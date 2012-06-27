@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 from twisted.internet import reactor, protocol
 from twisted.trial import unittest
-from twisted.words.protocols import irc
 from .ircd import IRCD
+from twisted.words.protocols.irc import IRCClient
 
 
-class NoLoginClient(irc.IRCCLient):
+class NoLoginClient(IRCClient):
     performLogin = 0
 
 
 class IRCDTests(unittest.TestCase):
     def setUp(self):
-        factory = IRCD()
-        self.port = reactor.listenTCP(0, factory, interface="127.0.0.1")
+        self.ircd = IRCD()
+        self.port = reactor.listenTCP(0, self.ircd, interface="127.0.0.1")
         self.client = None
 
     def tearDown(self):
@@ -20,14 +20,11 @@ class IRCDTests(unittest.TestCase):
             self.client.transport.loseConnection()
         return self.port.stopListening()
 
-    def build_client(self, client_class=irc.IRCClient):
+    def build_client(self, client_class=IRCClient):
         creator = protocol.ClientCreator(reactor, client_class)
 
         def cb(client):
             self.client = client
+            return client
 
         return creator.connectTCP('127.0.0.1', self.port.getHost().port).addCallback(cb)
-
-    def test_register(self):
-        deferred = self.build_client(NoLoginClient)
-        deferred.addCallback()

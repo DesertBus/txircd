@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
+from collections import MutableMapping
 from functools import wraps
 import inspect
 from twisted.internet import reactor
+from twisted.python import log
 from twisted.words.protocols import irc
 
 
@@ -23,7 +25,11 @@ class ParamParser(object):
         args, varargs, varkw, defaults = inspect.getargspec(method)
         if varkw:
             raise TypeError("Methods decorated with parse_args or multi may not use **kwargs")
-        del args[:1] # self
+        if args[0] != 'self':
+            raise TypeError("Methods decorated with parse_args or multi must have 'self' as first argument")
+        if args[1] != 'prefix':
+            raise TypeError("Methods decorated with parse_args or multi must have 'prefix' as second argument")
+        del args[:2] # self, prefix
 
         # amount of non-var-args
         fix_args = len(args)
@@ -73,8 +79,8 @@ def parse_args(method):
             return self.sendLine(irc.ERR_NEEDMOREPARAMS)
         except TooManyParams:
             return self.sendLine(irc.ERR_NEEDMOREPARAMS) # todo: is this the best response?
-        # is the prefix really never used?
-        return method(self, *rest, **kwargs)
+        log.msg("Calling %r with %r *%r **%r" % (method.__name__, prefix, rest, kwargs))
+        return method(self, prefix, *rest, **kwargs)
 
     return wrapper
 
@@ -88,7 +94,8 @@ def multi(name, *methods):
                 rest, kwargs = parser.parse(params)
             except ParamParserError:
                 continue
-            return parser.method(self, *rest, **kwargs)
+            log.msg("Calling %r with %r *%r **%r" % (parser.method.__name__, prefix, rest, kwargs))
+            return parser.method(self, prefix, *rest, **kwargs)
         return self.sendLine(irc.ERR_NEEDMOREPARAMS) # todo: just handle it like this?
 
     wrapper.__name__ = name
@@ -101,3 +108,45 @@ def iterate_non_blocking(iterator):
     except StopIteration:
         return
     reactor.callLater(0, iterate_non_blocking, iterator)
+
+
+class CaseInsensitiveDictionary(MutableMapping):
+    def __init__(self):
+        self._data = {}
+
+    def __repr__(self):
+        return repr(self._data)
+
+    def __delitem__(self, key):
+        try:
+            del self._data[key.lower()]
+        except KeyError:
+            raise KeyError(key)
+
+    def __getitem__(self, key):
+        try:
+            return self._data[key.lower()]
+        except KeyError:
+            raise KeyError(key)
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __setitem__(self, key, value):
+        self._data[key.lower()] = value
+
+
+class DefaultCaseInsensitiveDictionary(CaseInsensitiveDictionary):
+    def __init__(self, default_factory):
+        self._default_factory = default_factory
+        super(DefaultCaseInsensitiveDictionary, self).__init__()
+
+    def __getitem__(self, key):
+        try:
+            return super(DefaultCaseInsensitiveDictionary, self).__getitem__(key)
+        except KeyError:
+            value = self[key] = self._default_factory()
+            return value
