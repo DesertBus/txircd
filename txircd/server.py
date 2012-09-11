@@ -2,7 +2,7 @@
 
 from txircd.utils import irc_lower
 
-class IRCServer:
+class IRCServer(object):
     def __init__(self, parent, server, password):
         assert server[0] not in parent.factory.servers, "Server already known"
         assert server[1] == "0", "Server isn't a local peer"
@@ -94,7 +94,7 @@ class IRCServer:
 
     def irc_SERVER(self, prefix, params):
         assert params[0] not in self.parent.factory.servers, "Server already connected"
-        self.relay(":%s SERVER %s %s %s :%s" % (prefix, params[0], int(params[1])+1, params[2], params[3])
+        self.relay(":%s SERVER %s %s %s :%s" % (prefix, params[0], int(params[1])+1, params[2], params[3]))
         self.parent.factory.servers[params[0]] = {
             "name": params[0],
             "description": params[3],

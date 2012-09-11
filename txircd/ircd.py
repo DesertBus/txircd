@@ -7,7 +7,7 @@ from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictio
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
-import uuid
+import uuid, time
 
 class IRCProtocol(irc.IRC):
     UNREGISTERED_COMMANDS = ['PASS', 'USER', 'SERVICE', 'SERVER', 'NICK', 'PING', 'QUIT']
@@ -17,9 +17,9 @@ class IRCProtocol(irc.IRC):
         self.password = None
         self.nick = None
 
-    def get_prefix(self):
-        # FIXME: this is bugged! irssi does not recognize stuff sent back as coming from itself
-        return '%s!%s@%s' % (self.nick, self.username, self.transport.getHandle().getpeername()[0])
+    #def get_prefix(self):
+    #    # FIXME: this is bugged! irssi does not recognize stuff sent back as coming from itself
+    #    return '%s!%s@%s' % (self.nick, self.username, self.transport.getHandle().getpeername()[0])
 
     def handleCommand(self, command, prefix, params):
         log.msg('handleCommand: %r %r %r' % (command, prefix, params))
@@ -28,7 +28,18 @@ class IRCProtocol(irc.IRC):
         elif not self.type:
             return irc.IRC.handleCommand(self, command, prefix, params)
         else:
-            return irc.IRC.handleCommand(self.type, command, prefix, params)
+            return self.delegateCommand(self.type, command, prefix, params)
+    
+    def delegateCommand(self, delegate, command, prefix, params):
+        method = getattr(delegate, "irc_%s" % command, None)
+        try:
+            if method is not None:
+                method(prefix, params)
+            else:
+                delegate.irc_unknown(prefix, command, params)
+        except:
+            log.deferr()
+        
 
     def sendLine(self, line):
         log.msg('sendLine: %r' % line)
@@ -60,6 +71,8 @@ class IRCD(Factory):
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
         self.name = name
+        self.version = "0.1"
+        self.created = time.time()
         self.token = uuid.uuid1()
         self.description = description
         self.client_timeout = client_timeout
@@ -71,6 +84,11 @@ class IRCD(Factory):
         return {
             "name": name,
             "mode": "",
+            "topic": {
+                "message": None,
+                "author": "",
+                "created": time.time()
+            },
             "password": None,
             "limit": None,
             "users": CaseInsensitiveDictionary(),

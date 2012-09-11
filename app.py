@@ -16,7 +16,7 @@ if __name__ == '__main__':
     if args.verbose:
         import sys
         log.startLogging(sys.stdout)
-    ircd = IRCD(args.name, client_timeout=args.client_timeout, welcome_message=args.welcome)
+    ircd = IRCD(args.name, client_timeout=args.client_timeout, description=args.welcome)
     reactor.listenTCP(args.ircport, ircd)
     reactor.run()
 
