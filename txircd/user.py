@@ -69,8 +69,11 @@ class IRCUser(object):
         self.data["channels"].remove(channel)
         cdata = self.parent.factory.channels[channel]
         del cdata["users"][self.data["nickname"]]
-        for u in cdata["users"].itervalues():
-            u["socket"].sendMessage("QUIT", channel, reason, prefix=self.prefix())
+        if not cdata["users"]:
+            del self.parent.factory.channels[channel]
+        else:
+            for u in cdata["users"].itervalues():
+                u["socket"].sendMessage("QUIT", channel, reason, prefix=self.prefix())
     
     def irc_QUIT(self, prefix, params):
         reason = params[0] if params else "Client exited"
