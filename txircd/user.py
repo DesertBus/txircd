@@ -59,16 +59,21 @@ class IRCUser(object):
     def part(self, channel, reason = None):
         self.data["channels"].remove(channel)
         cdata = self.parent.factory.channels[channel]
-        del cdata["users"][self.data["nickname"]]
         for u in cdata["users"].itervalues():
             u["socket"].part(self.prefix(), channel, reason)
+        del cdata["users"][self.data["nickname"]]
+        if not cdata["users"]:
+            del self.parent.factory.channels[channel]
     
     def quit(self, channel, reason = None):
         self.data["channels"].remove(channel)
         cdata = self.parent.factory.channels[channel]
         del cdata["users"][self.data["nickname"]]
-        for u in cdata["users"].itervalues():
-            u["socket"].sendMessage("QUIT", channel, reason, prefix=self.prefix())
+        if not cdata["users"]:
+            del self.parent.factory.channels[channel]
+        else:
+            for u in cdata["users"].itervalues():
+                u["socket"].sendMessage("QUIT", channel, reason, prefix=self.prefix())
     
     def irc_QUIT(self, prefix, params):
         reason = params[0] if params else "Client exited"
