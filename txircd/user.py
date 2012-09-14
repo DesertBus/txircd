@@ -73,7 +73,7 @@ class IRCUser(object):
             del self.parent.factory.channels[channel]
         else:
             for u in cdata["users"].itervalues():
-                u["socket"].sendMessage("QUIT", channel, reason, prefix=self.prefix())
+                u["socket"].sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
     
     def irc_QUIT(self, prefix, params):
         reason = params[0] if params else "Client exited"
@@ -81,7 +81,7 @@ class IRCUser(object):
             self.quit(c,reason)
         del self.parent.factory.users[self.data['nickname']]
         self.parent.sendMessage("ERROR","Closing Link: %s" % self.prefix())
-        self.parent.loseConnection()
+        self.parent.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
         if params[0] == "0":
