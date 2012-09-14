@@ -81,7 +81,7 @@ class IRCUser(object):
             self.quit(c,reason)
         del self.parent.factory.users[self.data['nickname']]
         self.parent.sendMessage("ERROR","Closing Link: %s" % self.prefix())
-        self.parent.loseConnection()
+        self.parent.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
         if params[0] == "0":
