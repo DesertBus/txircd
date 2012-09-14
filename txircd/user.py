@@ -62,6 +62,8 @@ class IRCUser(object):
         for u in cdata["users"].itervalues():
             u["socket"].part(self.prefix(), channel, reason)
         del cdata["users"][self.data["nickname"]]
+        if not cdata["users"]:
+            del self.parent.factory.channels[channel]
     
     def quit(self, channel, reason = None):
         self.data["channels"].remove(channel)
