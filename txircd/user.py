@@ -35,10 +35,10 @@ class IRCUser(object):
             "channels": [],
             "service": False
         }
-        self.parent.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.data["nickname"], self.data["nickname"], self.data["username"], self.data["hostname"]))
-        self.parent.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version))
-        self.parent.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.data["nickname"], self.parent.factory.created,))
-        self.parent.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version, "iows", "bklmnopstv")) # usermodes & channel modes
+        self.parent.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.data["nickname"], self.data["nickname"], self.data["username"], self.data["hostname"]), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.data["nickname"], self.parent.factory.created,), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version, "iows", "bklmnopstv"), prefix=self.parent.hostname) # usermodes & channel modes
     
     def prefix(self):
         return "%s!%s@%s" % (self.data["nickname"], self.data["username"], self.data["hostname"])
