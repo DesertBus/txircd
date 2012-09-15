@@ -72,7 +72,7 @@ class IRCUser(object):
         else:
             for user, ranks in cdata["users"].iteritems():
                 if ranks:
-                    userlist.append(ranks[0] + self.parent.factory.users[user]["nickname"])
+                    userlist.append(self.parent.factory.PREFIX_SYMBOLS[ranks[0]] + self.parent.factory.users[user]["nickname"])
                 else:
                     userlist.append(self.parent.factory.users[user]["nickname"])
         self.parent.names(self.data["nickname"], channel, userlist)
