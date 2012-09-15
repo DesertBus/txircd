@@ -53,8 +53,11 @@ class IRCUser(object):
         self.data["channels"].append(channel)
         cdata = self.parent.factory.channels[channel]
         if not cdata["users"]:
-            cdata["prefixes"]["op"].append(self.data["nickname"])
-        cdata["users"][self.data["nickname"]] = self.data
+            cdata["users"][self.data["nickname"]] = self.data
+            cdata["users"][self.data["nickname"]]["prefixes"] = ["op"]
+        else:
+            cdata["users"][self.data["nickname"]] = self.data
+            cdata["users"][self.data["nickname"]]["prefixes"] = []
         for u in cdata["users"].itervalues():
             u["socket"].join(self.prefix(), channel)
         self.parent.topic(self.data["nickname"], channel, cdata["topic"]["message"])
