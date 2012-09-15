@@ -4,6 +4,10 @@ from twisted.words.protocols import irc
 import time
 
 class IRCUser(object):
+    cap = {
+        "multi-prefix": False
+    }
+    
     def __init__(self, parent, user, password, nick):
         password = password[0] if password else None
         nick = nick[0]
