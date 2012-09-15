@@ -48,6 +48,8 @@ class IRCUser(object):
         #TODO: Validate channel prefix
         self.data["channels"].append(channel)
         cdata = self.parent.factory.channels[channel]
+        if not cdata["users"]:
+            cdata["prefixes"]["op"].append(self.data["nickname"])
         cdata["users"][self.data["nickname"]] = self.data
         for u in cdata["users"].itervalues():
             u["socket"].join(self.prefix(), channel)
@@ -61,6 +63,8 @@ class IRCUser(object):
         cdata = self.parent.factory.channels[channel]
         for u in cdata["users"].itervalues():
             u["socket"].part(self.prefix(), channel, reason)
+        for rankedUsers in cdata["prefixes"].itervalues():
+            rankedUsers.remove(self.data["nickname"])
         del cdata["users"][self.data["nickname"]]
         if not cdata["users"]:
             del self.parent.factory.channels[channel]
@@ -68,6 +72,8 @@ class IRCUser(object):
     def quit(self, channel, reason = None):
         self.data["channels"].remove(channel)
         cdata = self.parent.factory.channels[channel]
+        for rankedUsers in cdata["prefixes"].itervalues:
+            rankedUsers.remove(self.data["nickname"])
         del cdata["users"][self.data["nickname"]]
         if not cdata["users"]:
             del self.parent.factory.channels[channel]

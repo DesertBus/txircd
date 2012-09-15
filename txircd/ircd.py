@@ -94,7 +94,14 @@ class IRCD(Factory):
             "users": CaseInsensitiveDictionary(),
             "bans": [],
             "exemptions": [],
-            "invites": []
+            "invites": [],
+            "prefixes": {
+                "owner": [],
+                "admin": [],
+                "op": [],
+                "halfop": [],
+                "voice": []
+            }
         }
 
     def broadcast(channel, message):
