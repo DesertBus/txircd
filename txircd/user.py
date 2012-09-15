@@ -120,5 +120,17 @@ class IRCUser(object):
                 if u is not self.data:
                     u["socket"].privmsg(self.prefix(), c["name"], message)
     
+    def irc_NOTICE(self, prefix, params):
+        target = params[0]
+        message = params[1]
+        if target in self.parent.factory.users:
+            u = self.parent.factory.users[target]
+            u["socket"].notice(self.prefix(), u["nickname"], message)
+        elif target in self.parent.factory.channels:
+            c = self.parent.factory.channels[target]
+            for u in c["users"].itervalues():
+                if u is not self.data:
+                    u["socket"].notice(self.prefix(), c["name"], message)
+    
     def irc_unknown(self, prefix, command, params):
         raise NotImplementedError(command, prefix, params)
