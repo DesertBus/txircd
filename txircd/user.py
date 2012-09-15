@@ -35,10 +35,10 @@ class IRCUser(object):
             "channels": [],
             "service": False
         }
-        self.parent.sendMessage(irc.RPL_WELCOME, ":Welcome to the Internet Relay Network %s!%s@%s" % (self.data["nickname"], self.data["username"], self.data["hostname"]))
-        self.parent.sendMessage(irc.RPL_YOURHOST, ":Your host is %s, running version %s" % (self.parent.factory.name, self.parent.factory.version))
-        self.parent.sendMessage(irc.RPL_CREATED, ":This server was created %s" % (self.parent.factory.created,))
-        self.parent.sendMessage(irc.RPL_MYINFO, ":%s %s %s %s" % (self.parent.factory.name, self.parent.factory.version, "", "")) # usermodes & channel modes
+        self.parent.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.data["nickname"], self.data["nickname"], self.data["username"], self.data["hostname"]), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.data["nickname"], self.parent.factory.created,), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version, "iows", "bklmnopstv"), prefix=self.parent.hostname) # usermodes & channel modes
     
     def prefix(self):
         return "%s!%s@%s" % (self.data["nickname"], self.data["username"], self.data["hostname"])
@@ -59,16 +59,21 @@ class IRCUser(object):
     def part(self, channel, reason = None):
         self.data["channels"].remove(channel)
         cdata = self.parent.factory.channels[channel]
-        del cdata["users"][self.data["nickname"]]
         for u in cdata["users"].itervalues():
             u["socket"].part(self.prefix(), channel, reason)
+        del cdata["users"][self.data["nickname"]]
+        if not cdata["users"]:
+            del self.parent.factory.channels[channel]
     
     def quit(self, channel, reason = None):
         self.data["channels"].remove(channel)
         cdata = self.parent.factory.channels[channel]
         del cdata["users"][self.data["nickname"]]
-        for u in cdata["users"].itervalues():
-            u["socket"].sendMessage("QUIT", channel, reason, prefix=self.prefix())
+        if not cdata["users"]:
+            del self.parent.factory.channels[channel]
+        else:
+            for u in cdata["users"].itervalues():
+                u["socket"].sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
     
     def irc_QUIT(self, prefix, params):
         reason = params[0] if params else "Client exited"
@@ -76,7 +81,7 @@ class IRCUser(object):
             self.quit(c,reason)
         del self.parent.factory.users[self.data['nickname']]
         self.parent.sendMessage("ERROR","Closing Link: %s" % self.prefix())
-        self.parent.loseConnection()
+        self.parent.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
         if params[0] == "0":
@@ -104,8 +109,12 @@ class IRCUser(object):
         pass
     
     def irc_PRIVMSG(self, prefix, params):
-        target = params[0]
-        message = params[1]
+        try:
+            target = params[0]
+            message = params[1]
+        except IndexError:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s PRIVMSG :Not enough parameters" % self.data["nickname"], prefix=self.parent.hostname)
+            return
         if target in self.parent.factory.users:
             u = self.parent.factory.users[target]
             u["socket"].privmsg(self.prefix(), u["nickname"], message)
@@ -114,6 +123,22 @@ class IRCUser(object):
             for u in c["users"].itervalues():
                 if u is not self.data:
                     u["socket"].privmsg(self.prefix(), c["name"], message)
+    
+    def irc_NOTICE(self, prefix, params):
+        try:
+            target = params[0]
+            message = params[1]
+        except IndexError:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s NOTICE :Not enough parameters" % self.data["nickname"], prefix=self.parent.hostname)
+            return
+        if target in self.parent.factory.users:
+            u = self.parent.factory.users[target]
+            u["socket"].notice(self.prefix(), u["nickname"], message)
+        elif target in self.parent.factory.channels:
+            c = self.parent.factory.channels[target]
+            for u in c["users"].itervalues():
+                if u is not self.data:
+                    u["socket"].notice(self.prefix(), c["name"], message)
     
     def irc_unknown(self, prefix, command, params):
         raise NotImplementedError(command, prefix, params)
