@@ -68,13 +68,13 @@ class IRCProtocol(irc.IRC):
 
 class IRCD(Factory):
     protocol = IRCProtocol
-    PREFIX_ORDER = [ 'owner', 'admin', 'op', 'halfop', 'voice' ]
+    PREFIX_ORDER = "qaohv"
     PREFIX_SYMBOLS = {
-        "owner": '~',
-        "admin": '&',
-        "op": '@',
-        "halfop": '%',
-        "voice": '+'
+        'q': '~',
+        'a': '&',
+        'o': '@',
+        'h': '%',
+        'v': '+'
     }
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
