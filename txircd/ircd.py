@@ -68,6 +68,14 @@ class IRCProtocol(irc.IRC):
 
 class IRCD(Factory):
     protocol = IRCProtocol
+    PREFIX_ORDER = [ 'owner', 'admin', 'op', 'halfop', 'voice' ]
+    PREFIX_SYMBOLS = {
+        "owner": '~',
+        "admin": '&',
+        "op": '@',
+        "halfop": '%',
+        "voice": '+'
+    }
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
         self.name = name
@@ -94,14 +102,7 @@ class IRCD(Factory):
             "users": CaseInsensitiveDictionary(),
             "bans": [],
             "exemptions": [],
-            "invites": [],
-            "prefixes": {
-                "owner": [],
-                "admin": [],
-                "op": [],
-                "halfop": [],
-                "voice": []
-            }
+            "invites": []
         }
 
     def broadcast(channel, message):
