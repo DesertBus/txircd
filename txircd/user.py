@@ -56,8 +56,8 @@ class IRCUser(object):
             cdata["users"][self.data["nickname"]] = "o"
         else:
             cdata["users"][self.data["nickname"]] = ""
-        for u in cdata["users"].itervalues():
-            u["socket"].join(self.prefix(), channel)
+        for u in cdata["users"].iterkeys():
+            self.parent.factory.users[u]["socket"].join(self.prefix(), channel)
         self.parent.topic(self.data["nickname"], channel, cdata["topic"]["message"])
         if cdata["topic"]["message"] is not None:
             self.parent.topicAuthor(self.data["nickname"], channel, cdata["topic"]["author"], cdata["topic"]["created"])
