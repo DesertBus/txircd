@@ -109,8 +109,12 @@ class IRCUser(object):
         pass
     
     def irc_PRIVMSG(self, prefix, params):
-        target = params[0]
-        message = params[1]
+        try:
+            target = params[0]
+            message = params[1]
+        except IndexError:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s PRIVMSG :Not enough parameters" % self.data["nickname"], prefix=self.parent.hostname)
+            return
         if target in self.parent.factory.users:
             u = self.parent.factory.users[target]
             u["socket"].privmsg(self.prefix(), u["nickname"], message)
@@ -119,6 +123,22 @@ class IRCUser(object):
             for u in c["users"].itervalues():
                 if u is not self.data:
                     u["socket"].privmsg(self.prefix(), c["name"], message)
+    
+    def irc_NOTICE(self, prefix, params):
+        try:
+            target = params[0]
+            message = params[1]
+        except IndexError:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s NOTICE :Not enough parameters" % self.data["nickname"], prefix=self.parent.hostname)
+            return
+        if target in self.parent.factory.users:
+            u = self.parent.factory.users[target]
+            u["socket"].notice(self.prefix(), u["nickname"], message)
+        elif target in self.parent.factory.channels:
+            c = self.parent.factory.channels[target]
+            for u in c["users"].itervalues():
+                if u is not self.data:
+                    u["socket"].notice(self.prefix(), c["name"], message)
     
     def irc_unknown(self, prefix, command, params):
         raise NotImplementedError(command, prefix, params)
