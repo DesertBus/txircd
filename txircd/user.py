@@ -53,11 +53,9 @@ class IRCUser(object):
         self.data["channels"].append(channel)
         cdata = self.parent.factory.channels[channel]
         if not cdata["users"]:
-            cdata["users"][self.data["nickname"]] = self.data
-            cdata["users"][self.data["nickname"]]["prefixes"] = ["op"]
+            cdata["users"][self.data["nickname"]] = "o"
         else:
-            cdata["users"][self.data["nickname"]] = self.data
-            cdata["users"][self.data["nickname"]]["prefixes"] = []
+            cdata["users"][self.data["nickname"]] = ""
         for u in cdata["users"].itervalues():
             u["socket"].join(self.prefix(), channel)
         self.parent.topic(self.data["nickname"], channel, cdata["topic"]["message"])
@@ -65,28 +63,18 @@ class IRCUser(object):
             self.parent.topicAuthor(self.data["nickname"], channel, cdata["topic"]["author"], cdata["topic"]["created"])
         userlist = []
         if self.cap["multi-prefix"]:
-            for u in cdata["users"]:
-                user = self.parent.factory.users[u]
-                ranks = ""
-                # The PREFIX_ORDER loop is done to ensure that the symbols are
-                # prepended to the nicknames in the proper order.
-                for rank in self.parent.factory.PREFIX_ORDER:
-                    if rank in user["prefixes"]:
-                        ranks += self.parent.PREFIX_SYMBOLS[rank]
-                userlist.append(ranks + user["nickname"])
+            for user, ranks in cdata["users"].iteritems():
+                name = ''
+                for p in ranks:
+                    name += p
+                name += self.parent.factory.users[user]["nickname"]
+                userlist.append(name)
         else:
-            for u in cdata["users"]:
-                user = self.parent.factory.users[u]
-                userAdded = False
-                # The PREFIX_ORDER loop is done to ensure that the symbol
-                # representing the highest status held by the user is the one
-                # that is applied.
-                for rank in self.parent.factory.PREFIX_ORDER:
-                    if rank in user["prefixes"]:
-                        userAdded = True
-                        userlist.append(self.parent.factory.PREFIX_SYMBOLS[rank] + user["nickname"])
-                if not userAdded:
-                    userlist.append(user["nickname"])
+            for user, ranks in cdata["users"].iteritems():
+                if ranks:
+                    userlist.append(ranks[0] + self.parent.factory.users[user]["nickname"])
+                else:
+                    userlist.append(self.parent.factory.users[user]["nickname"])
         self.parent.names(self.data["nickname"], channel, userlist)
     
     def part(self, channel, reason = None):
