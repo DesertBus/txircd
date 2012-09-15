@@ -63,7 +63,31 @@ class IRCUser(object):
         self.parent.topic(self.data["nickname"], channel, cdata["topic"]["message"])
         if cdata["topic"]["message"] is not None:
             self.parent.topicAuthor(self.data["nickname"], channel, cdata["topic"]["author"], cdata["topic"]["created"])
-        self.parent.names(self.data["nickname"], channel, [u["nickname"] for u in cdata["users"].itervalues()])
+        userlist = []
+        if self.cap["multi-prefix"]:
+            for u in cdata["users"]:
+                user = self.parent.factory.users[u]
+                ranks = ""
+                # The PREFIX_ORDER loop is done to ensure that the symbols are
+                # prepended to the nicknames in the proper order.
+                for rank in self.parent.factory.PREFIX_ORDER:
+                    if rank in user["prefixes"]:
+                        ranks += self.parent.PREFIX_SYMBOLS[rank]
+                userlist.append(ranks + user["nickname"])
+        else:
+            for u in cdata["users"]:
+                user = self.parent.factory.users[u]
+                userAdded = False
+                # The PREFIX_ORDER loop is done to ensure that the symbol
+                # representing the highest status held by the user is the one
+                # that is applied.
+                for rank in self.parent.factory.PREFIX_ORDER:
+                    if rank in user["prefixes"]:
+                        userAdded = True
+                        userlist.append(self.parent.factory.PREFIX_SYMBOLS[rank] + user["nickname"])
+                if not userAdded:
+                    userlist.append(user["nickname"])
+        self.parent.names(self.data["nickname"], channel, userlist)
     
     def part(self, channel, reason = None):
         self.data["channels"].remove(channel)
