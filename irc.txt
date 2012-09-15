@@ -1,0 +1,50 @@
+servers = {
+    <name>: {
+        name: <string>
+        description: <string>
+        host: <string>
+        socket: <Protocol>
+        hops: <integer>
+    }
+}
+
+channels = {
+    <name>: {
+        name: <string>
+        mode: <string>
+        password: <string>
+        limit: <integer>
+        users: {
+            <name> : <string> // Modes
+        }
+        bans: <list<string>>
+        exemptions: <list<string>>
+        invites: <list<string>>
+    }
+}
+
+users = {
+    <nick>: {
+        socket: <Protocol>
+        nick: <string>
+        username: <string>
+        hostname: <string>
+        realname: <string>
+        server: <string>
+        oper: <bool>
+        away: <bool>
+        signon: <integer>
+        lastactivity: <integer>
+        mode: <string>
+        channels: <list<string>>
+        service: <bool>
+    }
+}
+
+TODO:
+    How do we ensure a server connection is valid?
+    Implement IRCServer.irc_unknown
+    Add PING testing to IRCProtocol
+    Track nick changes
+    Fix SQUIT (should be one per server, not one for the lead server???)
+    
