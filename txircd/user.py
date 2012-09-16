@@ -371,7 +371,7 @@ class IRCUser(object):
                 if propModes:
                     modeStr = "%s %s" % (propModes, " ".join(propParams))
                     for user in cdata["users"].iterkeys():
-                        self.parent.factory.users[user]["socket"].sendMessage("MODE", modeStr, prefix=self.prefix())
+                        self.parent.factory.users[user]["socket"].sendMessage("MODE", "%s %s" % (cdata["name"], modeStr), prefix=self.prefix())
             else:
                 self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must have channel halfop access or above to set channel modes" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
         else:
