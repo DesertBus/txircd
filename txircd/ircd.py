@@ -89,6 +89,8 @@ class IRCD(Factory):
         'h': '%',
         'v': '+'
     }
+    usermodes = "iows"
+    chanmodes = [ "beI", "k", "l", "mnpst" ]
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
         self.name = name
