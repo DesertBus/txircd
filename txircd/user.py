@@ -164,6 +164,33 @@ class IRCUser(object):
     
     def irc_MODE(self, prefix, params):
         pass
+    
+    def irc_TOPIC(self, prefix, params):
+        if not params:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s TOPIC :Not enough parameters" % self.data["nickname"], prefix=self.parent.hostname)
+            return
+        if params[0] not in self.parent.factory.channels:
+            self.parent.sendMessage(irc.ERR_NOSUCHCHANNEL, "%s %s :No such channel" % (self.data["nickname"], params[0]), prefix=self.parent.hostname)
+            return
+        cdata = self.parent.factory.channels[params[0]]
+        if len(params) == 1:
+            self.parent.topic(self.data["nickname"], cdata["name"], cdata["topic"]["message"])
+            if cdata["topic"]["message"] is not None:
+                self.parent.topicAuthor(self.data["nickname"], cdata["name"], cdata["topic"]["author"], cdata["topic"]["created"])
+        else:
+            if self.data["nickname"] not in cdata["users"]:
+                self.parent.sendMessage(irc.ERR_NOTONCHANNEL, "%s %s :You're not in that channel" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+            elif 't' not in cdata["mode"] or (cdata["users"][self.data["nickname"]] and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) <= self.parent.factory.PREFIX_ORDER.find('h')):
+                # If the channel is +t and the user has a rank that is halfop or higher, allow the topic change
+                cdata["topic"] = {
+                    "message": params[1],
+                    "author": self.data["nickname"],
+                    "created": time.time()
+                }
+                for u in cdata["users"].iterkeys():
+                    self.parent.factory.users[u]["socket"].topic(self.parent.factory.users[u]["nickname"], cdata["name"], params[1], self.prefix())
+            else:
+                self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to change the topic on this channel" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
 
     def irc_WHO(self, prefix, params):
         pass
