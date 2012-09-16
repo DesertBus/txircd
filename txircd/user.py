@@ -10,7 +10,6 @@ class IRCUser(object):
     
     def __init__(self, parent, user, password, nick):
         password = password[0] if password else None
-        nick = nick[0]
         username = user[0]
         # RFC 2812 allows setting modes in the USER command but RFC 1459 does not
         mode = ""
@@ -44,6 +43,9 @@ class IRCUser(object):
         self.parent.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.data["nickname"], self.parent.factory.created,), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version, "iows", "bklmnopstv"), prefix=self.parent.hostname) # usermodes & channel modes
     
+    #=====================
+    #== Utility Methods ==
+    #=====================
     def prefix(self):
         return "%s!%s@%s" % (self.data["nickname"], self.data["username"], self.data["hostname"])
     
@@ -81,8 +83,8 @@ class IRCUser(object):
     def part(self, channel, reason = None):
         self.data["channels"].remove(channel)
         cdata = self.parent.factory.channels[channel]
-        for u in cdata["users"].itervalues():
-            u["socket"].part(self.prefix(), channel, reason)
+        for u in cdata["users"].iterkeys():
+            self.parent.factory.users[u]["socket"].part(self.prefix(), channel, reason)
         del cdata["users"][self.data["nickname"]]
         if not cdata["users"]:
             del self.parent.factory.channels[channel]
@@ -94,8 +96,36 @@ class IRCUser(object):
         if not cdata["users"]:
             del self.parent.factory.channels[channel]
         else:
-            for u in cdata["users"].itervalues():
-                u["socket"].sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
+            for u in cdata["users"].iterkeys():
+                self.parent.factory.users[u]["socket"].sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
+    
+    #======================
+    #== Protocol Methods ==
+    #======================
+    def irc_PASS(self, prefix, params):
+        self.parent.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)", prefix=self.parent.hostname)
+    
+    def irc_NICK(self, prefix, params):
+        if not params:
+            self.parent.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.parent.hostname)
+        elif params[0] in self.parent.factory.users:
+            self.parent.sendMessage(irc.ERR_NICKNAMEINUSE, "%s :Nickname is already in use" % params[0], prefix=self.parent.hostname)
+        else:
+            oldnick = self.data["nickname"]
+            newnick = params[0]
+            # Out with the old, in with the new
+            del self.parent.factory.users[oldnick]
+            self.parent.factory.users[newnick] = self.data
+            tomsg = set() # Ensure users are only messaged once
+            for c in self.data["channels"]:
+                mode = self.parent.factory.channels[c]["users"][oldnick]
+                del self.parent.factory.channels[c]["users"][oldnick]
+                self.parent.factory.channels[c]["users"][newnick] = mode
+                for u in self.parent.factory.channels[c]["users"].iterkeys():
+                    tomsg.add(u)
+            for u in tomsg:
+                self.parent.factory.users[u]["socket"].sendMessage("NICK", newnick, prefix=self.prefix())
+            self.data["nickname"] = newnick
     
     def irc_QUIT(self, prefix, params):
         reason = params[0] if params else "Client exited"
@@ -146,9 +176,9 @@ class IRCUser(object):
             u["socket"].privmsg(self.prefix(), u["nickname"], message)
         elif target in self.parent.factory.channels:
             c = self.parent.factory.channels[target]
-            for u in c["users"].itervalues():
-                if u is not self.data:
-                    u["socket"].privmsg(self.prefix(), c["name"], message)
+            for u in c["users"].iterkeys():
+                if self.parent.factory.users[u]["nickname"] is not self.data["nickname"]:
+                    self.parent.factory.users[u]["socket"].privmsg(self.prefix(), c["name"], message)
     
     def irc_NOTICE(self, prefix, params):
         try:
@@ -162,9 +192,9 @@ class IRCUser(object):
             u["socket"].notice(self.prefix(), u["nickname"], message)
         elif target in self.parent.factory.channels:
             c = self.parent.factory.channels[target]
-            for u in c["users"].itervalues():
-                if u is not self.data:
-                    u["socket"].notice(self.prefix(), c["name"], message)
+            for u in c["users"].iterkeys():
+                if self.parent.factory.users[u]["nickname"] is not self.data["nickname"]:
+                    self.parent.factory.users[u]["socket"].notice(self.prefix(), c["name"], message)
     
     def irc_unknown(self, prefix, command, params):
         self.parent.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.parent.hostname)

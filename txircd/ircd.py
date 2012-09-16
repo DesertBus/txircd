@@ -16,6 +16,7 @@ class IRCProtocol(irc.IRC):
         self.type = None
         self.password = None
         self.nick = None
+        self.user = None
 
     #def get_prefix(self):
     #    # FIXME: this is bugged! irssi does not recognize stuff sent back as coming from itself
@@ -46,13 +47,24 @@ class IRCProtocol(irc.IRC):
         return irc.IRC.sendLine(self, line)
 
     def irc_PASS(self, prefix, params):
+        if not params:
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS :Not enough parameters", prefix=self.hostname)
         self.password = params
 
     def irc_NICK(self, prefix, params):
-        self.nick = params
+        if not params:
+            self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.hostname)
+        elif params[0] in self.factory.users:
+            self.sendMessage(irc.ERR_NICKNAMEINUSE, "%s :Nickname is already in use" % params[0], prefix=self.hostname)
+        else:
+            self.nick = params[0]
+            if self.user:
+                self.type = IRCUser(self, self.user, self.password, self.nick)
 
     def irc_USER(self, prefix, params):
-        self.type = IRCUser(self, params, self.password, self.nick)
+        self.user = params
+        if self.nick:
+            self.type = IRCUser(self, self.user, self.password, self.nick)
 
     def irc_SERVICE(self, prefix, params):
         self.type = IRCService(self, params, self.password)
