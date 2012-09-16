@@ -4,6 +4,10 @@ from twisted.words.protocols import irc
 import time
 
 class IRCUser(object):
+    cap = {
+        "multi-prefix": False
+    }
+    
     def __init__(self, parent, user, password, nick):
         password = password[0] if password else None
         nick = nick[0]
@@ -49,13 +53,30 @@ class IRCUser(object):
             return self.parent.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.parent.hostname)
         self.data["channels"].append(channel)
         cdata = self.parent.factory.channels[channel]
-        cdata["users"][self.data["nickname"]] = self.data
-        for u in cdata["users"].itervalues():
-            u["socket"].join(self.prefix(), channel)
+        if not cdata["users"]:
+            cdata["users"][self.data["nickname"]] = "o"
+        else:
+            cdata["users"][self.data["nickname"]] = ""
+        for u in cdata["users"].iterkeys():
+            self.parent.factory.users[u]["socket"].join(self.prefix(), channel)
         self.parent.topic(self.data["nickname"], channel, cdata["topic"]["message"])
         if cdata["topic"]["message"] is not None:
             self.parent.topicAuthor(self.data["nickname"], channel, cdata["topic"]["author"], cdata["topic"]["created"])
-        self.parent.names(self.data["nickname"], channel, [u["nickname"] for u in cdata["users"].itervalues()])
+        userlist = []
+        if self.cap["multi-prefix"]:
+            for user, ranks in cdata["users"].iteritems():
+                name = ''
+                for p in ranks:
+                    name += p
+                name += self.parent.factory.users[user]["nickname"]
+                userlist.append(name)
+        else:
+            for user, ranks in cdata["users"].iteritems():
+                if ranks:
+                    userlist.append(self.parent.factory.PREFIX_SYMBOLS[ranks[0]] + self.parent.factory.users[user]["nickname"])
+                else:
+                    userlist.append(self.parent.factory.users[user]["nickname"])
+        self.parent.names(self.data["nickname"], channel, userlist)
     
     def part(self, channel, reason = None):
         self.data["channels"].remove(channel)

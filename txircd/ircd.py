@@ -69,6 +69,14 @@ class IRCProtocol(irc.IRC):
 class IRCD(Factory):
     protocol = IRCProtocol
     channel_prefixes = "#"
+    PREFIX_ORDER = "qaohv"
+    PREFIX_SYMBOLS = {
+        'q': '~',
+        'a': '&',
+        'o': '@',
+        'h': '%',
+        'v': '+'
+    }
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
         self.name = name
