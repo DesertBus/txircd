@@ -222,7 +222,7 @@ class IRCUser(object):
                     modeParams += ' ' + str(cdata["limit"])
                 modeStr += modeParams
                 self.parent.sendMessage(irc.RPL_CHANNELMODEIS, "%s %s +%s" % (self.data["nickname"], cdata["name"], modeStr), prefix=self.parent.hostname)
-                self.parent.sendMessage(irc.RPL_CREATIONTIME, "%s %s %d" % (self.data["nickname"], cdata["name"], cdata["created"]), prefix=self.parent.hostname)
+                self.parent.sendMessage("329", "%s %s %d" % (self.data["nickname"], cdata["name"], cdata["created"]), prefix=self.parent.hostname)
             elif cdata["users"][self.data["nickname"]] and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) <= self.parent.factory.PREFIX_ORDER.find('h'):
                 adding = True
                 changeCount = 0
