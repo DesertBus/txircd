@@ -45,7 +45,8 @@ class IRCUser(object):
     
     def join(self, channel, key):
         #TODO: Validate key
-        #TODO: Validate channel prefix
+        if channel[0] not in self.parent.factory.channel_prefixes:
+            return self.parent.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.parent.hostname)
         self.data["channels"].append(channel)
         cdata = self.parent.factory.channels[channel]
         cdata["users"][self.data["nickname"]] = self.data
@@ -84,7 +85,9 @@ class IRCUser(object):
         self.parent.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
-        if params[0] == "0":
+        if not params:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "JOIN :Not enough parameters", prefix=self.parent.hostname)
+        elif params[0] == "0":
             for c in self.data["channels"]:
                 self.part(c)
         else:
@@ -97,6 +100,8 @@ class IRCUser(object):
                 self.join(c,k)
 
     def irc_PART(self, prefix, params):
+        if not params:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "PART :Not enough parameters", prefix=self.parent.hostname)
         channels = params[0].split(',')
         reason = params[1] if len(params) > 1 else self.data['nickname']
         for c in channels:
