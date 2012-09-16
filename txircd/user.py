@@ -43,6 +43,7 @@ class IRCUser(object):
         self.parent.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.data["nickname"], self.parent.factory.created,), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version, "iows", "bklmnopstv"), prefix=self.parent.hostname) # usermodes & channel modes
+        self.parent.sendMessage(irc.RPL_ISUPPORT, "%s CASEMAPPING=rfc1459 CHANTYPES=%s PREFIX=(%s)%s STATUSMSG=%s :are supported by this server" % (self.data["nickname"], self.parent.factory.channel_prefixes, self.parent.factory.PREFIX_ORDER, "".join([self.parent.factory.PREFIX_SYMBOLS[mode] for mode in self.parent.factory.PREFIX_ORDER]), "".join([self.parent.factory.PREFIX_SYMBOLS[mode] for mode in self.parent.factory.PREFIX_ORDER])), prefix=self.parent.hostname)
     
     def prefix(self):
         return "%s!%s@%s" % (self.data["nickname"], self.data["username"], self.data["hostname"])
