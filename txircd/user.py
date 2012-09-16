@@ -243,34 +243,40 @@ class IRCUser(object):
                         if adding:
                             targetUser = params[currParam]
                             if targetUser in cdata["users"] and mode not in cdata["users"][targetUser]:
-                                if not cdata["users"][targetUser]:
-                                    cdata["users"][targetUser] = mode
+                                if self.parent.factory.PREFIX_ORDER.find(mode) >= self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) <= self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0]):
+                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to channel mode %s" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
                                 else:
-                                    statusList = list(cdata["users"][targetUser])
-                                    inserted = False
-                                    for i in range(0, len(statusList)):
-                                        if self.parent.factory.PREFIX_ORDER.find(mode) < self.parent.factory.PREFIX_ORDER.find(statusList[i]):
-                                            statusList.insert(i, mode)
-                                            inserted = True
-                                    if not inserted:
-                                        statusList.append(mode)
-                                    cdata["users"][targetUser] = "".join(statusList)
-                                if propAdding != '+':
-                                    propAdding = '+'
-                                    propModes += '+'
-                                propModes += mode
-                                propParams.append(params[currParam])
-                                changeCount += 1
+                                    if not cdata["users"][targetUser]:
+                                        cdata["users"][targetUser] = mode
+                                    else:
+                                        statusList = list(cdata["users"][targetUser])
+                                        inserted = False
+                                        for i in range(0, len(statusList)):
+                                            if self.parent.factory.PREFIX_ORDER.find(mode) < self.parent.factory.PREFIX_ORDER.find(statusList[i]):
+                                                statusList.insert(i, mode)
+                                                inserted = True
+                                        if not inserted:
+                                            statusList.append(mode)
+                                        cdata["users"][targetUser] = "".join(statusList)
+                                    if propAdding != '+':
+                                        propAdding = '+'
+                                        propModes += '+'
+                                    propModes += mode
+                                    propParams.append(params[currParam])
+                                    changeCount += 1
                         else:
                             targetUser = params[currParam]
                             if targetUser in cdata["users"] and mode in cdata["user"][targetUser]:
-                                cdata["users"][targetUser] = cdata["users"][targetUser].replace(mode, '')
-                                if propAdding != '-':
-                                    propAdding = '-'
-                                    propModes += '-'
-                                propModes += mode
-                                propParams.append(params[currParam])
-                                changeCount += 1
+                                if self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0]) < self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"][0]):
+                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to set channel mode %s on that user" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
+                                else:
+                                    cdata["users"][targetUser] = cdata["users"][targetUser].replace(mode, '')
+                                    if propAdding != '-':
+                                        propAdding = '-'
+                                        propModes += '-'
+                                    propModes += mode
+                                    propParams.append(params[currParam])
+                                    changeCount += 1
                         currParam += 1
                     elif mode in self.parent.factory.chanmodes[0]:
                         if currParam >= len(params):
