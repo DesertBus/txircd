@@ -193,7 +193,7 @@ class IRCUser(object):
                             if mode == 'o':
                                 self.parent.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode o" % self.data["nickname"], prefix=self.parent.hostname)
                             elif mode not in self.data["mode"]:
-                                self.data["mode"].append(mode)
+                                self.data["mode"] += mode
                                 if responseAdding != '+':
                                     responseAdding = '+'
                                     responseStr += '+'
@@ -216,7 +216,7 @@ class IRCUser(object):
                 modeParams = ''
                 if cdata["password"]:
                     modeStr += 'k'
-                    modeParams += ' ' + cdata["password"])
+                    modeParams += ' ' + cdata["password"]
                 if cdata["limit"]:
                     modeStr += 'l'
                     modeParams += ' ' + str(cdata["limit"])

@@ -107,7 +107,7 @@ class IRCD(Factory):
         return {
             "name": name,
             "mode": "",
-            "created": time.time()
+            "created": time.time(),
             "topic": {
                 "message": None,
                 "author": "",
