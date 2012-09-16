@@ -201,7 +201,7 @@ class IRCUser(object):
                                 changeCount += 1
                         else:
                             if mode in self.data["mode"]:
-                                self.data["mode"].replace(mode, '')
+                                self.data["mode"] = self.data["mode"].replace(mode, '')
                                 if responseAdding != '-':
                                     responseAdding = '-'
                                     responseStr += '-'
@@ -254,7 +254,7 @@ class IRCUser(object):
                                             inserted = True
                                     if not inserted:
                                         statusList.append(mode)
-                                    cdata["users"] = "".join(statusList)
+                                    cdata["users"][targetUser] = "".join(statusList)
                                 if propAdding != '+':
                                     propAdding = '+'
                                     propModes += '+'
@@ -264,7 +264,7 @@ class IRCUser(object):
                         else:
                             targetUser = params[currParam]
                             if targetUser in cdata["users"] and mode in cdata["user"][targetUser]:
-                                cdata.replace(mode, '')
+                                cdata["users"][targetUser] = cdata["users"][targetUser].replace(mode, '')
                                 if propAdding != '-':
                                     propAdding = '-'
                                     propModes += '-'
@@ -361,7 +361,7 @@ class IRCUser(object):
                                 propModes += '+'
                             propModes += mode
                         elif not adding and mode in cdata["mode"]:
-                            cdata["mode"].replace(mode, '')
+                            cdata["mode"] = cdata["mode"].replace(mode, '')
                             if propAdding != '-':
                                 propAdding = '-'
                                 propModes += '-'
