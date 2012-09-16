@@ -106,6 +106,12 @@ class IRCUser(object):
     def irc_PASS(self, prefix, params):
         self.parent.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)", prefix=self.parent.hostname)
     
+    def irc_PING(self, prefix, params):
+        if params:
+            self.parent.sendMessage("PONG", "%s :%s" % (self.parent.hostname, params[0]), prefix=self.parent.hostname)
+        else:
+            self.parent.sendMessage(irc.ERR_NOORIGIN, "%s :No origin specified" % self.data["nickname"], prefix=self.parent.hostname)
+    
     def irc_NICK(self, prefix, params):
         if not params:
             self.parent.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.parent.hostname)
