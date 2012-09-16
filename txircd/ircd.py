@@ -62,6 +62,8 @@ class IRCProtocol(irc.IRC):
                 self.type = IRCUser(self, self.user, self.password, self.nick)
 
     def irc_USER(self, prefix, params):
+        if len(params) < 4:
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER :Not enough parameters", prefix=self.hostname)
         self.user = params
         if self.nick:
             self.type = IRCUser(self, self.user, self.password, self.nick)

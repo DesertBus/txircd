@@ -128,6 +128,9 @@ class IRCUser(object):
                 self.parent.factory.users[u]["socket"].sendMessage("NICK", newnick, prefix=self.prefix())
             self.data["nickname"] = newnick
     
+    def irc_USER(self, prefix, params):
+        self.parent.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)", prefix=self.parent.hostname)
+    
     def irc_QUIT(self, prefix, params):
         reason = params[0] if params else "Client exited"
         for c in self.data["channels"]:
