@@ -83,6 +83,8 @@ class IRCProtocol(irc.IRC):
 class IRCD(Factory):
     protocol = IRCProtocol
     channel_prefixes = "#"
+    oper_hosts = ["127.0.0.1"]
+    opers = {"Fugiman":"test"}
     PREFIX_ORDER = "qaohv"
     PREFIX_SYMBOLS = {
         'q': '~',

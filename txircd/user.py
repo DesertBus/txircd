@@ -131,6 +131,17 @@ class IRCUser(object):
     def irc_USER(self, prefix, params):
         self.parent.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)", prefix=self.parent.hostname)
     
+    def irc_OPER(self, prefix, params):
+        if len(params) < 2:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER :Not enough parameters", prefix=self.parent.hostname)
+        elif self.data["hostname"] not in self.parent.factory.oper_hosts:
+            self.parent.sendMessage(irc.ERR_NOOPERHOST, "%s :No O-lines for your host" % self.data["nickname"], prefix=self.parent.hostname)
+        elif params[0] not in self.parent.factory.opers or self.parent.factory.opers[params[0]] != params[1]:
+            self.parent.sendMessage(irc.ERR_PASSWDMISMATCH, "%s :Password incorrect" % self.data["nickname"], prefix=self.parent.hostname)
+        else:
+            self.data["oper"] = True
+            self.parent.sendMessage(irc.RPL_YOUREOPER, "%s :You are now an IRC operator" % self.data["nickname"], prefix=self.parent.hostname)
+    
     def irc_QUIT(self, prefix, params):
         reason = params[0] if params else "Client exited"
         for c in self.data["channels"]:
