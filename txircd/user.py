@@ -167,4 +167,5 @@ class IRCUser(object):
                     u["socket"].notice(self.prefix(), c["name"], message)
     
     def irc_unknown(self, prefix, command, params):
+        self.parent.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.parent.hostname)
         raise NotImplementedError(command, prefix, params)
