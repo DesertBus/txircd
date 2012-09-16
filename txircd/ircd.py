@@ -24,7 +24,7 @@ class IRCProtocol(irc.IRC):
     def handleCommand(self, command, prefix, params):
         log.msg('handleCommand: %r %r %r' % (command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
-            return self.sendMessage(irc.ERR_NOTREGISTERED)
+            return self.sendMessage(irc.ERR_NOTREGISTERED, "%s :You have not registered" % command, prefix=self.hostname)
         elif not self.type:
             return irc.IRC.handleCommand(self, command, prefix, params)
         else:
