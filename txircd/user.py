@@ -203,13 +203,20 @@ class IRCUser(object):
                 self.parent.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.data["nickname"], mode), prefix=self.parent.hostname)
             else:
                 try:
-                    response = mode.combine(params[1])
+                    added, removed, bad = mode.combine(params[1])
                 except mode.NoPrivileges:
                     return self.parent.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode o" % self.data["nickname"], prefix=self.parent.hostname)
-                except mode.UnknownMode, exc:
-                    return self.parent.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (self.data["nickname"], exc.message), prefix=self.parent.hostname)
+                response = ''
+                if added:
+                    response += '+'
+                    response += ''.join(added)
+                if removed:
+                    response += '-'
+                    response += ''.join(removed)
                 if response:
                     self.parent.sendMessage("MODE", "%s %s" % (self.data["nickname"], response))
+                for mode in bad:
+                    self.parent.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (self.data["nickname"], mode), prefix=self.parent.hostname)
 
     def irc_MODE_channel(self, params):
         cdata = self.parent.factory.channels[params[0]]

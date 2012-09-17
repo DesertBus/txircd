@@ -2,7 +2,6 @@
 
 
 class Modes(object):
-    class UnknownMode(Exception): pass
     class NoPrivileges(Exception): pass
 
     def __init__(self, allowed_modes):
@@ -12,31 +11,24 @@ class Modes(object):
     def __str__(self):
         return ''.join(self.modes)
 
-    def _add(self, mode):
-        self.modes.add(mode)
-
-    def _remove(self, mode):
-        self.modes.discard(mode)
-
     def combine(self, modes):
-        handler = self._add
         changes = 0
-        response = ''
+        added = set()
+        removed = set()
+        bad = set()
+        current = added
         for mode in modes:
             if changes >= 20:
                 break
             elif mode == '+':
-                if handler is not self._add:
-                    handler = self._add
-                    response += '+'
+                current = added
             elif mode == '-':
-                if handler is not self._remove:
-                    handler = self._remove
-                    response += '-'
+                current = removed
             elif mode not in self.allowed_modes:
-                raise self.UnknownMode(mode)
+                bad.add(mode)
             else:
-                handler(mode)
                 changes += 1
-                response += mode
-        return response
+                current.add(mode)
+        self.modes.update(added)
+        self.modes.difference_update(removed)
+        return added, removed, bad
