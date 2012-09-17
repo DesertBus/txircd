@@ -340,12 +340,15 @@ class IRCUser(object):
                             continue
                         if mode == 'k': # The channel password has its own channel data entry
                             if adding:
-                                cdata["password"] = params[currParam]
+                                password = params[currParam]
+                                if ' ' in password:
+                                    password = password[:password.find(' ')]
+                                cdata["password"] = password
                                 if propAdding != '+':
                                     propAdding = '+'
                                     propModes += '+'
                                 propModes += mode
-                                propParams.append(params[currParam])
+                                propParams.append(password)
                                 changeCount += 1
                             elif params[currParam] == cdata["password"]:
                                 cdata["password"] = None
