@@ -41,8 +41,8 @@ class IRCUser(object):
         self.parent.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.data["nickname"], self.data["nickname"], self.data["username"], self.data["hostname"]), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.data["nickname"], self.parent.factory.created,), prefix=self.parent.hostname)
-        self.parent.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version, "iows", "bklmnopstv"), prefix=self.parent.hostname) # usermodes & channel modes
-        self.parent.sendMessage(irc.RPL_ISUPPORT, "%s CASEMAPPING=rfc1459 CHANTYPES=%s PREFIX=(%s)%s STATUSMSG=%s :are supported by this server" % (self.data["nickname"], self.parent.factory.channel_prefixes, self.parent.factory.PREFIX_ORDER, "".join([self.parent.factory.PREFIX_SYMBOLS[mode] for mode in self.parent.factory.PREFIX_ORDER]), "".join([self.parent.factory.PREFIX_SYMBOLS[mode] for mode in self.parent.factory.PREFIX_ORDER])), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version, self.parent.factory.usermodes, "".join(self.parent.factory.chanmodes)), prefix=self.parent.hostname) # usermodes & channel modes
+        self.parent.sendMessage(irc.RPL_ISUPPORT, "%s CASEMAPPING=rfc1459 CHANMODES=%s CHANTYPES=%s MODES=20 PREFIX=(%s)%s STATUSMSG=%s :are supported by this server" % (self.data["nickname"], ",".join(self.parent.factory.chanmodes), self.parent.factory.channel_prefixes, self.parent.factory.PREFIX_ORDER, "".join([self.parent.factory.PREFIX_SYMBOLS[mode] for mode in self.parent.factory.PREFIX_ORDER]), "".join([self.parent.factory.PREFIX_SYMBOLS[mode] for mode in self.parent.factory.PREFIX_ORDER])), prefix=self.parent.hostname)
     
     #=====================
     #== Utility Methods ==
@@ -52,6 +52,9 @@ class IRCUser(object):
     
     def join(self, channel, key):
         #TODO: Validate key
+        # TODO: check channel limit
+        # TODO: check channel bans and exceptions
+        # TODO: check invite only and invite status
         if channel[0] not in self.parent.factory.channel_prefixes:
             return self.parent.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.parent.hostname)
         self.data["channels"].append(channel)
@@ -180,7 +183,262 @@ class IRCUser(object):
             self.part(c, reason)
     
     def irc_MODE(self, prefix, params):
-        pass
+        if not params:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "MODE :Not enough parameters", prefix=self.parent.hostname)
+        elif params[0] in self.parent.factory.users:
+            user = self.parent.factory.users[params[0]]
+            if user["nickname"] != self.data["nickname"]:
+                self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s :Can't %s for other users" % (self.data["nickname"], "view modes" if len(params) == 1 else "change mode"), prefix=self.parent.hostname)
+            else:
+                if len(params) == 1:
+                    self.parent.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.data["nickname"], self.data["mode"]), prefix=self.parent.hostname)
+                else:
+                    adding = True
+                    changeCount = 0
+                    responseStr = ''
+                    responseAdding = None
+                    for mode in params[1]:
+                        if changeCount >= 20:
+                            break
+                        if mode == '+':
+                            adding = True
+                        elif mode == '-':
+                            adding = False
+                        elif mode not in self.parent.factory.usermodes:
+                            self.parent.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (self.data["nickname"], mode), prefix=self.parent.hostname)
+                        elif adding:
+                            if mode == 'o':
+                                self.parent.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode o" % self.data["nickname"], prefix=self.parent.hostname)
+                            elif mode not in self.data["mode"]:
+                                self.data["mode"] += mode
+                                if responseAdding != '+':
+                                    responseAdding = '+'
+                                    responseStr += '+'
+                                responseStr += mode
+                                changeCount += 1
+                        else:
+                            if mode in self.data["mode"]:
+                                self.data["mode"] = self.data["mode"].replace(mode, '')
+                                if responseAdding != '-':
+                                    responseAdding = '-'
+                                    responseStr += '-'
+                                responseStr += mode
+                                changeCount += 1
+                    if responseStr:
+                        self.parent.sendMessage("MODE", "%s %s" % (self.data["nickname"], responseStr), prefix=self.prefix())
+        elif params[0] in self.parent.factory.channels:
+            cdata = self.parent.factory.channels[params[0]]
+            if len(params) == 1:
+                modeStr = cdata["mode"]
+                modeParams = ''
+                if cdata["password"]:
+                    modeStr += 'k'
+                    modeParams += ' ' + cdata["password"]
+                if cdata["limit"]:
+                    modeStr += 'l'
+                    modeParams += ' ' + str(cdata["limit"])
+                modeStr += modeParams
+                self.parent.sendMessage(irc.RPL_CHANNELMODEIS, "%s %s +%s" % (self.data["nickname"], cdata["name"], modeStr), prefix=self.parent.hostname)
+                self.parent.sendMessage("329", "%s %s %d" % (self.data["nickname"], cdata["name"], cdata["created"]), prefix=self.parent.hostname)
+            elif self.data["nickname"] in cdata["users"] and cdata["users"][self.data["nickname"]] and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) <= self.parent.factory.PREFIX_ORDER.find('h'):
+                adding = True
+                changeCount = 0
+                propModes = ''
+                propAdding = None
+                propParams = []
+                currParam = 2
+                for mode in params[1]:
+                    if changeCount >= 20:
+                        break
+                    if mode == '+':
+                        adding = True
+                    elif mode == '-':
+                        adding = False
+                    elif mode in self.parent.factory.PREFIX_ORDER:
+                        if currParam >= len(params):
+                            continue
+                        if adding:
+                            targetUser = params[currParam]
+                            if targetUser in cdata["users"] and mode not in cdata["users"][targetUser]:
+                                if self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) > self.parent.factory.PREFIX_ORDER.find(mode) or (targetUser in cdata["users"] and cdata["users"][targetUser] and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) > self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0])):
+                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
+                                else:
+                                    if not cdata["users"][targetUser]:
+                                        cdata["users"][targetUser] = mode
+                                    else:
+                                        statusList = list(cdata["users"][targetUser])
+                                        inserted = False
+                                        for i in range(0, len(statusList)):
+                                            if self.parent.factory.PREFIX_ORDER.find(mode) < self.parent.factory.PREFIX_ORDER.find(statusList[i]):
+                                                statusList.insert(i, mode)
+                                                inserted = True
+                                        if not inserted:
+                                            statusList.append(mode)
+                                        cdata["users"][targetUser] = "".join(statusList)
+                                    if propAdding != '+':
+                                        propAdding = '+'
+                                        propModes += '+'
+                                    propModes += mode
+                                    propParams.append(params[currParam])
+                                    changeCount += 1
+                        else:
+                            targetUser = params[currParam]
+                            if targetUser in cdata["users"] and mode in cdata["users"][targetUser]:
+                                if self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0]) < self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]):
+                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
+                                else:
+                                    cdata["users"][targetUser] = cdata["users"][targetUser].replace(mode, '')
+                                    if propAdding != '-':
+                                        propAdding = '-'
+                                        propModes += '-'
+                                    propModes += mode
+                                    propParams.append(params[currParam])
+                                    changeCount += 1
+                        currParam += 1
+                    elif mode in self.parent.factory.chanmodes[0]:
+                        if currParam >= len(params):
+                            if mode == 'b':
+                                for banmask, settertime in cdata["bans"].iteritems():
+                                    self.parent.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                                self.parent.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                            elif mode == 'e':
+                                for exceptmask, settertime in cdata["exemptions"].iteritems():
+                                    self.parent.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                                self.parent.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                            elif mode == 'I':
+                                for invexmask, settertime in cdata["invites"].iteritems():
+                                    self.parent.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                                self.parent.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                            continue
+                        change = None
+                        hostmask = params[currParam]
+                        if ' ' in hostmask:
+                            hostmask = hostmask[:hostmask.find(' ')]
+                        # If we ever add a list mode that doesn't work on hostmasks, move this check to inside the +beI checks
+                        if '!' not in hostmask:
+                            if '@' in hostmask:
+                                hostmask = '*!' + hostmask
+                            else:
+                                hostmask += "!*@*"
+                        elif '@' not in hostmask:
+                            hostmask += "@*"
+                        if mode == 'b':
+                            if adding and hostmask not in cdata["bans"]:
+                                cdata["bans"][hostmask] = [self.data["nickname"], time.time()]
+                                change = '+'
+                            elif not adding and hostmask in cdata["bans"]:
+                                del cdata["bans"][hostmask]
+                                change = '-'
+                        elif mode == 'e':
+                            if adding and hostmask not in cdata["exemptions"]:
+                                cdata["exemptions"][hostmask] = [self.data["nickname"], time.time()]
+                                change = '+'
+                            elif not adding and hostmask in cdata["exemptions"]:
+                                del cdata["exemptions"][hostmask]
+                                change = '-'
+                        elif mode == 'I':
+                            if adding and hostmask not in cdata["invites"]:
+                                cdata["invites"][hostmask] = [self.data["nickname"], time.time()]
+                                change = '+'
+                            elif not adding and hostmask in cdata["invites"]:
+                                del cdata["invites"][hostmask]
+                                change = '-'
+                        currParam += 1
+                        if change:
+                            if propAdding != change:
+                                propAdding = change
+                                propModes += change
+                            propModes += mode
+                            propParams.append(hostmask)
+                            changeCount += 1
+                    elif mode in self.parent.factory.chanmodes[1]:
+                        if currParam >= len(params):
+                            continue
+                        if mode == 'k': # The channel password has its own channel data entry
+                            if adding:
+                                password = params[currParam]
+                                if ' ' in password:
+                                    password = password[:password.find(' ')]
+                                cdata["password"] = password
+                                if propAdding != '+':
+                                    propAdding = '+'
+                                    propModes += '+'
+                                propModes += mode
+                                propParams.append(password)
+                                changeCount += 1
+                            elif params[currParam] == cdata["password"]:
+                                cdata["password"] = None
+                                if propAdding != '-':
+                                    propAdding = '-'
+                                    propModes += '-'
+                                propModes += mode
+                                propParams.append(params[currParam])
+                                changeCount += 1
+                        # else: there aren't other param/param modes currently
+                    elif mode in self.parent.factory.chanmodes[2]:
+                        if mode == 'l': # The channel limit has its own channel data entry
+                            if adding:
+                                if currParam >= len(params):
+                                    continue
+                                try:
+                                    newLimit = int(params[currParam])
+                                    if newLimit > 0:
+                                        cdata["limit"] = newLimit
+                                        if propAdding != '+':
+                                            propAdding = '+'
+                                            propModes += '+'
+                                        propModes += mode
+                                        propParams.append(params[currParam])
+                                        changeCount += 1
+                                except:
+                                    pass # Don't bother processing anything if we get a non-number
+                                currParam += 1
+                            else:
+                                cdata["params"] = None
+                                if propAdding != '-':
+                                    propAdding = '-'
+                                    propModes += '-'
+                                propModes += mode
+                                changeCount += 1
+                        # else: there aren't any other param modes currently
+                    elif mode in self.parent.factory.chanmodes[3]:
+                        if adding and mode not in cdata["mode"]:
+                            cdata["mode"] += mode
+                            if propAdding != '+':
+                                propAdding = '+'
+                                propModes += '+'
+                            propModes += mode
+                            changeCount += 1
+                        elif not adding and mode in cdata["mode"]:
+                            cdata["mode"] = cdata["mode"].replace(mode, '')
+                            if propAdding != '-':
+                                propAdding = '-'
+                                propModes += '-'
+                            propModes += mode
+                            changeCount += 1
+                    else:
+                        self.parent.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.data["nickname"], mode), prefix=self.parent.hostname)
+                if propModes:
+                    modeStr = "%s %s" % (propModes, " ".join(propParams))
+                    for user in cdata["users"].iterkeys():
+                        self.parent.factory.users[user]["socket"].sendMessage("MODE", "%s %s" % (cdata["name"], modeStr), prefix=self.prefix())
+            elif len(params) == 2 and ('b' in params[1] or 'e' in params[1] or 'I' in params[1]):
+                if 'b' in params[1]:
+                    for banmask, settertime in cdata["bans"].iteritems():
+                        self.parent.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                    self.parent.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                if 'e' in params[1]:
+                    for exceptmask, settertime in cdata["exemptions"].iteritems():
+                        self.parent.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                    self.parent.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                if 'I' in params[1]:
+                    for invexmask, settertime in cdata["invites"].iteritems():
+                        self.parent.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                    self.parent.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+            else:
+                self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must have channel halfop access or above to set channel modes" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+        else:
+            self.parent.sendMessage(irc.ERR_NOSUCHNICK, "%s %s :No such nick/channel" % (self.data["nickname"], params[0]), prefix=self.parent.hostname)
     
     def irc_TOPIC(self, prefix, params):
         if not params:
@@ -224,6 +482,8 @@ class IRCUser(object):
             u["socket"].privmsg(self.prefix(), u["nickname"], message)
         elif target in self.parent.factory.channels:
             c = self.parent.factory.channels[target]
+            # TODO: check for +m and status
+            # TODO: check for +n
             for u in c["users"].iterkeys():
                 if self.parent.factory.users[u]["nickname"] is not self.data["nickname"]:
                     self.parent.factory.users[u]["socket"].privmsg(self.prefix(), c["name"], message)
@@ -240,6 +500,8 @@ class IRCUser(object):
             u["socket"].notice(self.prefix(), u["nickname"], message)
         elif target in self.parent.factory.channels:
             c = self.parent.factory.channels[target]
+            # TODO: check for +m and status
+            # TODO: check for +n
             for u in c["users"].iterkeys():
                 if self.parent.factory.users[u]["nickname"] is not self.data["nickname"]:
                     self.parent.factory.users[u]["socket"].notice(self.prefix(), c["name"], message)

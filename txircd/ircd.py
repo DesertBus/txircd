@@ -93,6 +93,8 @@ class IRCD(Factory):
         'h': '%',
         'v': '+'
     }
+    usermodes = "iows"
+    chanmodes = [ "beI", "k", "l", "mnpst" ]
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
         self.name = name
@@ -108,7 +110,8 @@ class IRCD(Factory):
     def createChannel(self, name):
         return {
             "name": name,
-            "mode": "",
+            "mode": "nt",
+            "created": time.time(),
             "topic": {
                 "message": None,
                 "author": "",
@@ -117,9 +120,9 @@ class IRCD(Factory):
             "password": None,
             "limit": None,
             "users": CaseInsensitiveDictionary(),
-            "bans": [],
-            "exemptions": [],
-            "invites": []
+            "bans": CaseInsensitiveDictionary(),
+            "exemptions": CaseInsensitiveDictionary(),
+            "invites": CaseInsensitiveDictionary()
         }
 
     def broadcast(channel, message):
