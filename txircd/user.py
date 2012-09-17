@@ -243,8 +243,8 @@ class IRCUser(object):
                         if adding:
                             targetUser = params[currParam]
                             if targetUser in cdata["users"] and mode not in cdata["users"][targetUser]:
-                                if self.parent.factory.PREFIX_ORDER.find(mode) >= self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) <= self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0]):
-                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to channel mode %s" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
+                                if self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) > self.parent.factory.PREFIX_ORDER.find(mode) or (targetUser in cdata["users"] and cdata["users"][targetUser] and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) > self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0])):
+                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
                                 else:
                                     if not cdata["users"][targetUser]:
                                         cdata["users"][targetUser] = mode
@@ -268,7 +268,7 @@ class IRCUser(object):
                             targetUser = params[currParam]
                             if targetUser in cdata["users"] and mode in cdata["users"][targetUser]:
                                 if self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0]) < self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]):
-                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to set channel mode %s on that user" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
+                                    self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
                                 else:
                                     cdata["users"][targetUser] = cdata["users"][targetUser].replace(mode, '')
                                     if propAdding != '-':
