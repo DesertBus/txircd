@@ -364,7 +364,7 @@ class IRCUser(object):
                                 try:
                                     newLimit = int(params[currParam])
                                     if newLimit > 0:
-                                        cdata["params"] = newLimit
+                                        cdata["limit"] = newLimit
                                         if propAdding != '+':
                                             propAdding = '+'
                                             propModes += '+'
