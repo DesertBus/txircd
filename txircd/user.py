@@ -213,8 +213,6 @@ class IRCUser(object):
                     if responseStr:
                         self.parent.sendMessage("MODE", "%s %s" % (self.data["nickname"], responseStr), prefix=self.prefix())
         elif params[0] in self.parent.factory.channels:
-            from twisted.python import log
-            log.msg("DEBUG: %s" % params)
             cdata = self.parent.factory.channels[params[0]]
             if len(params) == 1:
                 modeStr = cdata["mode"]
