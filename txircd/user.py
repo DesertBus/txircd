@@ -213,6 +213,8 @@ class IRCUser(object):
                     if responseStr:
                         self.parent.sendMessage("MODE", "%s %s" % (self.data["nickname"], responseStr), prefix=self.prefix())
         elif params[0] in self.parent.factory.channels:
+            from twisted.python import log
+            log.msg("DEBUG: %s" % params)
             cdata = self.parent.factory.channels[params[0]]
             if len(params) == 1:
                 modeStr = cdata["mode"]
@@ -283,6 +285,18 @@ class IRCUser(object):
                         currParam += 1
                     elif mode in self.parent.factory.chanmodes[0]:
                         if currParam >= len(params):
+                            if mode == 'b':
+                                for banmask, settertime in cdata["bans"].iteritems():
+                                    self.parent.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                                self.parent.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                            elif mode == 'e':
+                                for exceptmask, settertime in cdata["exemptions"].iteritems():
+                                    self.parent.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                                self.parent.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                            elif mode == 'I':
+                                for invexmask, settertime in cdata["invites"].iteritems():
+                                    self.parent.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                                self.parent.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
                             continue
                         change = None
                         hostmask = params[currParam]
