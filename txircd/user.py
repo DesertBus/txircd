@@ -52,6 +52,9 @@ class IRCUser(object):
     
     def join(self, channel, key):
         #TODO: Validate key
+        # TODO: check channel limit
+        # TODO: check channel bans and exceptions
+        # TODO: check invite only and invite status
         if channel[0] not in self.parent.factory.channel_prefixes:
             return self.parent.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.parent.hostname)
         self.data["channels"].append(channel)
@@ -425,6 +428,8 @@ class IRCUser(object):
             u["socket"].privmsg(self.prefix(), u["nickname"], message)
         elif target in self.parent.factory.channels:
             c = self.parent.factory.channels[target]
+            # TODO: check for +m and status
+            # TODO: check for +n
             for u in c["users"].iterkeys():
                 if self.parent.factory.users[u]["nickname"] is not self.data["nickname"]:
                     self.parent.factory.users[u]["socket"].privmsg(self.prefix(), c["name"], message)
@@ -441,6 +446,8 @@ class IRCUser(object):
             u["socket"].notice(self.prefix(), u["nickname"], message)
         elif target in self.parent.factory.channels:
             c = self.parent.factory.channels[target]
+            # TODO: check for +m and status
+            # TODO: check for +n
             for u in c["users"].iterkeys():
                 if self.parent.factory.users[u]["nickname"] is not self.data["nickname"]:
                     self.parent.factory.users[u]["socket"].notice(self.prefix(), c["name"], message)
