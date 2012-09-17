@@ -266,8 +266,8 @@ class IRCUser(object):
                                     changeCount += 1
                         else:
                             targetUser = params[currParam]
-                            if targetUser in cdata["users"] and mode in cdata["user"][targetUser]:
-                                if self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0]) < self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"][0]):
+                            if targetUser in cdata["users"] and mode in cdata["users"][targetUser]:
+                                if self.parent.factory.PREFIX_ORDER.find(cdata["users"][targetUser][0]) < self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]):
                                     self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to set channel mode %s on that user" % (self.data["nickname"], cdata["name"], mode), prefix=self.parent.hostname)
                                 else:
                                     cdata["users"][targetUser] = cdata["users"][targetUser].replace(mode, '')
