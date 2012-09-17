@@ -319,6 +319,7 @@ class IRCUser(object):
                                 propModes += change
                             propModes += mode
                             propParams.append(hostmask)
+                            changeCount += 1
                     elif mode in self.parent.factory.chanmodes[1]:
                         if currParam >= len(params):
                             continue
@@ -330,6 +331,7 @@ class IRCUser(object):
                                     propModes += '+'
                                 propModes += mode
                                 propParams.append(params[currParam])
+                                changeCount += 1
                             elif params[currParam] == cdata["password"]:
                                 cdata["password"] = None
                                 if propAdding != '-':
@@ -337,6 +339,7 @@ class IRCUser(object):
                                     propModes += '-'
                                 propModes += mode
                                 propParams.append(params[currParam])
+                                changeCount += 1
                         # else: there aren't other param/param modes currently
                     elif mode in self.parent.factory.chanmodes[2]:
                         if mode == 'l': # The channel limit has its own channel data entry
@@ -352,6 +355,7 @@ class IRCUser(object):
                                             propModes += '+'
                                         propModes += mode
                                         propParams.append(params[currParam])
+                                        changeCount += 1
                                 except:
                                     pass # Don't bother processing anything if we get a non-number
                                 currParam += 1
@@ -361,6 +365,7 @@ class IRCUser(object):
                                     propAdding = '-'
                                     propModes += '-'
                                 propModes += mode
+                                changeCount += 1
                         # else: there aren't any other param modes currently
                     elif mode in self.parent.factory.chanmodes[3]:
                         if adding and mode not in cdata["mode"]:
@@ -369,12 +374,14 @@ class IRCUser(object):
                                 propAdding = '+'
                                 propModes += '+'
                             propModes += mode
+                            changeCount += 1
                         elif not adding and mode in cdata["mode"]:
                             cdata["mode"] = cdata["mode"].replace(mode, '')
                             if propAdding != '-':
                                 propAdding = '-'
                                 propModes += '-'
                             propModes += mode
+                            changeCount += 1
                     else:
                         self.parent.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.data["nickname"], mode), prefix=self.parent.hostname)
                 if propModes:
