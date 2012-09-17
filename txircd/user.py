@@ -2,6 +2,7 @@
 
 from twisted.words.protocols import irc
 import time
+from txircd.mode import Modes
 
 class IRCUser(object):
     cap = {
@@ -34,7 +35,7 @@ class IRCUser(object):
             "away": False,
             "signon": time.time(),
             "lastactivity": time.time(),
-            "mode": mode,
+            "mode": Modes(self.parent.factory.usermodes),
             "channels": [],
             "service": False
         }
@@ -190,42 +191,18 @@ class IRCUser(object):
             if user["nickname"] != self.data["nickname"]:
                 self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s :Can't %s for other users" % (self.data["nickname"], "view modes" if len(params) == 1 else "change mode"), prefix=self.parent.hostname)
             else:
+                mode = self.data["mode"]
                 if len(params) == 1:
-                    self.parent.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.data["nickname"], self.data["mode"]), prefix=self.parent.hostname)
+                    self.parent.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.data["nickname"], mode), prefix=self.parent.hostname)
                 else:
-                    adding = True
-                    changeCount = 0
-                    responseStr = ''
-                    responseAdding = None
-                    for mode in params[1]:
-                        if changeCount >= 20:
-                            break
-                        if mode == '+':
-                            adding = True
-                        elif mode == '-':
-                            adding = False
-                        elif mode not in self.parent.factory.usermodes:
-                            self.parent.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (self.data["nickname"], mode), prefix=self.parent.hostname)
-                        elif adding:
-                            if mode == 'o':
-                                self.parent.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode o" % self.data["nickname"], prefix=self.parent.hostname)
-                            elif mode not in self.data["mode"]:
-                                self.data["mode"] += mode
-                                if responseAdding != '+':
-                                    responseAdding = '+'
-                                    responseStr += '+'
-                                responseStr += mode
-                                changeCount += 1
-                        else:
-                            if mode in self.data["mode"]:
-                                self.data["mode"] = self.data["mode"].replace(mode, '')
-                                if responseAdding != '-':
-                                    responseAdding = '-'
-                                    responseStr += '-'
-                                responseStr += mode
-                                changeCount += 1
-                    if responseStr:
-                        self.parent.sendMessage("MODE", "%s %s" % (self.data["nickname"], responseStr), prefix=self.prefix())
+                    try:
+                        response = mode.combine(params[1])
+                    except mode.NoPrivileges:
+                        return self.parent.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode o" % self.data["nickname"], prefix=self.parent.hostname)
+                    except mode.UnknownMode, exc:
+                        self.parent.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (self.data["nickname"], exc.message), prefix=self.parent.hostname)
+                    if response:
+                        self.parent.sendMessage("MODE", "%s %s" % (self.data["nickname"], response))
         elif params[0] in self.parent.factory.channels:
             cdata = self.parent.factory.channels[params[0]]
             if len(params) == 1:
