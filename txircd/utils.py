@@ -46,6 +46,13 @@ class DefaultCaseInsensitiveDictionary(CaseInsensitiveDictionary):
         self._default_factory = default_factory
         super(DefaultCaseInsensitiveDictionary, self).__init__()
 
+    def __contains__(self, key):
+        try:
+            super(DefaultCaseInsensitiveDictionary, self).__getitem__(key)
+        except KeyError:
+            return False
+        return True
+
     def __getitem__(self, key):
         try:
             return super(DefaultCaseInsensitiveDictionary, self).__getitem__(key)
