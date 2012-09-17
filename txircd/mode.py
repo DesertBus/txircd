@@ -2,10 +2,9 @@
 
 
 class Modes(object):
-    class NoPrivileges(Exception): pass
-
-    def __init__(self, allowed_modes):
+    def __init__(self, allowed_modes, perm_checker):
         self.allowed_modes = allowed_modes
+        self.perm_checker = perm_checker
         self.modes = set()
 
     def __str__(self):
@@ -16,6 +15,7 @@ class Modes(object):
         added = set()
         removed = set()
         bad = set()
+        forbidden = set()
         current = added
         for mode in modes:
             if changes >= 20:
@@ -26,9 +26,11 @@ class Modes(object):
                 current = removed
             elif mode not in self.allowed_modes:
                 bad.add(mode)
-            else:
+            elif self.perm_checker(mode):
                 changes += 1
                 current.add(mode)
+            else:
+                forbidden.add(mode)
         self.modes.update(added)
         self.modes.difference_update(removed)
-        return added, removed, bad
+        return added, removed, forbidden, bad

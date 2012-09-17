@@ -35,7 +35,7 @@ class IRCUser(object):
             "away": False,
             "signon": time.time(),
             "lastactivity": time.time(),
-            "mode": Modes(self.parent.factory.usermodes),
+            "mode": Modes(self.parent.factory.usermodes, lambda mode: mode != 'o'),
             "channels": [],
             "service": False
         }
@@ -202,10 +202,7 @@ class IRCUser(object):
             if len(params) == 1:
                 self.parent.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.data["nickname"], mode), prefix=self.parent.hostname)
             else:
-                try:
-                    added, removed, bad = mode.combine(params[1])
-                except mode.NoPrivileges:
-                    return self.parent.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode o" % self.data["nickname"], prefix=self.parent.hostname)
+                added, removed, bad, forbidden = mode.combine(params[1])
                 response = ''
                 if added:
                     response += '+'
@@ -217,6 +214,8 @@ class IRCUser(object):
                     self.parent.sendMessage("MODE", "%s %s" % (self.data["nickname"], response))
                 for mode in bad:
                     self.parent.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (self.data["nickname"], mode), prefix=self.parent.hostname)
+                for mode in forbidden:
+                    self.parent.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode %s" % (self.data["nickname"], mode), prefix=self.parent.hostname)
 
     def irc_MODE_channel(self, params):
         cdata = self.parent.factory.channels[params[0]]
