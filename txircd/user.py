@@ -226,7 +226,7 @@ class IRCUser(object):
                 modeStr += modeParams
                 self.parent.sendMessage(irc.RPL_CHANNELMODEIS, "%s %s +%s" % (self.data["nickname"], cdata["name"], modeStr), prefix=self.parent.hostname)
                 self.parent.sendMessage("329", "%s %s %d" % (self.data["nickname"], cdata["name"], cdata["created"]), prefix=self.parent.hostname)
-            elif cdata["users"][self.data["nickname"]] and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) <= self.parent.factory.PREFIX_ORDER.find('h'):
+            elif self.data["nickname"] in cdata["users"] and cdata["users"][self.data["nickname"]] and self.parent.factory.PREFIX_ORDER.find(cdata["users"][self.data["nickname"]][0]) <= self.parent.factory.PREFIX_ORDER.find('h'):
                 adding = True
                 changeCount = 0
                 propModes = ''
@@ -288,29 +288,32 @@ class IRCUser(object):
                         hostmask = params[currParam]
                         # If we ever add a list mode that doesn't work on hostmasks, move this check to inside the +beI checks
                         if '!' not in hostmask:
-                            hostmask += "!*@*"
+                            if '@' in hostmask:
+                                hostmask = '*!' + hostmask
+                            else:
+                                hostmask += "!*@*"
                         elif '@' not in hostmask:
                             hostmask += "@*"
                         if mode == 'b':
-                            if adding and params[currParam] not in cdata["bans"]:
-                                cdata["bans"].append(hostmask)
+                            if adding and hostmask not in cdata["bans"]:
+                                cdata["bans"][hostmask] = [self.data["nickname"], time.time()]
                                 change = '+'
-                            elif not adding and params[currParam] in cdata["bans"]:
-                                cdata["bans"].remove(hostmask)
+                            elif not adding and hostmask in cdata["bans"]:
+                                del cdata["bans"][hostmask]
                                 change = '-'
                         elif mode == 'e':
-                            if adding and params[currParam] not in cdata["exemptions"]:
-                                cdata["exemptions"].append(hostmask)
+                            if adding and hostmask not in cdata["exemptions"]:
+                                cdata["exemptions"][hostmask] = [self.data["nickname"], time.time()]
                                 change = '+'
-                            elif not adding and params[currParam] in cdata["exemptions"]:
-                                cdata["exemptions"].remove(hostmask)
+                            elif not adding and hostmask in cdata["exemptions"]:
+                                del cdata["exemptions"][hostmask]
                                 change = '-'
                         elif mode == 'I':
-                            if adding and params[currParam] not in cdata["invites"]:
-                                cdata["invites"].append(hostmask)
+                            if adding and hostmask not in cdata["invites"]:
+                                cdata["invites"][hostmask] = [self.data["nickname"], time.time()]
                                 change = '+'
-                            elif not adding and params[currParam] in cdata["invites"]:
-                                cdata["invites"].append(hostmask)
+                            elif not adding and hostmask in cdata["invites"]:
+                                del cdata["invites"][hostmask]
                                 change = '-'
                         currParam += 1
                         if change:
@@ -388,6 +391,19 @@ class IRCUser(object):
                     modeStr = "%s %s" % (propModes, " ".join(propParams))
                     for user in cdata["users"].iterkeys():
                         self.parent.factory.users[user]["socket"].sendMessage("MODE", "%s %s" % (cdata["name"], modeStr), prefix=self.prefix())
+            elif len(params) == 2 and ('b' in params[1] or 'e' in params[1] or 'I' in params[1]):
+                if 'b' in params[1]:
+                    for banmask, settertime in cdata["bans"].iteritems():
+                        self.parent.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                    self.parent.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                if 'e' in params[1]:
+                    for exceptmask, settertime in cdata["exemptions"].iteritems():
+                        self.parent.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                    self.parent.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
+                if 'I' in params[1]:
+                    for invexmask, settertime in cdata["invites"].iteritems():
+                        self.parent.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.data["nickname"], cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.parent.hostname)
+                    self.parent.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
             else:
                 self.parent.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must have channel halfop access or above to set channel modes" % (self.data["nickname"], cdata["name"]), prefix=self.parent.hostname)
         else:
