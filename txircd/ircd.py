@@ -106,7 +106,7 @@ class IRCD(Factory):
     def createChannel(self, name):
         return {
             "name": name,
-            "mode": "",
+            "mode": "nt",
             "created": time.time(),
             "topic": {
                 "message": None,
