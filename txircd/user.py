@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from twisted.words.protocols import irc
+from twisted.internet.task import Cooperator
 import time
 
 class IRCUser(object):
@@ -50,21 +51,8 @@ class IRCUser(object):
     def prefix(self):
         return "%s!%s@%s" % (self.data["nickname"], self.data["username"], self.data["hostname"])
     
-    def join(self, channel, key):
-        #TODO: Validate key
-        if channel[0] not in self.parent.factory.channel_prefixes:
-            return self.parent.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.parent.hostname)
-        self.data["channels"].append(channel)
+    def report_names(self, channel):
         cdata = self.parent.factory.channels[channel]
-        if not cdata["users"]:
-            cdata["users"][self.data["nickname"]] = "o"
-        else:
-            cdata["users"][self.data["nickname"]] = ""
-        for u in cdata["users"].iterkeys():
-            self.parent.factory.users[u]["socket"].join(self.prefix(), channel)
-        self.parent.topic(self.data["nickname"], channel, cdata["topic"]["message"])
-        if cdata["topic"]["message"] is not None:
-            self.parent.topicAuthor(self.data["nickname"], channel, cdata["topic"]["author"], cdata["topic"]["created"])
         userlist = []
         if self.cap["multi-prefix"]:
             for user, ranks in cdata["users"].iteritems():
@@ -80,6 +68,23 @@ class IRCUser(object):
                 else:
                     userlist.append(self.parent.factory.users[user]["nickname"])
         self.parent.names(self.data["nickname"], channel, userlist)
+    
+    def join(self, channel, key):
+        #TODO: Validate key
+        if channel[0] not in self.parent.factory.channel_prefixes:
+            return self.parent.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.parent.hostname)
+        self.data["channels"].append(channel)
+        cdata = self.parent.factory.channels[channel]
+        if not cdata["users"]:
+            cdata["users"][self.data["nickname"]] = "o"
+        else:
+            cdata["users"][self.data["nickname"]] = ""
+        for u in cdata["users"].iterkeys():
+            self.parent.factory.users[u]["socket"].join(self.prefix(), channel)
+        self.parent.topic(self.data["nickname"], channel, cdata["topic"]["message"])
+        if cdata["topic"]["message"] is not None:
+            self.parent.topicAuthor(self.data["nickname"], channel, cdata["topic"]["author"], cdata["topic"]["created"])
+        self.report_names(channel)
     
     def part(self, channel, reason = None):
         self.data["channels"].remove(channel)
@@ -243,6 +248,14 @@ class IRCUser(object):
             for u in c["users"].iterkeys():
                 if self.parent.factory.users[u]["nickname"] is not self.data["nickname"]:
                     self.parent.factory.users[u]["socket"].notice(self.prefix(), c["name"], message)
+    
+    def irc_NAMES(self, prefix, params):
+        #params[0] = channel list, params[1] = target server. We ignore the target
+        channels = self.data["channels"]
+        if params:
+            channels = params[0].split(",")
+        channels = filter(lambda x: x in self.data["channels"] and x in self.parent.factory.channels, channels)
+        Cooperator().cooperate((self.report_names(c) for c in channels))
     
     def irc_unknown(self, prefix, command, params):
         self.parent.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.parent.hostname)
