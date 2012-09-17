@@ -39,7 +39,6 @@ class IRCUser(object):
             "channels": [],
             "service": False
         }
-        self.mode = Modes(self.parent.factory.usermodes, lambda mode: mode != 'o')
         self.parent.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.data["nickname"], self.data["nickname"], self.data["username"], self.data["hostname"]), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.data["nickname"], self.parent.factory.name, self.parent.factory.version), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.data["nickname"], self.parent.factory.created,), prefix=self.parent.hostname)
@@ -199,10 +198,11 @@ class IRCUser(object):
         if user["nickname"] != self.data["nickname"]:
             self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s :Can't %s for other users" % (self.data["nickname"], "view modes" if len(params) == 1 else "change mode"), prefix=self.parent.hostname)
         else:
+            mode = self.data["mode"]
             if len(params) == 1:
-                self.parent.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.data["nickname"], self.mode), prefix=self.parent.hostname)
+                self.parent.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.data["nickname"], mode), prefix=self.parent.hostname)
             else:
-                added, removed, bad, forbidden = self.mode.combine(params[1])
+                added, removed, bad, forbidden = mode.combine(params[1])
                 response = ''
                 if added:
                     response += '+'
