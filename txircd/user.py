@@ -70,7 +70,7 @@ class IRCUser(object):
             for user, ranks in cdata["users"].iteritems():
                 name = ''
                 for p in ranks:
-                    name += p
+                    name += self.parent.factory.PREFIX_SYMBOLS[p]
                 name += self.parent.factory.users[user]["nickname"]
                 userlist.append(name)
         else:
