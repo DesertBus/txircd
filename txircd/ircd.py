@@ -90,8 +90,8 @@ class IRCD(Factory):
         'server': IRCServer,
         'service': IRCService,
     }
-    PREFIX_ORDER = "qaohv"
-    PREFIX_SYMBOLS = {
+    prefix_order = "qaohv"
+    prefix_symbols = {
         'q': '~',
         'a': '&',
         'o': '@',
