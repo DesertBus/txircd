@@ -257,6 +257,18 @@ class IRCUser(object):
         channels = filter(lambda x: x in self.data["channels"] and x in self.parent.factory.channels, channels)
         Cooperator().cooperate((self.report_names(c) for c in channels))
     
+    def irc_LIST(self, prefix, params):
+        #params[0] = channel list, params[1] = target server. We ignore the target
+        channels = []
+        if params:
+            channels = filter(lambda x: x in self.parent.factory.channels, params[0].split(","))
+        if not channels:
+            channels = self.parent.factory.channels.keys()
+        for c in channels:
+            cdata = self.parent.factory.channels[c]
+            self.parent.sendMessage(irc.RPL_LIST, "%s %s %d :%s" % (self.data["nickname"], cdata["name"], len(cdata["users"]), cdata["topic"]["message"]), prefix=self.parent.hostname)
+        self.parent.sendMessage(irc.RPL_LISTEND, "%s :End of /LIST" % self.data["nickname"], prefix=self.parent.hostname)
+    
     def irc_unknown(self, prefix, command, params):
         self.parent.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.parent.hostname)
         raise NotImplementedError(command, prefix, params)
