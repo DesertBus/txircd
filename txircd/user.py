@@ -52,6 +52,31 @@ class IRCUser(object):
     def prefix(self):
         return "%s!%s@%s" % (self.nickname, self.username, self.hostname)
     
+    def accessLevel(self, channel):
+        if channel not in self.channels or channel not in self.ircd.channels or not self.ircd.channels[channel]["users"][self.nickname]:
+            return 0
+        try:
+            return len(self.ircd.prefix_order) - self.ircd.prefix_order.index(self.ircd.channels[channel]["users"][self.nickname][0])
+        except:
+            return 0
+    
+    def hasAccess(self, channel, level):
+        if channel not in self.channels or channel not in self.ircd.channels:
+            return None
+        if not self.ircd.channels[channel]["users"][self.nickname]:
+            return False
+        try:
+            return self.ircd.prefix_order.index(self.ircd.channels[channel]["users"][self.nickname][0]) <= self.ircd.prefix_order.index(level)
+        except:
+            return None
+    
+    def statusSort(self, status):
+        s = ""
+        for m in self.irc.prefix_order:
+            if m in status:
+                s += m
+        return s
+    
     def join(self, channel, key):
         #TODO: Validate key
         # TODO: check channel limit
@@ -219,18 +244,14 @@ class IRCUser(object):
                     self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode %s" % (self.nickname, mode), prefix=self.socket.hostname)
 
     def irc_MODE_channel(self, params):
-        cdata = self.ircd.channels[params[0]]
-        nickname = self.nickname
-        users = cdata["users"]
-        prefix_order = self.ircd.prefix_order
         if len(params) == 1:
             self.irc_MODE_channel_show(params)
-        elif (nickname in users and users[nickname] and prefix_order.find(nickname[0]) <= prefix_order.find('h')):
+        elif self.hasAccess(params[0], "h"):
             self.irc_MODE_channel_change(params)
         elif len(params) == 2 and ('b' in params[1] or 'e' in params[1] or 'I' in params[1]):
             self.irc_MODE_channel_bans(params)
         else:
-            self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must have channel halfop access or above to set channel modes" % (nickname, cdata["name"]), prefix=self.socket.hostname)
+            self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must have channel halfop access or above to set channel modes" % (self.nickname, params[0]), prefix=self.socket.hostname)
 
     def irc_MODE_channel_show(self, params):
         cdata = self.ircd.channels[params[0]]
@@ -249,10 +270,6 @@ class IRCUser(object):
     def irc_MODE_channel_change(self, params):
         cdata = self.ircd.channels[params[0]]
 
-        nickname = self.nickname
-        users = cdata["users"]
-        prefix_order = self.ircd.prefix_order
-
         adding = True
         change_count = 0
         prop_modes = ''
@@ -267,62 +284,53 @@ class IRCUser(object):
                 adding = True
             elif mode == '-':
                 adding = False
-            elif mode in prefix_order:
+            elif mode in self.ircd.prefix_order:
                 if current_parameter >= len(params):
                     continue
+                target = params[current_parameter]
+                if target not in cdata["users"]:
+                    continue
                 if adding:
-                    targetUser = params[current_parameter]
-                    if targetUser in users and mode not in users[targetUser]:
-                        if prefix_order.find(users[nickname][0]) > prefix_order.find(mode) or (targetUser in users and users[targetUser] and prefix_order.find(users[nickname][0]) > prefix_order.find(users[targetUser][0])):
-                            self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (nickname, cdata["name"], mode), prefix=self.socket.hostname)
-                        else:
-                            if not users[targetUser]:
-                                users[targetUser] = mode
-                            else:
-                                statusList = list(users[targetUser])
-                                inserted = False
-                                for i in range(0, len(statusList)):
-                                    if prefix_order.find(mode) < prefix_order.find(statusList[i]):
-                                        statusList.insert(i, mode)
-                                        inserted = True
-                                        break
-                                if not inserted:
-                                    statusList.append(mode)
-                                users[targetUser] = "".join(statusList)
-                            if prop_adding != '+':
-                                prop_adding = '+'
-                                prop_modes += '+'
-                            prop_modes += mode
-                            prop_params.append(params[current_parameter])
-                            change_count += 1
+                    if mode in cdata["users"][target]:
+                        continue
+                    if not self.hasAccess(params[0],mode) or self.ircd.users[target].accessLevel(params[0]) > self.accessLevel(params[0]):
+                        self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.nickname, cdata["name"], mode), prefix=self.socket.hostname)
+                    else:
+                        cdata["users"][target] = self.statusSort(cdata["users"][target] + mode)
+                        if prop_adding != '+':
+                            prop_adding = '+'
+                            prop_modes += '+'
+                        prop_modes += mode
+                        prop_params.append(target)
+                        change_count += 1
                 else:
-                    targetUser = params[current_parameter]
-                    if targetUser in users and mode in users[targetUser]:
-                        if prefix_order.find(users[targetUser][0]) < prefix_order.find(users[nickname][0]):
-                            self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (nickname, cdata["name"], mode), prefix=self.socket.hostname)
-                        else:
-                            users[targetUser] = users[targetUser].replace(mode, '')
-                            if prop_adding != '-':
-                                prop_adding = '-'
-                                prop_modes += '-'
-                            prop_modes += mode
-                            prop_params.append(params[current_parameter])
-                            change_count += 1
+                    if mode not in cdata["users"][target]:
+                        continue
+                    if self.ircd.users[target].accessLevel(params[0]) > self.accessLevel(params[0]):
+                        self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.nickname, cdata["name"], mode), prefix=self.socket.hostname)
+                    else:
+                        cdata["users"][target] = cdata["users"][target].replace(mode, '')
+                        if prop_adding != '-':
+                            prop_adding = '-'
+                            prop_modes += '-'
+                        prop_modes += mode
+                        prop_params.append(target)
+                        change_count += 1
                 current_parameter += 1
             elif mode in self.ircd.chanmodes[0]:
                 if current_parameter >= len(params):
                     if mode == 'b':
                         for banmask, settertime in cdata["bans"].iteritems():
-                            self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (nickname, cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
-                        self.socket.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (nickname, cdata["name"]), prefix=self.socket.hostname)
+                            self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+                        self.socket.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
                     elif mode == 'e':
                         for exceptmask, settertime in cdata["exemptions"].iteritems():
-                            self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (nickname, cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
-                        self.socket.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (nickname, cdata["name"]), prefix=self.socket.hostname)
+                            self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+                        self.socket.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
                     elif mode == 'I':
                         for invexmask, settertime in cdata["invites"].iteritems():
-                            self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (nickname, cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
-                        self.socket.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (nickname, cdata["name"]), prefix=self.socket.hostname)
+                            self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+                        self.socket.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
                     continue
                 change = None
                 hostmask = params[current_parameter]
@@ -338,21 +346,21 @@ class IRCUser(object):
                     hostmask += "@*"
                 if mode == 'b':
                     if adding and hostmask not in cdata["bans"]:
-                        cdata["bans"][hostmask] = [nickname, time.time()]
+                        cdata["bans"][hostmask] = [self.nickname, time.time()]
                         change = '+'
                     elif not adding and hostmask in cdata["bans"]:
                         del cdata["bans"][hostmask]
                         change = '-'
                 elif mode == 'e':
                     if adding and hostmask not in cdata["exemptions"]:
-                        cdata["exemptions"][hostmask] = [nickname, time.time()]
+                        cdata["exemptions"][hostmask] = [self.nickname, time.time()]
                         change = '+'
                     elif not adding and hostmask in cdata["exemptions"]:
                         del cdata["exemptions"][hostmask]
                         change = '-'
                 elif mode == 'I':
                     if adding and hostmask not in cdata["invites"]:
-                        cdata["invites"][hostmask] = [nickname, time.time()]
+                        cdata["invites"][hostmask] = [self.nickname, time.time()]
                         change = '+'
                     elif not adding and hostmask in cdata["invites"]:
                         del cdata["invites"][hostmask]
@@ -431,10 +439,10 @@ class IRCUser(object):
                     prop_modes += mode
                     change_count += 1
             else:
-                self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (nickname, mode), prefix=self.socket.hostname)
+                self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
         if prop_modes:
             modeStr = "%s %s" % (prop_modes, " ".join(prop_params))
-            for user in users.iterkeys():
+            for user in cdata["users"].iterkeys():
                 self.ircd.users[user].socket.sendMessage("MODE", "%s %s" % (cdata["name"], modeStr), prefix=self.prefix())
 
     def irc_MODE_channel_bans(self, params):
@@ -483,12 +491,10 @@ class IRCUser(object):
         pass
     
     def irc_PRIVMSG(self, prefix, params):
-        try:
-            target = params[0]
-            message = params[1]
-        except IndexError:
-            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s PRIVMSG :Not enough parameters" % self.nickname, prefix=self.socket.hostname)
-            return
+        if len(params) < 2:
+            return self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s PRIVMSG :Not enough parameters" % self.nickname, prefix=self.socket.hostname)
+        target = params[0]
+        message = params[1]
         if target in self.ircd.users:
             u = self.ircd.users[target]
             u.socket.privmsg(self.prefix(), u.nickname, message)
@@ -501,12 +507,10 @@ class IRCUser(object):
                     self.ircd.users[u].socket.privmsg(self.prefix(), c["name"], message)
     
     def irc_NOTICE(self, prefix, params):
-        try:
-            target = params[0]
-            message = params[1]
-        except IndexError:
-            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s NOTICE :Not enough parameters" % self.nickname, prefix=self.socket.hostname)
-            return
+        if len(params) < 2:
+            return self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s NOTICE :Not enough parameters" % self.nickname, prefix=self.socket.hostname)
+        target = params[0]
+        message = params[1]
         if target in self.ircd.users:
             u = self.ircd.users[target]
             u.socket.notice(self.prefix(), u.nickname, message)
