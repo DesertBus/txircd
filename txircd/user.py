@@ -269,6 +269,24 @@ class IRCUser(object):
             self.parent.sendMessage(irc.RPL_LIST, "%s %s %d :%s" % (self.data["nickname"], cdata["name"], len(cdata["users"]), cdata["topic"]["message"]), prefix=self.parent.hostname)
         self.parent.sendMessage(irc.RPL_LISTEND, "%s :End of /LIST" % self.data["nickname"], prefix=self.parent.hostname)
     
+    def irc_INVITE(self, prefix, params):
+        if len(params) < 2:
+            self.parent.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s INVITE :Not enough parameters" % self.data["nickname"], prefix=self.parent.hostname)
+        elif params[0] not in self.parent.factory.users:
+            self.parent.sendMessage(ERR_NOSUCHNICK, "%s :No such nick/channel" % params[0], prefix=self.parent.hostname)
+        elif params[1] in self.parent.factory.users[params[0]]["channels"]:
+            self.parent.sendMessage(ERR_USERONCHANNEL, "%s %s :is already on channel" % (params[0], params[1]), prefix=self.parent.hostname)
+        elif params[1] in self.parent.factory.channels and params[1] not in self.data["channels"]:
+            self.parent.sendMessage(ERR_NOTONCHANNEL, "%s :You're not on that channel" % params[1], prefix=self.parent.hostname)
+        elif params[1] in self.parent.factory.channels and "i" in self.parent.factory.channels[params[1]]["modes"] and not self.chanLevel("h"):
+            self.parent.sendMessage(ERR_CHANOPRIVSNEEDED, "%s :You're not channel operator" % params[1], prefix=self.parent.hostname)
+        elif "a" in self.parent.factory.users[params[0]]:
+            self.parent.sendMessage(RPL_AWAY, "%s :%s" % (params[0], self.parent.factory.users[params[0]]["away"]), prefix=self.parent.hostname)
+        else:
+            u = self.parent.factory.users[params[0]]
+            self.parent.sendMessage(RPL_INVITING, "%s %s" % (params[1], u["nickname"]), prefix=self.parent.hostname)
+            u["socket"].sendMessage("INVITE", "%s %s" % (u["nickname"], params[1]), prefix=self.prefix())
+    
     def irc_unknown(self, prefix, command, params):
         self.parent.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.parent.hostname)
         raise NotImplementedError(command, prefix, params)
