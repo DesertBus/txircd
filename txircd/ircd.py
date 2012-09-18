@@ -18,10 +18,6 @@ class IRCProtocol(irc.IRC):
         self.nick = None
         self.user = None
 
-    #def get_prefix(self):
-    #    # FIXME: this is bugged! irssi does not recognize stuff sent back as coming from itself
-    #    return '%s!%s@%s' % (self.nick, self.username, self.transport.getHandle().getpeername()[0])
-
     def handleCommand(self, command, prefix, params):
         log.msg('handleCommand: %r %r %r' % (command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
@@ -131,5 +127,5 @@ class IRCD(Factory):
         }
 
     def broadcast(self, channel, message):
-        for u in self.channels[channel].users.iterkeys():
+        for u in self.channels[channel]["users"].iterkeys():
             self.users[u].socket.sendLine(message)
