@@ -66,13 +66,13 @@ class IRCProtocol(irc.IRC):
             return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER :Not enough parameters", prefix=self.hostname)
         self.user = params
         if self.nick:
-            self.type = IRCUser(self, self.user, self.password, self.nick)
+            self.type = self.factory.types['user'](self, self.user, self.password, self.nick)
 
     def irc_SERVICE(self, prefix, params):
-        self.type = IRCService(self, params, self.password)
+        self.type = self.factory.types['service'](self, params, self.password)
 
     def irc_SERVER(self, prefix, params):
-        self.type = IRCServer(self, params, self.password)
+        self.type = self.factory.types['server'](self, params, self.password)
 
     def irc_PING(self, prefix, params):
         pass
@@ -85,6 +85,11 @@ class IRCD(Factory):
     channel_prefixes = "#"
     oper_hosts = ["127.0.0.1"]
     opers = {"Fugiman":"test"}
+    types = {
+        'user': IRCUser,
+        'server': IRCServer,
+        'service': IRCService,
+    }
     PREFIX_ORDER = "qaohv"
     PREFIX_SYMBOLS = {
         'q': '~',
@@ -125,6 +130,6 @@ class IRCD(Factory):
             "invites": CaseInsensitiveDictionary()
         }
 
-    def broadcast(channel, message):
+    def broadcast(self, channel, message):
         for u in self.channels[channel].users.iterkeys():
             self.users[u].socket.sendLine(message)
