@@ -154,6 +154,7 @@ class IRCUser(object):
             del self.ircd.users[oldnick]
             self.ircd.users[newnick] = self
             tomsg = set() # Ensure users are only messaged once
+            tomsg.add(newnick)
             for c in self.channels:
                 mode = self.ircd.channels[c]["users"][oldnick]
                 del self.ircd.channels[c]["users"][oldnick]
