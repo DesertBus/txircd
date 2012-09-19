@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from twisted.words.protocols import irc
-import time
 from txircd.mode import Modes
+from txircd.utils import irc_lower, VALID_USERNAME
+import time
 
 class IRCUser(object):
     cap = {
@@ -147,6 +148,8 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.socket.hostname)
         elif params[0] in self.ircd.users:
             self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, "%s :Nickname is already in use" % params[0], prefix=self.socket.hostname)
+        elif not VALID_USERNAME.match(params[0]):
+            self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, "%s :Erroneous nickname" % params[0], prefix=self.socket.hostname)
         else:
             oldnick = self.nickname
             newnick = params[0]
@@ -154,7 +157,7 @@ class IRCUser(object):
             del self.ircd.users[oldnick]
             self.ircd.users[newnick] = self
             tomsg = set() # Ensure users are only messaged once
-            tomsg.add(newnick)
+            tomsg.add(irc_lower(newnick))
             for c in self.channels:
                 mode = self.ircd.channels[c]["users"][oldnick]
                 del self.ircd.channels[c]["users"][oldnick]

@@ -52,6 +52,8 @@ class IRCProtocol(irc.IRC):
             self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.hostname)
         elif params[0] in self.factory.users:
             self.sendMessage(irc.ERR_NICKNAMEINUSE, "%s :Nickname is already in use" % params[0], prefix=self.hostname)
+        elif not VALID_USERNAME.match(params[0]):
+            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, "%s :Erroneous nickname" % params[0], prefix=self.hostname)
         else:
             self.nick = params[0]
             if self.user:
