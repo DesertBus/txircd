@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from twisted.words.protocols import irc
-from txircd.mode import Modes
+from txircd.mode import UserModes
 from txircd.utils import irc_lower, VALID_USERNAME
 import time
 
@@ -35,7 +35,7 @@ class IRCUser(object):
         self.away = False
         self.signon = time.time()
         self.lastactivity = time.time()
-        self.mode = Modes(self.ircd.usermodes, lambda mode: mode != 'o')
+        self.mode = UserModes(self.ircd.usermodes)
         self.channels = []
         self.service = False
         
@@ -232,7 +232,7 @@ class IRCUser(object):
             if len(params) == 1:
                 self.socket.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.nickname, mode), prefix=self.socket.hostname)
             else:
-                added, removed, bad, forbidden = mode.combine(params[1])
+                added, removed, bad, forbidden = mode.combine(params[1], params[2:], self.nickname)
                 response = ''
                 if added:
                     response += '+'
