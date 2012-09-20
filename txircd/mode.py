@@ -31,6 +31,9 @@ class Modes(object):
                 current.add(mode)
             else:
                 forbidden.add(mode)
+        old = self.modes.copy()
         self.modes.update(added)
         self.modes.difference_update(removed)
+        added = self.modes - old
+        removed = old - self.modes
         return added, removed, forbidden, bad

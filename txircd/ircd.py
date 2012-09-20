@@ -9,6 +9,8 @@ from txircd.service import IRCService
 from txircd.user import IRCUser
 import uuid, time
 
+irc.RPL_CREATIONTIME = '329'
+
 class IRCProtocol(irc.IRC):
     UNREGISTERED_COMMANDS = ['PASS', 'USER', 'SERVICE', 'SERVER', 'NICK', 'PING', 'QUIT']
 

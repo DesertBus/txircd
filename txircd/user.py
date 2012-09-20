@@ -269,7 +269,7 @@ class IRCUser(object):
             modeParams += ' ' + str(cdata["limit"])
         modeStr += modeParams
         self.socket.sendMessage(irc.RPL_CHANNELMODEIS, "%s %s +%s" % (self.nickname, cdata["name"], modeStr), prefix=self.socket.hostname)
-        self.socket.sendMessage("329", "%s %s %d" % (self.nickname, cdata["name"], cdata["created"]), prefix=self.socket.hostname)
+        self.socket.sendMessage(irc.RPL_CREATIONTIME, "%s %s %d" % (self.nickname, cdata["name"], cdata["created"]), prefix=self.socket.hostname)
 
     def irc_MODE_channel_change(self, params):
         cdata = self.ircd.channels[params[0]]
