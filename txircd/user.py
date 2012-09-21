@@ -420,7 +420,7 @@ class IRCUser(object):
                             pass # Don't bother processing anything if we get a non-number
                         current_parameter += 1
                     else:
-                        cdata["params"] = None
+                        cdata["limit"] = None
                         if prop_adding != '-':
                             prop_adding = '-'
                             prop_modes += '-'
