@@ -4,9 +4,10 @@
 class Modes(object):
     allowed_modes = ""
     param_modes = ""
-    def __init__(self, allowed_modes = None, param_modes = None, default_modes = None, user = None, perm_checker = None):
+    def __init__(self, ircd, allowed_modes = None, param_modes = None, default_modes = None, user = None, perm_checker = None):
         self.modes = set()
         self.params = {}
+        self.ircd = ircd
         if allowed_modes is not None:
             self.allowed_modes = allowed_modes
         if param_modes is not None:
@@ -82,3 +83,22 @@ class UserModes(Modes):
     
     def perm_checker(self, mode):
         return mode != 'o' and mode != 'a' # r is handled by rejecting the mode command entirely
+
+class ChannelModes(Modes):
+    allowed_modes = "qaohv"+"imnst"+"kl"+"beI" # User, No parameter, Parameter, List
+    param_modes = "kl"+"beI" #Normal + Special
+    channel = None
+    
+    def perm_checker(self, mode):
+        return True # What do
+    
+    def add_param_b(self, param, user):
+        if not "b" in self.params:
+            self.params["b"] = {}
+        self.params["b"][param] = (user, time.time())
+    
+    def remove_param_b(self, param, user):
+        if not "b" in self.params:
+            self.params["b"] = {}
+        del self.params["b"][param]
+        
