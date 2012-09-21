@@ -73,7 +73,7 @@ class IRCUser(object):
     
     def statusSort(self, status):
         s = ""
-        for m in self.irc.prefix_order:
+        for m in self.ircd.prefix_order:
             if m in status:
                 s += m
         return s
