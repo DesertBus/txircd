@@ -225,7 +225,7 @@ class IRCUser(object):
 
     def irc_MODE_user(self, params):
         user = self.ircd.users[params[0]]
-        if user.nickname != self.nickname:
+        if user.nickname != self.nickname and not self.mode.has("o"): # Not self and not an OPER
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s :Can't %s for other users" % (self.nickname, "view modes" if len(params) == 1 else "change mode"), prefix=self.socket.hostname)
         else:
             mode = self.mode

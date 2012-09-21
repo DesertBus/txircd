@@ -74,11 +74,11 @@ class Modes(object):
         self.modes.difference_update(removed)
         added = self.modes - old
         removed = old - self.modes
-        return added, removed, forbidden, bad
+        return added, removed, bad, forbidden
 
 class UserModes(Modes):
-    allowed_modes = "aiows"
+    allowed_modes = "aiorsw" # http://tools.ietf.org/html/rfc2812#section-3.1.5
     param_modes = ""
     
     def perm_checker(self, mode):
-        return mode != 'o' and mode != 'a'
+        return mode != 'o' and mode != 'a' # r is handled by rejecting the mode command entirely

@@ -3,7 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Factory
 from twisted.python import log
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary
+from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
