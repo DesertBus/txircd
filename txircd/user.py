@@ -270,184 +270,195 @@ class IRCUser(object):
         modeStr += modeParams
         self.socket.sendMessage(irc.RPL_CHANNELMODEIS, "%s %s +%s" % (self.nickname, cdata["name"], modeStr), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_CREATIONTIME, "%s %s %d" % (self.nickname, cdata["name"], cdata["created"]), prefix=self.socket.hostname)
-
+    
     def irc_MODE_channel_change(self, params):
-        cdata = self.ircd.channels[params[0]]
+        cdata = self.ircd.channels[params.pop(0)]
+        added, removed, bad, forbidden = cdata["mode"].combine(params)
+        for mode in bad:
+            self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
+        for mode in forbidden:
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission denied - only operators may set mode %s" % (self.nickname, mode), prefix=self.socket.hostname)
+        modes = ""
+        # TODO: construct mode string
+        # TODO: display mode string
 
-        adding = True
-        change_count = 0
-        prop_modes = ''
-        prop_adding = None
-        prop_params = []
-        current_parameter = 2
+    #def irc_MODE_channel_change(self, params):
+        #cdata = self.ircd.channels[params[0]]
 
-        for mode in params[1]:
-            if change_count >= 20:
-                break
-            if mode == '+':
-                adding = True
-            elif mode == '-':
-                adding = False
-            elif mode in self.ircd.prefix_order:
-                if current_parameter >= len(params):
-                    continue
-                target = params[current_parameter]
-                if target not in cdata["users"]:
-                    continue
-                if adding:
-                    if mode in cdata["users"][target]:
-                        continue
-                    if not self.hasAccess(params[0],mode) or self.ircd.users[target].accessLevel(params[0]) > self.accessLevel(params[0]):
-                        self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.nickname, cdata["name"], mode), prefix=self.socket.hostname)
-                    else:
-                        cdata["users"][target] = self.statusSort(cdata["users"][target] + mode)
-                        if prop_adding != '+':
-                            prop_adding = '+'
-                            prop_modes += '+'
-                        prop_modes += mode
-                        prop_params.append(target)
-                        change_count += 1
-                else:
-                    if mode not in cdata["users"][target]:
-                        continue
-                    if self.ircd.users[target].accessLevel(params[0]) > self.accessLevel(params[0]):
-                        self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.nickname, cdata["name"], mode), prefix=self.socket.hostname)
-                    else:
-                        cdata["users"][target] = cdata["users"][target].replace(mode, '')
-                        if prop_adding != '-':
-                            prop_adding = '-'
-                            prop_modes += '-'
-                        prop_modes += mode
-                        prop_params.append(target)
-                        change_count += 1
-                current_parameter += 1
-            elif mode in self.ircd.chanmodes[0]:
-                if current_parameter >= len(params):
-                    if mode == 'b':
-                        for banmask, settertime in cdata["bans"].iteritems():
-                            self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
-                        self.socket.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
-                    elif mode == 'e':
-                        for exceptmask, settertime in cdata["exemptions"].iteritems():
-                            self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
-                        self.socket.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
-                    elif mode == 'I':
-                        for invexmask, settertime in cdata["invites"].iteritems():
-                            self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
-                        self.socket.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
-                    continue
-                change = None
-                hostmask = params[current_parameter]
-                if ' ' in hostmask:
-                    hostmask = hostmask[:hostmask.find(' ')]
-                    # If we ever add a list mode that doesn't work on hostmasks, move this check to inside the +beI checks
-                if '!' not in hostmask:
-                    if '@' in hostmask:
-                        hostmask = '*!' + hostmask
-                    else:
-                        hostmask += "!*@*"
-                elif '@' not in hostmask:
-                    hostmask += "@*"
-                if mode == 'b':
-                    if adding and hostmask not in cdata["bans"]:
-                        cdata["bans"][hostmask] = [self.nickname, time.time()]
-                        change = '+'
-                    elif not adding and hostmask in cdata["bans"]:
-                        del cdata["bans"][hostmask]
-                        change = '-'
-                elif mode == 'e':
-                    if adding and hostmask not in cdata["exemptions"]:
-                        cdata["exemptions"][hostmask] = [self.nickname, time.time()]
-                        change = '+'
-                    elif not adding and hostmask in cdata["exemptions"]:
-                        del cdata["exemptions"][hostmask]
-                        change = '-'
-                elif mode == 'I':
-                    if adding and hostmask not in cdata["invites"]:
-                        cdata["invites"][hostmask] = [self.nickname, time.time()]
-                        change = '+'
-                    elif not adding and hostmask in cdata["invites"]:
-                        del cdata["invites"][hostmask]
-                        change = '-'
-                current_parameter += 1
-                if change:
-                    if prop_adding != change:
-                        prop_adding = change
-                        prop_modes += change
-                    prop_modes += mode
-                    prop_params.append(hostmask)
-                    change_count += 1
-            elif mode in self.ircd.chanmodes[1]:
-                if current_parameter >= len(params):
-                    continue
-                if mode == 'k': # The channel password has its own channel data entry
-                    if adding:
-                        password = params[current_parameter]
-                        if ' ' in password:
-                            password = password[:password.find(' ')]
-                        cdata["password"] = password
-                        if prop_adding != '+':
-                            prop_adding = '+'
-                            prop_modes += '+'
-                        prop_modes += mode
-                        prop_params.append(password)
-                        change_count += 1
-                    elif params[current_parameter] == cdata["password"]:
-                        cdata["password"] = None
-                        if prop_adding != '-':
-                            prop_adding = '-'
-                            prop_modes += '-'
-                        prop_modes += mode
-                        prop_params.append(params[current_parameter])
-                        change_count += 1
-                        # else: there aren't other param/param modes currently
-            elif mode in self.ircd.chanmodes[2]:
-                if mode == 'l': # The channel limit has its own channel data entry
-                    if adding:
-                        if current_parameter >= len(params):
-                            continue
-                        try:
-                            newLimit = int(params[current_parameter])
-                            if newLimit > 0:
-                                cdata["limit"] = newLimit
-                                if prop_adding != '+':
-                                    prop_adding = '+'
-                                    prop_modes += '+'
-                                prop_modes += mode
-                                prop_params.append(params[current_parameter])
-                                change_count += 1
-                        except:
-                            pass # Don't bother processing anything if we get a non-number
-                        current_parameter += 1
-                    else:
-                        cdata["limit"] = None
-                        if prop_adding != '-':
-                            prop_adding = '-'
-                            prop_modes += '-'
-                        prop_modes += mode
-                        change_count += 1
-                        # else: there aren't any other param modes currently
-            elif mode in self.ircd.chanmodes[3]:
-                if adding and mode not in cdata["mode"]:
-                    cdata["mode"] += mode
-                    if prop_adding != '+':
-                        prop_adding = '+'
-                        prop_modes += '+'
-                    prop_modes += mode
-                    change_count += 1
-                elif not adding and mode in cdata["mode"]:
-                    cdata["mode"] = cdata["mode"].replace(mode, '')
-                    if prop_adding != '-':
-                        prop_adding = '-'
-                        prop_modes += '-'
-                    prop_modes += mode
-                    change_count += 1
-            else:
-                self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
-        if prop_modes:
-            modeStr = "%s %s" % (prop_modes, " ".join(prop_params))
-            for user in cdata["users"].iterkeys():
-                self.ircd.users[user].socket.sendMessage("MODE", "%s %s" % (cdata["name"], modeStr), prefix=self.prefix())
+        #adding = True
+        #change_count = 0
+        #prop_modes = ''
+        #prop_adding = None
+        #prop_params = []
+        #current_parameter = 2
+
+        #for mode in params[1]:
+            #if change_count >= 20:
+                #break
+            #if mode == '+':
+                #adding = True
+            #elif mode == '-':
+                #adding = False
+            #elif mode in self.ircd.prefix_order:
+                #if current_parameter >= len(params):
+                    #continue
+                #target = params[current_parameter]
+                #if target not in cdata["users"]:
+                    #continue
+                #if adding:
+                    #if mode in cdata["users"][target]:
+                        #continue
+                    #if not self.hasAccess(params[0],mode) or self.ircd.users[target].accessLevel(params[0]) > self.accessLevel(params[0]):
+                        #self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.nickname, cdata["name"], mode), prefix=self.socket.hostname)
+                    #else:
+                        #cdata["users"][target] = self.statusSort(cdata["users"][target] + mode)
+                        #if prop_adding != '+':
+                            #prop_adding = '+'
+                            #prop_modes += '+'
+                        #prop_modes += mode
+                        #prop_params.append(target)
+                        #change_count += 1
+                #else:
+                    #if mode not in cdata["users"][target]:
+                        #continue
+                    #if self.ircd.users[target].accessLevel(params[0]) > self.accessLevel(params[0]):
+                        #self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to use channel mode %s on that user" % (self.nickname, cdata["name"], mode), prefix=self.socket.hostname)
+                    #else:
+                        #cdata["users"][target] = cdata["users"][target].replace(mode, '')
+                        #if prop_adding != '-':
+                            #prop_adding = '-'
+                            #prop_modes += '-'
+                        #prop_modes += mode
+                        #prop_params.append(target)
+                        #change_count += 1
+                #current_parameter += 1
+            #elif mode in self.ircd.chanmodes[0]:
+                #if current_parameter >= len(params):
+                    #if mode == 'b':
+                        #for banmask, settertime in cdata["bans"].iteritems():
+                            #self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+                        #self.socket.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+                    #elif mode == 'e':
+                        #for exceptmask, settertime in cdata["exemptions"].iteritems():
+                            #self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+                        #self.socket.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+                    #elif mode == 'I':
+                        #for invexmask, settertime in cdata["invites"].iteritems():
+                            #self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+                        #self.socket.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+                    #continue
+                #change = None
+                #hostmask = params[current_parameter]
+                #if ' ' in hostmask:
+                    #hostmask = hostmask[:hostmask.find(' ')]
+                    ## If we ever add a list mode that doesn't work on hostmasks, move this check to inside the +beI checks
+                #if '!' not in hostmask:
+                    #if '@' in hostmask:
+                        #hostmask = '*!' + hostmask
+                    #else:
+                        #hostmask += "!*@*"
+                #elif '@' not in hostmask:
+                    #hostmask += "@*"
+                #if mode == 'b':
+                    #if adding and hostmask not in cdata["bans"]:
+                        #cdata["bans"][hostmask] = [self.nickname, time.time()]
+                        #change = '+'
+                    #elif not adding and hostmask in cdata["bans"]:
+                        #del cdata["bans"][hostmask]
+                        #change = '-'
+                #elif mode == 'e':
+                    #if adding and hostmask not in cdata["exemptions"]:
+                        #cdata["exemptions"][hostmask] = [self.nickname, time.time()]
+                        #change = '+'
+                    #elif not adding and hostmask in cdata["exemptions"]:
+                        #del cdata["exemptions"][hostmask]
+                        #change = '-'
+                #elif mode == 'I':
+                    #if adding and hostmask not in cdata["invites"]:
+                        #cdata["invites"][hostmask] = [self.nickname, time.time()]
+                        #change = '+'
+                    #elif not adding and hostmask in cdata["invites"]:
+                        #del cdata["invites"][hostmask]
+                        #change = '-'
+                #current_parameter += 1
+                #if change:
+                    #if prop_adding != change:
+                        #prop_adding = change
+                        #prop_modes += change
+                    #prop_modes += mode
+                    #prop_params.append(hostmask)
+                    #change_count += 1
+            #elif mode in self.ircd.chanmodes[1]:
+                #if current_parameter >= len(params):
+                    #continue
+                #if mode == 'k': # The channel password has its own channel data entry
+                    #if adding:
+                        #password = params[current_parameter]
+                        #if ' ' in password:
+                            #password = password[:password.find(' ')]
+                        #cdata["password"] = password
+                        #if prop_adding != '+':
+                            #prop_adding = '+'
+                            #prop_modes += '+'
+                        #prop_modes += mode
+                        #prop_params.append(password)
+                        #change_count += 1
+                    #elif params[current_parameter] == cdata["password"]:
+                        #cdata["password"] = None
+                        #if prop_adding != '-':
+                            #prop_adding = '-'
+                            #prop_modes += '-'
+                        #prop_modes += mode
+                        #prop_params.append(params[current_parameter])
+                        #change_count += 1
+                        ## else: there aren't other param/param modes currently
+            #elif mode in self.ircd.chanmodes[2]:
+                #if mode == 'l': # The channel limit has its own channel data entry
+                    #if adding:
+                        #if current_parameter >= len(params):
+                            #continue
+                        #try:
+                            #newLimit = int(params[current_parameter])
+                            #if newLimit > 0:
+                                #cdata["limit"] = newLimit
+                                #if prop_adding != '+':
+                                    #prop_adding = '+'
+                                    #prop_modes += '+'
+                                #prop_modes += mode
+                                #prop_params.append(params[current_parameter])
+                                #change_count += 1
+                        #except:
+                            #pass # Don't bother processing anything if we get a non-number
+                        #current_parameter += 1
+                    #else:
+                        #cdata["limit"] = None
+                        #if prop_adding != '-':
+                            #prop_adding = '-'
+                            #prop_modes += '-'
+                        #prop_modes += mode
+                        #change_count += 1
+                        ## else: there aren't any other param modes currently
+            #elif mode in self.ircd.chanmodes[3]:
+                #if adding and mode not in cdata["mode"]:
+                    #cdata["mode"] += mode
+                    #if prop_adding != '+':
+                        #prop_adding = '+'
+                        #prop_modes += '+'
+                    #prop_modes += mode
+                    #change_count += 1
+                #elif not adding and mode in cdata["mode"]:
+                    #cdata["mode"] = cdata["mode"].replace(mode, '')
+                    #if prop_adding != '-':
+                        #prop_adding = '-'
+                        #prop_modes += '-'
+                    #prop_modes += mode
+                    #change_count += 1
+            #else:
+                #self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
+        #if prop_modes:
+            #modeStr = "%s %s" % (prop_modes, " ".join(prop_params))
+            #for user in cdata["users"].iterkeys():
+                #self.ircd.users[user].socket.sendMessage("MODE", "%s %s" % (cdata["name"], modeStr), prefix=self.prefix())
 
     def irc_MODE_channel_bans(self, params):
         cdata = self.ircd.channels[params[0]]

@@ -4,6 +4,7 @@ from twisted.internet.protocol import Factory
 from twisted.python import log
 from twisted.words.protocols import irc
 from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME
+from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
@@ -115,7 +116,7 @@ class IRCD(Factory):
     def createChannel(self, name):
         return {
             "name": name,
-            "mode": "nt",
+            "mode": ChannelModes(self, default_modes = "nt"),
             "created": time.time(),
             "topic": {
                 "message": None,
