@@ -44,7 +44,7 @@ class IRCUser(object):
         self.socket.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.nickname, self.nickname, self.username, self.hostname), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.nickname, self.ircd.name, self.ircd.version), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.nickname, self.ircd.created,), prefix=self.socket.hostname)
-        self.socket.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.nickname, self.ircd.name, self.ircd.version, self.ircd.usermodes, "".join(self.ircd.chanmodes) + self.ircd.prefix_order), prefix=self.socket.hostname) # usermodes & channel modes
+        self.socket.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.nickname, self.ircd.name, self.ircd.version, self.mode.allowed_modes, "".join(self.ircd.chanmodes) + self.ircd.prefix_order), prefix=self.socket.hostname) # usermodes & channel modes
         self.socket.sendMessage(irc.RPL_ISUPPORT, "%s CASEMAPPING=rfc1459 CHANMODES=%s CHANTYPES=%s MODES=20 NICKLEN=32 PREFIX=(%s)%s STATUSMSG=%s :are supported by this server" % (self.nickname, ",".join(self.ircd.chanmodes), self.ircd.channel_prefixes, self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order]), "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])), prefix=self.socket.hostname)
     
     #=====================
@@ -73,7 +73,7 @@ class IRCUser(object):
     
     def statusSort(self, status):
         s = ""
-        for m in self.irc.prefix_order:
+        for m in self.ircd.prefix_order:
             if m in status:
                 s += m
         return s
@@ -270,7 +270,19 @@ class IRCUser(object):
         modeStr += modeParams
         self.socket.sendMessage(irc.RPL_CHANNELMODEIS, "%s %s +%s" % (self.nickname, cdata["name"], modeStr), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_CREATIONTIME, "%s %s %d" % (self.nickname, cdata["name"], cdata["created"]), prefix=self.socket.hostname)
+    
+    def irc_MODE_channel_change(self, params):
+        cdata = self.ircd.channels[params.pop(0)]
+        added, removed, bad, forbidden = cdata["mode"].combine(params)
+        for mode in bad:
+            self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
+        for mode in forbidden:
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission denied - only operators may set mode %s" % (self.nickname, mode), prefix=self.socket.hostname)
+        modes = ""
+        # TODO: construct mode string
+        # TODO: display mode string
 
+    """
     def irc_MODE_channel_change(self, params):
         cdata = self.ircd.channels[params[0]]
 
@@ -420,7 +432,7 @@ class IRCUser(object):
                             pass # Don't bother processing anything if we get a non-number
                         current_parameter += 1
                     else:
-                        cdata["params"] = None
+                        cdata["limit"] = None
                         if prop_adding != '-':
                             prop_adding = '-'
                             prop_modes += '-'
@@ -448,6 +460,7 @@ class IRCUser(object):
             modeStr = "%s %s" % (prop_modes, " ".join(prop_params))
             for user in cdata["users"].iterkeys():
                 self.ircd.users[user].socket.sendMessage("MODE", "%s %s" % (cdata["name"], modeStr), prefix=self.prefix())
+    """
 
     def irc_MODE_channel_bans(self, params):
         cdata = self.ircd.channels[params[0]]

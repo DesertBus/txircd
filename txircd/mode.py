@@ -52,6 +52,7 @@ class Modes(object):
         forbidden = set()
         current = added
         cur_param = self.add_param
+        old_params = self.params.copy()
         for mode in modes:
             if changes >= 20:
                 break
@@ -73,8 +74,13 @@ class Modes(object):
         old = self.modes.copy()
         self.modes.update(added)
         self.modes.difference_update(removed)
+        added_keep = set()
+        for mode in self.param_modes:
+            if (mode in added or mode in removed) and mode in old_params and self.params[mode] != old_params[mode]:
+                added_keep.add(mode) # keep notification of added modes if a parameter mode was already set but had its parameter changed
         added = self.modes - old
         removed = old - self.modes
+        added.update(added_keep)
         return added, removed, bad, forbidden
 
 class UserModes(Modes):
