@@ -32,8 +32,6 @@ class IRCUser(object):
         self.realname = realname
         self.hostname = parent.transport.getHandle().getpeername()[0]
         self.server = parent.factory.name
-        self.oper = False
-        self.away = False
         self.signon = time.time()
         self.lastactivity = time.time()
         self.mode = UserModes(self.ircd, self, mode, self.nickname)
@@ -196,7 +194,7 @@ class IRCUser(object):
         elif params[0] not in self.ircd.opers or self.ircd.opers[params[0]] != params[1]:
             self.socket.sendMessage(irc.ERR_PASSWDMISMATCH, "%s :Password incorrect" % self.nickname, prefix=self.socket.hostname)
         else:
-            self.oper = True
+            self.mode.modes["o"] = True
             self.socket.sendMessage(irc.RPL_YOUREOPER, "%s :You are now an IRC operator" % self.nickname, prefix=self.socket.hostname)
     
     def irc_QUIT(self, prefix, params):
@@ -315,7 +313,7 @@ class IRCUser(object):
         else:
             if self.nickname not in cdata["users"]:
                 self.socket.sendMessage(irc.ERR_NOTONCHANNEL, "%s %s :You're not in that channel" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
-            elif not cdata["mode"].has("t") or self.hasAccess(params[0],"h"):
+            elif not cdata["mode"].has("t") or self.hasAccess(params[0],"h") or self.mode.has("o"):
                 # If the channel is +t and the user has a rank that is halfop or higher, allow the topic change
                 cdata["topic"] = {
                     "message": params[1],
