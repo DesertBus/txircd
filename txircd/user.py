@@ -300,7 +300,7 @@ class IRCUser(object):
         else:
             if self.nickname not in cdata["users"]:
                 self.socket.sendMessage(irc.ERR_NOTONCHANNEL, "%s %s :You're not in that channel" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
-            elif 't' not in cdata["mode"] or self.hasAccess(params[0],"h"):
+            elif not cdata["mode"].has("t") or self.hasAccess(params[0],"h"):
                 # If the channel is +t and the user has a rank that is halfop or higher, allow the topic change
                 cdata["topic"] = {
                     "message": params[1],
