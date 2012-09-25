@@ -374,6 +374,24 @@ class IRCUser(object):
             self.socket.sendMessage(irc.RPL_LIST, "%s %s %d :%s" % (self.nickname, cdata["name"], len(cdata["users"]), cdata["topic"]["message"]), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_LISTEND, "%s :End of /LIST" % self.nickname, prefix=self.socket.hostname)
     
+    def irc_INVITE(self, prefix, params):
+        if len(params) < 2:
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s INVITE :Not enough parameters" % self.nickname, prefix=self.socket.hostname)
+        elif params[0] not in self.ircd.users:
+            self.socket.sendMessage(ERR_NOSUCHNICK, "%s :No such nick/channel" % params[0], prefix=self.socket.hostname)
+        elif params[1] in self.ircd.users[params[0]].channels:
+            self.socket.sendMessage(ERR_USERONCHANNEL, "%s %s :is already on channel" % (params[0], params[1]), prefix=self.socket.hostname)
+        elif params[1] in self.ircd.channels and params[1] not in self.channels:
+            self.socket.sendMessage(ERR_NOTONCHANNEL, "%s :You're not on that channel" % params[1], prefix=self.socket.hostname)
+        elif params[1] in self.ircd.channels and self.ircd.channels[params[1]]["mode"].has("i") and not self.chanLevel("h"):
+            self.socket.sendMessage(ERR_CHANOPRIVSNEEDED, "%s :You're not channel operator" % params[1], prefix=self.socket.hostname)
+        elif self.ircd.users[params[0]].mode.has("a"):
+            self.socket.sendMessage(RPL_AWAY, "%s :%s" % (params[0], self.ircd.users[params[0]].mode.get("a")), prefix=self.socket.hostname)
+        else:
+            u = self.parent.factory.users[params[0]]
+            self.socket.sendMessage(RPL_INVITING, "%s %s" % (params[1], u.nickname), prefix=self.parent.hostname)
+            u.socket.sendMessage("INVITE", "%s %s" % (u.nickname, params[1]), prefix=self.prefix())
+    
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.socket.hostname)
         raise NotImplementedError(command, prefix, params)
