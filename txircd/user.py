@@ -246,10 +246,10 @@ class IRCUser(object):
     def irc_MODE_channel(self, params):
         if len(params) == 1:
             self.irc_MODE_channel_show(params)
-        elif self.hasAccess(params[0], "h"):
-            self.irc_MODE_channel_change(params)
         elif len(params) == 2 and ('b' in params[1] or 'e' in params[1] or 'I' in params[1]):
             self.irc_MODE_channel_bans(params)
+        elif self.hasAccess(params[0], "h"):
+            self.irc_MODE_channel_change(params)
         else:
             self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must have channel halfop access or above to set channel modes" % (self.nickname, params[0]), prefix=self.socket.hostname)
 
