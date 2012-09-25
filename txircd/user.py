@@ -277,8 +277,9 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
         for mode in forbidden:
             self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission denied - only operators may set mode %s" % (self.nickname, mode), prefix=self.socket.hostname)
-        for u in cdata["users"].itervalues():
-            u.socket.sendMessage("MODE", "%s %s" % (cdata["name"], modes), prefix=self.prefix())
+        if modes:
+            for u in cdata["users"].itervalues():
+                u.socket.sendMessage("MODE", "%s %s" % (cdata["name"], modes), prefix=self.prefix())
 
     def irc_MODE_channel_bans(self, params):
         cdata = self.ircd.channels[params[0]]
