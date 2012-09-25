@@ -91,7 +91,7 @@ class IRCD(Factory):
         'server': IRCServer,
         'service': IRCService,
     }
-    prefix_order = "qaohv"
+    prefix_order = "qaohv" # Hardcoded into modes :(
     prefix_symbols = {
         'q': '~',
         'a': '&',
@@ -99,8 +99,6 @@ class IRCD(Factory):
         'h': '%',
         'v': '+'
     }
-    usermodes = None
-    chanmodes = [ "beI", "k", "l", "mnpst" ]
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
         self.name = name
@@ -114,22 +112,18 @@ class IRCD(Factory):
         self.channels = DefaultCaseInsensitiveDictionary(self.createChannel)
 
     def createChannel(self, name):
-        return {
+        c = {
             "name": name,
-            "mode": ChannelModes(self, default_modes = "nt"),
             "created": time.time(),
             "topic": {
                 "message": None,
                 "author": "",
                 "created": time.time()
             },
-            "password": None,
-            "limit": None,
             "users": CaseInsensitiveDictionary(),
-            "bans": CaseInsensitiveDictionary(),
-            "exemptions": CaseInsensitiveDictionary(),
-            "invites": CaseInsensitiveDictionary()
         }
+        c["mode"] = ChannelModes(self, c, "nt", name)
+        return c
 
     def broadcast(self, channel, message):
         for u in self.channels[channel]["users"].iterkeys():

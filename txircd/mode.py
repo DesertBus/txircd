@@ -1,110 +1,173 @@
 # -*- coding: utf-8 -*-
 
+def fix_hostmask(hostmask):
+    if ' ' in hostmask:
+        hostmask = hostmask[:hostmask.find(' ')]
+        # If we ever add a list mode that doesn't work on hostmasks, move this check to inside the +beI checks
+    if '!' not in hostmask:
+        if '@' in hostmask:
+            hostmask = '*!' + hostmask
+        else:
+            hostmask += "!*@*"
+    elif '@' not in hostmask:
+        hostmask += "@*"
+    return hostmask
 
 class Modes(object):
-    allowed_modes = ""
-    param_modes = ""
-    def __init__(self, ircd, allowed_modes = None, param_modes = None, default_modes = None, user = None, perm_checker = None):
-        self.modes = set()
-        self.params = {}
+    bool_modes = ""
+    string_modes = ""
+    list_modes = ""
+    hostmask_modes = "" # Subset of list modes to run fix_hostmask on
+    
+    def __init__(self, ircd, parent, default_modes = None, user = None):
+        self.modes = {}
         self.ircd = ircd
-        if allowed_modes is not None:
-            self.allowed_modes = allowed_modes
-        if param_modes is not None:
-            self.param_modes = param_modes
-        if perm_checker is not None:
-            self.perm_checker = perm_checker
+        self.parent = parent
         if default_modes is not None:
             params = default_modes.split(" ")
             self.combine(params[0], params[1:], user)
 
     def __str__(self):
-        return ''.join(self.modes)
+        params = [""]
+        for m in self.bool_modes:
+            if m in self.modes and self.modes[m]:
+                params[0] += m
+        for m in self.string_modes:
+            if m in self.modes and self.modes[m]:
+                params[0] += m
+                params.append(self.modes[m])
+        return " ".join(params)
 
-    def perm_checker(self, perm):
+    def allowed(self):
+        return self.bool_modes + self.string_modes + self.list_modes
+    
+    def perm_checker(self, mode, user):
         return True
     
-    def has(self, perm):
-        return perm in self.modes
+    def has(self, mode):
+        return mode in self.modes and self.modes[mode]
     
-    def get(self, perm):
-        return self.params[perm]
-    
-    def add_param(self, mode, param, user):
-        method = getattr(self, "add_param_%s" % mode, None)
-        if method is not None:
-            method(param, user)
-        else:
-            self.params[mode] = param
-    
-    def remove_param(self, mode, param, user):
-        method = getattr(self, "remove_param_%s" % mode, None)
-        if method is not None:
-            method(param, user)
-        else:
-            del self.params[mode]
-    
+    def get(self, mode):
+        return self.modes[mode]
+        
     def combine(self, modes, params, user):
+        # State Variables
+        old_modes = self.modes.copy()
         changes = 0
-        added = set()
-        removed = set()
+        adding = True
+        changed = ""
         bad = set()
         forbidden = set()
-        current = added
-        cur_param = self.add_param
-        old_params = self.params.copy()
+        # Change internal modes
         for mode in modes:
             if changes >= 20:
                 break
             elif mode == '+':
-                current = added
-                cur_param = self.add_param
+                adding = True
+                modelist = added
             elif mode == '-':
-                current = removed
-                cur_param = self.remove_param
-            elif mode not in self.allowed_modes:
-                bad.add(mode)
-            elif self.perm_checker(mode):
-                changes += 1
-                current.add(mode)
-                if mode in self.param_modes:
-                    cur_param(mode, params.pop(0), user)
+                adding = False
+                modelist = removed
+            elif mode in self.bool_modes:
+                if self.perm_checker(mode,user):
+                    if mode not in self.modes or self.modes[mode] != adding:
+                        changes += 1
+                        self.modes[mode] = adding
+                else:
+                    forbidden.add(mode)
+            elif mode in self.string_modes:
+                if self.perm_checker(mode,user):
+                    if adding:
+                        param = params.pop(0)
+                    else:
+                        param = False
+                    if mode not in self.modes or self.modes[mode] != param:
+                        changes += 1
+                        self.modes[mode] = param
+                else:
+                    forbidden.add(mode)
+            elif mode in self.list_modes:
+                if self.perm_checker(mode,user):
+                    if mode not in self.modes:
+                        self.modes[mode] = {}
+                    param = params.pop(0)
+                    if mode in self.hostmask_modes:
+                        param = fix_hostmask(param) # Fix hostmask if it needs fixing
+                    if adding:
+                        if param not in self.modes[mode]:
+                            changes += 1
+                            self.modes[mode][param] = (user, time.time())
+                    else:
+                        if param in self.modes[mode]:
+                            changes += 1
+                            del self.modes[mode][param]
+                else:
+                    forbidden.add(mode)
             else:
-                forbidden.add(mode)
-        old = self.modes.copy()
-        self.modes.update(added)
-        self.modes.difference_update(removed)
-        added_keep = set()
-        for mode in self.param_modes:
-            if (mode in added or mode in removed) and mode in old_params and self.params[mode] != old_params[mode]:
-                added_keep.add(mode) # keep notification of added modes if a parameter mode was already set but had its parameter changed
-        added = self.modes - old
-        removed = old - self.modes
-        added.update(added_keep)
-        return added, removed, bad, forbidden
+                bad.add(mode)
+        # Figure out what actually changed
+        added = [""]
+        removed = [""]
+        for k, v in self.modes.iteritems():
+            if k not in old_modes:
+                if k in self.bool_modes:
+                    if v:
+                        added[0] += k
+                elif k in self.string_modes:
+                    if v:
+                        added[0] += k
+                        added.append(v)
+                elif k in self.list_modes:
+                    for n in v.iterkeys():
+                        added[0] += k
+                        added.append(n)
+            else:
+                if k in self.bool_modes:
+                    if v == old_modes[k]:
+                        continue
+                    elif v:
+                        added[0] += k
+                    else:
+                        removed[0] += k
+                elif k in self.string_modes:
+                    if v == old_modes[k]:
+                        continue
+                    elif v:
+                        added[0] += k
+                        added.append(v)
+                    else:
+                        removed[0] += k
+                elif k in self.list_modes:
+                    for n in v.iterkeys():
+                        if n not in old_modes[k]:
+                            added[0] += k
+                            added.append(n)
+                    for n in old_modes[k].iterkeys():
+                        if n not in v:
+                            removed[0] += k
+                            removed.append(n)
+        if added[0]:
+            changed += "+"+added[0]
+        if removed[0]:
+            changed += "+"+removed[0]
+        changed = ("%s %s %s" % (changed, " ".join(added[1:]), " ".join(removed[1:]))).strip()
+        # Return the changes
+        return changed, bad, forbidden
 
 class UserModes(Modes):
-    allowed_modes = "aiorsw" # http://tools.ietf.org/html/rfc2812#section-3.1.5
-    param_modes = ""
+    bool_modes = "iorsw" # http://tools.ietf.org/html/rfc2812#section-3.1.5
+    string_modes = "a"
+    list_modes = ""
+    hostmask_modes = ""
     
-    def perm_checker(self, mode):
+    def perm_checker(self, mode, user):
         return mode != 'o' and mode != 'a' # r is handled by rejecting the mode command entirely
 
 class ChannelModes(Modes):
-    allowed_modes = "qaohv"+"imnst"+"kl"+"beI" # User, No parameter, Parameter, List
-    param_modes = "kl"+"beI" #Normal + Special
-    channel = None
+    bool_modes = "imnst" # http://tools.ietf.org/html/rfc2811#section-4 
+    string_modes = "kl"
+    list_modes = "aqohv"+"beI"
+    hostmask_modes = "beI"
     
-    def perm_checker(self, mode):
+    def perm_checker(self, mode, user):
         return True # What do
-    
-    def add_param_b(self, param, user):
-        if not "b" in self.params:
-            self.params["b"] = {}
-        self.params["b"][param] = (user, time.time())
-    
-    def remove_param_b(self, param, user):
-        if not "b" in self.params:
-            self.params["b"] = {}
-        del self.params["b"][param]
-        
