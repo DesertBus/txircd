@@ -105,7 +105,7 @@ class IRCUser(object):
                 if ranks:
                     userlist.append(self.ircd.prefix_symbols[ranks[0]] + user.nickname)
                 else:
-                    userlist.append(suser.nickname)
+                    userlist.append(user.nickname)
         self.socket.names(self.nickname, channel, userlist)
     
     def join(self, channel, key):
