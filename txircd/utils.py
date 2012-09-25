@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 from collections import MutableMapping
 from twisted.internet import reactor
+import re
 
-def iterate_non_blocking(iterator):
-    try:
-        iterator.next()
-    except StopIteration:
-        return
-    reactor.callLater(0, iterate_non_blocking, iterator)
+VALID_USERNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{3,31}$") # 4-32 char nicks
 
 def irc_lower(str):
     return str.lower().replace('[','{').replace(']','}').replace('/','|').replace('~','^')

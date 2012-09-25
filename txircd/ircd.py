@@ -3,11 +3,14 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Factory
 from twisted.python import log
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary
+from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME
+from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
 import uuid, time
+
+irc.RPL_CREATIONTIME = '329'
 
 class IRCProtocol(irc.IRC):
     UNREGISTERED_COMMANDS = ['PASS', 'USER', 'SERVICE', 'SERVER', 'NICK', 'PING', 'QUIT']
@@ -17,10 +20,6 @@ class IRCProtocol(irc.IRC):
         self.password = None
         self.nick = None
         self.user = None
-
-    #def get_prefix(self):
-    #    # FIXME: this is bugged! irssi does not recognize stuff sent back as coming from itself
-    #    return '%s!%s@%s' % (self.nick, self.username, self.transport.getHandle().getpeername()[0])
 
     def handleCommand(self, command, prefix, params):
         log.msg('handleCommand: %r %r %r' % (command, prefix, params))
@@ -56,6 +55,8 @@ class IRCProtocol(irc.IRC):
             self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.hostname)
         elif params[0] in self.factory.users:
             self.sendMessage(irc.ERR_NICKNAMEINUSE, "%s :Nickname is already in use" % params[0], prefix=self.hostname)
+        elif not VALID_USERNAME.match(params[0]):
+            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, "%s :Erroneous nickname" % params[0], prefix=self.hostname)
         else:
             self.nick = params[0]
             if self.user:
@@ -66,13 +67,13 @@ class IRCProtocol(irc.IRC):
             return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER :Not enough parameters", prefix=self.hostname)
         self.user = params
         if self.nick:
-            self.type = IRCUser(self, self.user, self.password, self.nick)
+            self.type = self.factory.types['user'](self, self.user, self.password, self.nick)
 
     def irc_SERVICE(self, prefix, params):
-        self.type = IRCService(self, params, self.password)
+        self.type = self.factory.types['service'](self, params, self.password)
 
     def irc_SERVER(self, prefix, params):
-        self.type = IRCServer(self, params, self.password)
+        self.type = self.factory.types['server'](self, params, self.password)
 
     def irc_PING(self, prefix, params):
         pass
@@ -85,8 +86,13 @@ class IRCD(Factory):
     channel_prefixes = "#"
     oper_hosts = ["127.0.0.1"]
     opers = {"Fugiman":"test"}
-    PREFIX_ORDER = "qaohv"
-    PREFIX_SYMBOLS = {
+    types = {
+        'user': IRCUser,
+        'server': IRCServer,
+        'service': IRCService,
+    }
+    prefix_order = "qaohv" # Hardcoded into modes :(
+    prefix_symbols = {
         'q': '~',
         'a': '&',
         'o': '@',
@@ -106,22 +112,19 @@ class IRCD(Factory):
         self.channels = DefaultCaseInsensitiveDictionary(self.createChannel)
 
     def createChannel(self, name):
-        return {
+        c = {
             "name": name,
-            "mode": "",
+            "created": time.time(),
             "topic": {
                 "message": None,
                 "author": "",
                 "created": time.time()
             },
-            "password": None,
-            "limit": None,
             "users": CaseInsensitiveDictionary(),
-            "bans": [],
-            "exemptions": [],
-            "invites": []
         }
+        c["mode"] = ChannelModes(self, c, "nt", name)
+        return c
 
-    def broadcast(channel, message):
-        for u in self.channels[channel].users.iterkeys():
+    def broadcast(self, channel, message):
+        for u in self.channels[channel]["users"].iterkeys():
             self.users[u].socket.sendLine(message)
