@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from txircd.utils import CaseInsensitiveDictionary
-import time
+import time, copy
 
 def fix_hostmask(hostmask):
     if ' ' in hostmask:
@@ -54,7 +54,7 @@ class Modes(object):
         
     def combine(self, modes, params, user):
         # State Variables
-        old_modes = self.modes.copy()
+        old_modes = copy.deepcopy(self.modes)
         changes = 0
         adding = True
         changed = ""
