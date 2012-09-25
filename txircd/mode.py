@@ -3,7 +3,6 @@
 def fix_hostmask(hostmask):
     if ' ' in hostmask:
         hostmask = hostmask[:hostmask.find(' ')]
-        # If we ever add a list mode that doesn't work on hostmasks, move this check to inside the +beI checks
     if '!' not in hostmask:
         if '@' in hostmask:
             hostmask = '*!' + hostmask

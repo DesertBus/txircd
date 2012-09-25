@@ -42,7 +42,7 @@ class IRCUser(object):
         self.ircd.users[self.nickname] = self
         
         chanmodes = ChannelModes.bool_modes + ChannelModes.string_modes + ChannelModes.hostmask_modes + self.ircd.prefix_order
-        chanmodes2 = ChannelModes.bool_modes + "," + ChannelModes.string_modes + "," + ChannelModes.hostmask_modes
+        chanmodes2 = ChannelModes.hostmask_modes + ",," + ChannelModes.bool_modes + "," + ChannelModes.string_modes
         self.socket.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.nickname, self.nickname, self.username, self.hostname), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.nickname, self.ircd.name, self.ircd.version), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.nickname, self.ircd.created,), prefix=self.socket.hostname)
