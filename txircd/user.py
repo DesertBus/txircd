@@ -176,8 +176,8 @@ class IRCUser(object):
                 self.ircd.channels[c]["users"][newnick] = self
                 # Transfer modes
                 mode = self.status(c)
-                self.ircd.channels[c]["mode"].combine("+"+mode,[newnick for _ in len(mode)],oldnick)
-                self.ircd.channels[c]["mode"].combine("-"+mode,[oldnick for _ in len(mode)],oldnick)
+                self.ircd.channels[c]["mode"].combine("+"+mode,[newnick for _ in mode],oldnick)
+                self.ircd.channels[c]["mode"].combine("-"+mode,[oldnick for _ in mode],oldnick)
                 # Add channel members to message queue
                 for u in self.ircd.channels[c]["users"].iterkeys():
                     tomsg.add(u)
