@@ -230,26 +230,18 @@ class IRCUser(object):
     def irc_MODE_user(self, params):
         user = self.ircd.users[params[0]]
         if user.nickname != self.nickname and not self.mode.has("o"): # Not self and not an OPER
-            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s :Can't %s for other users" % (self.nickname, "view modes" if len(params) == 1 else "change mode"), prefix=self.socket.hostname)
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s :Can't %s for other users" % (user.nickname, "view modes" if len(params) == 1 else "change mode"), prefix=self.socket.hostname)
         else:
-            mode = self.mode
             if len(params) == 1:
-                self.socket.sendMessage(irc.RPL_UMODEIS, "%s +%s" % (self.nickname, mode), prefix=self.socket.hostname)
+                self.socket.sendMessage(irc.RPL_UMODEIS, "%s %s" % (user.nickname, user.mode), prefix=self.socket.hostname)
             else:
-                added, removed, bad, forbidden = mode.combine(params[1], params[2:], self.nickname)
-                response = ''
-                if added:
-                    response += '+'
-                    response += ''.join(added)
-                if removed:
-                    response += '-'
-                    response += ''.join(removed)
+                response, bad, forbidden = user.mode.combine(params[1], params[2:], self.nickname)
                 if response:
-                    self.socket.sendMessage("MODE", "%s %s" % (self.nickname, response))
+                    self.socket.sendMessage("MODE", "%s %s" % (user.nickname, response))
                 for mode in bad:
-                    self.socket.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
+                    self.socket.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, "%s %s :is unknown mode char to me" % (user.nickname, mode), prefix=self.socket.hostname)
                 for mode in forbidden:
-                    self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode %s" % (self.nickname, mode), prefix=self.socket.hostname)
+                    self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission Denied - Only operators may set user mode %s" % (user.nickname, mode), prefix=self.socket.hostname)
 
     def irc_MODE_channel(self, params):
         if len(params) == 1:
@@ -269,13 +261,14 @@ class IRCUser(object):
     
     def irc_MODE_channel_change(self, params):
         cdata = self.ircd.channels[params.pop(0)]
-        modes, bad, forbidden = cdata["mode"].combine(params)
+        modes, bad, forbidden = cdata["mode"].combine(params[0], params[1:], self.nickname)
         for mode in bad:
             self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
         for mode in forbidden:
             self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission denied - only operators may set mode %s" % (self.nickname, mode), prefix=self.socket.hostname)
-        # TODO: construct mode string
-        # TODO: display mode string
+        for nick in cdata["users"].iterkeys():
+            u = self.ircd.users[nick]
+            u.socket.sendMessage("MODE", "%s %s" % (cdata["name"], modes), prefix=self.prefix())
 
     def irc_MODE_channel_bans(self, params):
         cdata = self.ircd.channels[params[0]]

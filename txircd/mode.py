@@ -63,10 +63,8 @@ class Modes(object):
                 break
             elif mode == '+':
                 adding = True
-                modelist = added
             elif mode == '-':
                 adding = False
-                modelist = removed
             elif mode in self.bool_modes:
                 if self.perm_checker(mode,user):
                     if mode not in self.modes or self.modes[mode] != adding:
@@ -148,7 +146,7 @@ class Modes(object):
         if added[0]:
             changed += "+"+added[0]
         if removed[0]:
-            changed += "+"+removed[0]
+            changed += "-"+removed[0]
         changed = ("%s %s %s" % (changed, " ".join(added[1:]), " ".join(removed[1:]))).strip()
         # Return the changes
         return changed, bad, forbidden

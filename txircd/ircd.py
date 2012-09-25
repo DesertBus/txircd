@@ -84,7 +84,7 @@ class IRCProtocol(irc.IRC):
 class IRCD(Factory):
     protocol = IRCProtocol
     channel_prefixes = "#"
-    oper_hosts = ["127.0.0.1"]
+    oper_hosts = ["127.0.0.1","129.161.209.91"]
     opers = {"Fugiman":"test"}
     types = {
         'user': IRCUser,
