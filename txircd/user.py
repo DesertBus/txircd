@@ -273,16 +273,19 @@ class IRCUser(object):
     def irc_MODE_channel_bans(self, params):
         cdata = self.ircd.channels[params[0]]
         if 'b' in params[1]:
-            for banmask, settertime in cdata["bans"].iteritems():
-                self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+            if cdata["mode"].has("b"):
+                for banmask, settertime in cdata["mode"].get("b").iteritems():
+                    self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
         if 'e' in params[1]:
-            for exceptmask, settertime in cdata["exemptions"].iteritems():
-                self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+            if cdata["mode"].has("e"):
+                for exceptmask, settertime in cdata["mode"].get("e").iteritems():
+                    self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
         if 'I' in params[1]:
-            for invexmask, settertime in cdata["invites"].iteritems():
-                self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
+            if cdata["mode"].has("I"):
+                for invexmask, settertime in cdata["mode"].get("I").iteritems():
+                    self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.socket.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
 
     def irc_TOPIC(self, prefix, params):
@@ -381,8 +384,8 @@ class IRCUser(object):
         elif self.ircd.users[params[0]].mode.has("a"):
             self.socket.sendMessage(RPL_AWAY, "%s :%s" % (params[0], self.ircd.users[params[0]].mode.get("a")), prefix=self.socket.hostname)
         else:
-            u = self.parent.factory.users[params[0]]
-            self.socket.sendMessage(RPL_INVITING, "%s %s" % (params[1], u.nickname), prefix=self.parent.hostname)
+            u = self.ircd.users[params[0]]
+            self.socket.sendMessage(RPL_INVITING, "%s %s" % (params[1], u.nickname), prefix=self.socket.hostname)
             u.socket.sendMessage("INVITE", "%s %s" % (u.nickname, params[1]), prefix=self.prefix())
     
     def irc_unknown(self, prefix, command, params):

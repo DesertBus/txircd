@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import time
+
 def fix_hostmask(hostmask):
     if ' ' in hostmask:
         hostmask = hostmask[:hostmask.find(' ')]
