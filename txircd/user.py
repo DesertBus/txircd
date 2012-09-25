@@ -57,46 +57,55 @@ class IRCUser(object):
         return "%s!%s@%s" % (self.nickname, self.username, self.hostname)
     
     def accessLevel(self, channel):
-        if channel not in self.channels or channel not in self.ircd.channels or not self.ircd.channels[channel]["users"][self.nickname]:
+        if channel not in self.channels or channel not in self.ircd.channels or self.nickname not in self.ircd.channels[channel]["users"]:
             return 0
-        try:
-            return len(self.ircd.prefix_order) - self.ircd.prefix_order.index(self.ircd.channels[channel]["users"][self.nickname][0])
-        except:
-            return 0
+        modes = self.ircd.channels[channel]["mode"]
+        max = len(self.ircd.prefix_order)
+        for level, mode in enumerate(self.ircd.prefix_order):
+            if not modes.has(mode):
+                continue
+            if self.nickname in modes.get(mode):
+                return max - level
+        return 0
     
     def hasAccess(self, channel, level):
-        if channel not in self.channels or channel not in self.ircd.channels:
+        if channel not in self.channels or channel not in self.ircd.channels or level not in self.ircd.prefix_order:
             return None
-        if not self.ircd.channels[channel]["users"][self.nickname]:
+        if self.nickname not in self.ircd.channels[channel]["users"]:
             return False
-        try:
-            return self.ircd.prefix_order.index(self.ircd.channels[channel]["users"][self.nickname][0]) <= self.ircd.prefix_order.index(level)
-        except:
-            return None
+        access = len(self.ircd.prefix_order) - self.ircd.prefix_order.index(level)
+        return self.accessLevel(channel) >= access
     
-    def statusSort(self, status):
-        s = ""
-        for m in self.ircd.prefix_order:
-            if m in status:
-                s += m
-        return s
+    def status(self, channel):
+        if channel not in self.channels or channel not in self.ircd.channels or self.nickname not in self.ircd.channels[channel]["users"]:
+            return ""
+        status = ""
+        modes = self.ircd.channels[channel]["mode"]
+        for mode in self.ircd.prefix_order:
+            if not modes.has(mode):
+                continue
+            if self.nickname in modes.get(mode):
+                status += mode
+        return status
     
     def report_names(self, channel):
         cdata = self.ircd.channels[channel]
         userlist = []
         if self.cap["multi-prefix"]:
-            for user, ranks in cdata["users"].iteritems():
+            for user in cdata["users"].itervalues():
+                ranks = user.status(channel)
                 name = ''
                 for p in ranks:
                     name += self.ircd.PREFIX_SYMBOLS[p]
-                name += self.ircd.users[user].nickname
+                name += user.nickname
                 userlist.append(name)
         else:
-            for user, ranks in cdata["users"].iteritems():
+            for user in cdata["users"].itervalues():
+                ranks = user.status(channel)
                 if ranks:
-                    userlist.append(self.ircd.prefix_symbols[ranks[0]] + self.ircd.users[user].nickname)
+                    userlist.append(self.ircd.prefix_symbols[ranks[0]] + user.nickname)
                 else:
-                    userlist.append(self.ircd.users[user].nickname)
+                    userlist.append(suser.nickname)
         self.socket.names(self.nickname, channel, userlist)
     
     def join(self, channel, key):
@@ -106,11 +115,10 @@ class IRCUser(object):
         self.channels.append(channel)
         cdata = self.ircd.channels[channel]
         if not cdata["users"]:
-            cdata["users"][self.nickname] = "o"
-        else:
-            cdata["users"][self.nickname] = ""
-        for u in cdata["users"].iterkeys():
-            self.ircd.users[u].socket.join(self.prefix(), channel)
+            cdata["mode"].combine("+q",[self.nickname],self.nickname) # Set first user as founder
+        cdata["users"][self.nickname] = self
+        for u in cdata["users"].itervalues():
+            u.socket.join(self.prefix(), channel)
         self.socket.topic(self.nickname, channel, cdata["topic"]["message"])
         if cdata["topic"]["message"] is not None:
             self.socket.topicAuthor(self.nickname, channel, cdata["topic"]["author"], cdata["topic"]["created"])
@@ -119,8 +127,8 @@ class IRCUser(object):
     def part(self, channel, reason = None):
         self.channels.remove(channel)
         cdata = self.ircd.channels[channel]
-        for u in cdata["users"].iterkeys():
-            self.ircd.users[u].socket.part(self.prefix(), channel, reason)
+        for u in cdata["users"].itervalues():
+            u.socket.part(self.prefix(), channel, reason)
         del cdata["users"][self.nickname]
         if not cdata["users"]:
             del self.ircd.channels[channel]
@@ -132,8 +140,8 @@ class IRCUser(object):
         if not cdata["users"]:
             del self.ircd.channels[channel]
         else:
-            for u in cdata["users"].iterkeys():
-                self.ircd.users[u].socket.sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
+            for u in cdata["users"].itervalues():
+                u.socket.sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
     
     #======================
     #== Protocol Methods ==
@@ -163,9 +171,14 @@ class IRCUser(object):
             tomsg = set() # Ensure users are only messaged once
             tomsg.add(irc_lower(newnick))
             for c in self.channels:
-                mode = self.ircd.channels[c]["users"][oldnick]
+                # Change reference in users map
                 del self.ircd.channels[c]["users"][oldnick]
-                self.ircd.channels[c]["users"][newnick] = mode
+                self.ircd.channels[c]["users"][newnick] = self
+                # Transfer modes
+                mode = self.status(c)
+                self.ircd.channels[c]["mode"].combine("+"+mode,[newnick for _ in len(mode)],oldnick)
+                self.ircd.channels[c]["mode"].combine("-"+mode,[oldnick for _ in len(mode)],oldnick)
+                # Add channel members to message queue
                 for u in self.ircd.channels[c]["users"].iterkeys():
                     tomsg.add(u)
             for u in tomsg:
@@ -248,7 +261,7 @@ class IRCUser(object):
             self.irc_MODE_channel_show(params)
         elif len(params) == 2 and ('b' in params[1] or 'e' in params[1] or 'I' in params[1]):
             self.irc_MODE_channel_bans(params)
-        elif self.hasAccess(params[0], "h"):
+        elif self.hasAccess(params[0], "h") or self.mode.has("o"):
             self.irc_MODE_channel_change(params)
         else:
             self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must have channel halfop access or above to set channel modes" % (self.nickname, params[0]), prefix=self.socket.hostname)
@@ -266,8 +279,7 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_UNKNOWNMODE, "%s %s :is unknown mode char to me" % (self.nickname, mode), prefix=self.socket.hostname)
         for mode in forbidden:
             self.socket.sendMessage(irc.ERR_NOPRIVILEGES, "%s :Permission denied - only operators may set mode %s" % (self.nickname, mode), prefix=self.socket.hostname)
-        for nick in cdata["users"].iterkeys():
-            u = self.ircd.users[nick]
+        for u in cdata["users"].itervalues():
             u.socket.sendMessage("MODE", "%s %s" % (cdata["name"], modes), prefix=self.prefix())
 
     def irc_MODE_channel_bans(self, params):
@@ -310,8 +322,8 @@ class IRCUser(object):
                     "author": self.nickname,
                     "created": time.time()
                 }
-                for u in cdata["users"].iterkeys():
-                    self.ircd.users[u].socket.topic(self.ircd.users[u].nickname, cdata["name"], params[1], self.prefix())
+                for u in cdata["users"].itervalues():
+                    u.socket.topic(u.nickname, cdata["name"], params[1], self.prefix())
             else:
                 self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to change the topic on this channel" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
 
@@ -330,9 +342,9 @@ class IRCUser(object):
             c = self.ircd.channels[target]
             # TODO: check for +m and status
             # TODO: check for +n
-            for u in c["users"].iterkeys():
-                if self.ircd.users[u].nickname is not self.nickname:
-                    self.ircd.users[u].socket.privmsg(self.prefix(), c["name"], message)
+            for u in c["users"].itervalues():
+                if u.nickname is not self.nickname:
+                    u.socket.privmsg(self.prefix(), c["name"], message)
     
     def irc_NOTICE(self, prefix, params):
         if len(params) < 2:
@@ -346,9 +358,9 @@ class IRCUser(object):
             c = self.ircd.channels[target]
             # TODO: check for +m and status
             # TODO: check for +n
-            for u in c["users"].iterkeys():
-                if self.ircd.users[u].nickname is not self.nickname:
-                    self.ircd.users[u].socket.notice(self.prefix(), c["name"], message)
+            for u in c["users"].itervalues():
+                if u.nickname is not self.nickname:
+                    u.socket.notice(self.prefix(), c["name"], message)
     
     def irc_NAMES(self, prefix, params):
         #params[0] = channel list, params[1] = target server. We ignore the target

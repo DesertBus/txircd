@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from txircd.utils import CaseInsensitiveDictionary
 import time
 
 def fix_hostmask(hostmask):
@@ -88,7 +89,7 @@ class Modes(object):
             elif mode in self.list_modes:
                 if self.perm_checker(mode,user):
                     if mode not in self.modes:
-                        self.modes[mode] = {}
+                        self.modes[mode] = CaseInsensitiveDictionary()
                     param = params.pop(0)
                     if mode in self.hostmask_modes:
                         param = fix_hostmask(param) # Fix hostmask if it needs fixing
