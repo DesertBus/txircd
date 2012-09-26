@@ -360,8 +360,8 @@ class IRCUser(object):
             del self.ircd.channels[params[0]] # destroy the empty channel
         else:
             for rank in self.ircd.prefix_order:
-                if self.nickname in cdata["mode"].get(rank):
-                    cdata["mode"].combine("-%s" % rank, [self.nickname], self.nickname)
+                if udata.nickname in cdata["mode"].get(rank):
+                    cdata["mode"].combine("-%s" % rank, [udata.nickname], self.nickname)
 
     def irc_WHO(self, prefix, params):
         pass
