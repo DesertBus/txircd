@@ -115,9 +115,12 @@ class IRCUser(object):
         if cmodes.has('k') and cmodes.get('k') != key:
             self.socket.sendMessage(irc.ERR_BADCHANNELKEY, "%s %s :Cannot join channel (Incorrect channel key)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
-        if cmodes.has('l') and cmodes.get('l') <= len(cdata["users"]):
-            self.socket.sendMessage(irc.ERR_CHANNELISFULL, "%s %s :Cannot join channel (Channel is full)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
-            return
+        try:
+            if cmodes.has('l') and int(cmodes.get('l')) <= len(cdata["users"]):
+                self.socket.sendMessage(irc.ERR_CHANNELISFULL, "%s %s :Cannot join channel (Channel is full)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+                return
+        except: # If the conversion to int fails, it wasn't a number for some reason
+            pass
         if cmodes.has('i') and channel not in self.invites:
             # TODO: check for match in +I
             self.socket.sendMessage(irc.ERR_INVITEONLYCHAN, "%s %s :Cannot join channel (Invite only)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
