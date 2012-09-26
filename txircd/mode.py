@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
+from txircd.utils import CaseInsensitiveDictionary
+import time, copy
+
 def fix_hostmask(hostmask):
     if ' ' in hostmask:
         hostmask = hostmask[:hostmask.find(' ')]
@@ -51,7 +54,7 @@ class Modes(object):
         
     def combine(self, modes, params, user):
         # State Variables
-        old_modes = self.modes.copy()
+        old_modes = copy.deepcopy(self.modes)
         changes = 0
         adding = True
         changed = ""
@@ -63,10 +66,8 @@ class Modes(object):
                 break
             elif mode == '+':
                 adding = True
-                modelist = added
             elif mode == '-':
                 adding = False
-                modelist = removed
             elif mode in self.bool_modes:
                 if self.perm_checker(mode,user):
                     if mode not in self.modes or self.modes[mode] != adding:
@@ -88,7 +89,7 @@ class Modes(object):
             elif mode in self.list_modes:
                 if self.perm_checker(mode,user):
                     if mode not in self.modes:
-                        self.modes[mode] = {}
+                        self.modes[mode] = CaseInsensitiveDictionary()
                     param = params.pop(0)
                     if mode in self.hostmask_modes:
                         param = fix_hostmask(param) # Fix hostmask if it needs fixing
@@ -148,7 +149,7 @@ class Modes(object):
         if added[0]:
             changed += "+"+added[0]
         if removed[0]:
-            changed += "+"+removed[0]
+            changed += "-"+removed[0]
         changed = ("%s %s %s" % (changed, " ".join(added[1:]), " ".join(removed[1:]))).strip()
         # Return the changes
         return changed, bad, forbidden
