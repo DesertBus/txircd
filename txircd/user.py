@@ -349,7 +349,7 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_USERNOTINCHANNEL, "%s %s %s :They are not on that channel" (self.nickname, params[1], cdata["name"]), prefix=self.socket.hostname)
             return
         udata = cdata["users"][params[1]]
-        if not self.hasAccess(params[0], "h") and not self.hasAccess(params[0], self.ircd.prefix_order[len(self.ircd.prefix_order) - udata.accessLevel(params[0])]) and not self.mode.has("o"):
+        if (not self.hasAccess(params[0], "h") or not self.hasAccess(params[0], self.ircd.prefix_order[len(self.ircd.prefix_order) - udata.accessLevel(params[0])])) and not self.mode.has("o"):
             self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must be a channel half-operator" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
         for u in cdata["users"].itervalues():
