@@ -19,7 +19,6 @@ class Modes(object):
     bool_modes = ""
     string_modes = ""
     list_modes = ""
-    hostmask_modes = "" # Subset of list modes to run fix_hostmask on
     
     def __init__(self, ircd, parent, default_modes = None, user = None):
         self.modes = {}
@@ -43,8 +42,11 @@ class Modes(object):
     def allowed(self):
         return self.bool_modes + self.string_modes + self.list_modes
     
-    def perm_checker(self, mode, user):
+    def perm_checker(self, adding, mode, user, param = None):
         return True
+    
+    def prep_param(self, mode, param):
+        return param
     
     def has(self, mode):
         return mode in self.modes and self.modes[mode]
@@ -69,30 +71,28 @@ class Modes(object):
             elif mode == '-':
                 adding = False
             elif mode in self.bool_modes:
-                if self.perm_checker(mode,user):
+                if self.perm_checker(adding,mode,user):
                     if mode not in self.modes or self.modes[mode] != adding:
                         changes += 1
                         self.modes[mode] = adding
                 else:
                     forbidden.add(mode)
             elif mode in self.string_modes:
-                if self.perm_checker(mode,user):
-                    if adding:
-                        param = params.pop(0)
-                    else:
-                        param = False
+                if adding:
+                    param = self.prep_param(mode, params.pop(0))
+                else:
+                    param = False
+                if self.perm_checker(adding,mode,user,param):
                     if mode not in self.modes or self.modes[mode] != param:
                         changes += 1
                         self.modes[mode] = param
                 else:
                     forbidden.add(mode)
             elif mode in self.list_modes:
-                if self.perm_checker(mode,user):
+                param = self.prep_param(mode, params.pop(0))
+                if self.perm_checker(adding,mode,user,param):
                     if mode not in self.modes:
                         self.modes[mode] = CaseInsensitiveDictionary()
-                    param = params.pop(0)
-                    if mode in self.hostmask_modes:
-                        param = fix_hostmask(param) # Fix hostmask if it needs fixing
                     if adding:
                         if param not in self.modes[mode]:
                             changes += 1
@@ -150,7 +150,10 @@ class Modes(object):
             changed += "+"+added[0]
         if removed[0]:
             changed += "-"+removed[0]
-        changed = ("%s %s %s" % (changed, " ".join(added[1:]), " ".join(removed[1:]))).strip()
+        if added[1:]:
+            changed += " " + " ".join(added[1:])
+        if removed[1:]:
+            changed += " " + " ".join(removed[1:])
         # Return the changes
         return changed, bad, forbidden
 
@@ -158,16 +161,52 @@ class UserModes(Modes):
     bool_modes = "iorsw" # http://tools.ietf.org/html/rfc2812#section-3.1.5
     string_modes = "a"
     list_modes = ""
-    hostmask_modes = ""
     
-    def perm_checker(self, mode, user):
-        return mode != 'o' and mode != 'a' # r is handled by rejecting the mode command entirely
+    def __str__(self):
+        return Modes.__str__(self).split(" ")[0]
+    
+    def perm_checker(self, adding, mode, user, param = None):
+        if mode == "a":
+            return False
+        if mode == "o" and adding:
+            return False
+        if mode == "r" and not adding:
+            return False
+        return True
 
 class ChannelModes(Modes):
     bool_modes = "imnpst" # http://tools.ietf.org/html/rfc2811#section-4 
     string_modes = "kl"
     list_modes = "aqohv"+"beI"
-    hostmask_modes = "beI"
     
-    def perm_checker(self, mode, user):
-        return True # What do
+    def perm_checker(self, adding, mode, user, param = None):
+        # Always allow the channel to set modes.
+        # This means the server can set modes without fear of rejection
+        if user == self.parent["name"]:
+            return True
+        if mode in "aqohv":
+            setter = self.ircd.users[user]
+            getter = self.ircd.users[param]
+            if param not in self.parent["users"]:
+                return False # Can't set modes on somebody not in the channel
+            if user not in self.parent["users"] and not setter.mode.has("o"):
+                return False # Only opers can set modes without being in the channel
+            if not adding and getter.mode.has("o"):
+                return False # Can't demote opers, not that it matters
+            if adding and not setter.hasAccess(self.parent["name"], mode):
+                return False # Need the access to set the access
+            if not adding and not setter.accessLevel(self.parent["name"]) > getter.accessLevel(self.parent["name"]):
+                return False # Can only demote those below you
+        if mode == "l":
+            try:
+                int(param)
+            except:
+                return False
+        return True
+    
+    def prep_param(self, mode, param):
+        if mode in "beI":
+            return fix_hostmask(param)
+        if mode == "l":
+            return int(param)
+        return param
