@@ -107,11 +107,18 @@ class IRCUser(object):
         self.socket.names(self.nickname, channel, userlist)
     
     def join(self, channel, key):
-        #TODO: Validate key
         if channel[0] not in self.ircd.channel_prefixes:
             return self.socket.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.socket.hostname)
-        self.channels.append(channel)
         cdata = self.ircd.channels[channel]
+        cmodes = cdata["mode"]
+        if cmodes.has('k') and cmodes.get('k') != key:
+            self.socket.sendMessage(irc.ERR_BADCHANNELKEY, "%s %s :Cannot join channel (Incorrect channel key)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+            return
+        if cmodes.has('l') and cmodes.get('l') <= len(cdata["users"]):
+            self.socket.sendMessage(irc.err_CHANNELISFULL, "%s %s :Cannot join channel (Channel is full)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+            return
+        # TODO: check for +i and invite status
+        self.channels.append(channel)
         if not cdata["users"]:
             cdata["mode"].combine("+q",[self.nickname],self.nickname) # Set first user as founder
         cdata["users"][self.nickname] = self
