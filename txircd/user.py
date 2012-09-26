@@ -132,7 +132,7 @@ class IRCUser(object):
             del self.ircd.channels[channel]
         else:
             for rank in self.ircd.prefix_order:
-                if self.nickname in cdata["mode"].get(rank):
+                if cdata["mode"].has(rank) and self.nickname in cdata["mode"].get(rank):
                     cdata["mode"].combine("-%s" % rank, [self.nickname], self.nickname)
     
     def quit(self, channel, reason = None):
@@ -348,10 +348,10 @@ class IRCUser(object):
         if params[1] not in cdata["users"]:
             self.socket.sendMessage(irc.ERR_USERNOTINCHANNEL, "%s %s %s :They are not on that channel" (self.nickname, params[1], cdata["name"]), prefix=self.socket.hostname)
             return
-        if not self.hasAccess(params[0], "h") and not self.mode.has("o"):
+        udata = cdata["users"][params[1]]
+        if (not self.hasAccess(params[0], "h") or not self.hasAccess(params[0], self.ircd.prefix_order[len(self.ircd.prefix_order) - udata.accessLevel(params[0])])) and not self.mode.has("o"):
             self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must be a channel half-operator" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
-        udata = cdata["users"][params[1]]
         for u in cdata["users"].itervalues():
             u.socket.sendMessage("KICK", "%s %s :%s" % (cdata["name"], udata.nickname, params[2]), prefix=self.prefix())
         del cdata["users"][udata.nickname] # remove channel user entry
@@ -360,7 +360,7 @@ class IRCUser(object):
             del self.ircd.channels[params[0]] # destroy the empty channel
         else:
             for rank in self.ircd.prefix_order:
-                if udata.nickname in cdata["mode"].get(rank):
+                if cdata["mode"].has(rank) and udata.nickname in cdata["mode"].get(rank):
                     cdata["mode"].combine("-%s" % rank, [udata.nickname], self.nickname)
 
     def irc_WHO(self, prefix, params):
