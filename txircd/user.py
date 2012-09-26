@@ -36,6 +36,7 @@ class IRCUser(object):
         self.lastactivity = time.time()
         self.mode = UserModes(self.ircd, self, mode, self.nickname)
         self.channels = []
+        self.invites = []
         self.service = False
         
         self.ircd.users[self.nickname] = self
@@ -115,11 +116,16 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_BADCHANNELKEY, "%s %s :Cannot join channel (Incorrect channel key)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
         if cmodes.has('l') and cmodes.get('l') <= len(cdata["users"]):
-            self.socket.sendMessage(irc.err_CHANNELISFULL, "%s %s :Cannot join channel (Channel is full)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+            self.socket.sendMessage(irc.ERR_CHANNELISFULL, "%s %s :Cannot join channel (Channel is full)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
-        # TODO: check for +i and invite status and +I
+        if cmodes.has('i') and channel not in self.invites:
+            # TODO: check for match in +I
+            self.socket.sendMessage(irc.ERR_INVITEONLYCHAN, "%s %s :Cannot join channel (Invite only)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+            return
         # TODO: check for bans/exceptions
         self.channels.append(channel)
+        if channel in self.invites:
+            self.invites.remove(channel)
         if not cdata["users"]:
             cdata["mode"].combine("+q",[self.nickname],self.nickname) # Set first user as founder
         cdata["users"][self.nickname] = self
@@ -454,6 +460,7 @@ class IRCUser(object):
             u = self.ircd.users[params[0]]
             self.socket.sendMessage(RPL_INVITING, "%s %s" % (params[1], u.nickname), prefix=self.socket.hostname)
             u.socket.sendMessage("INVITE", "%s %s" % (u.nickname, params[1]), prefix=self.prefix())
+            u.invites.append(params[1])
     
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.socket.hostname)
