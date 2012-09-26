@@ -324,6 +324,28 @@ class IRCUser(object):
                     u.socket.topic(u.nickname, cdata["name"], params[1], self.prefix())
             else:
                 self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to change the topic on this channel" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+    
+    def irc_KICK(self, prefix, params):
+        if not params or len(params) < 3:
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s KICK :Not enough parameters" % self.nickname, prefix=self.socket.hostname)
+            return
+        if params[0] not in self.ircd.channels:
+            self.socket.sendMessage(irc.ERR_NOSUCHCHANNEL, "%s %s :No such channel" % (self.nickname, params[0]), prefix=self.socket.hostname)
+            return
+        if params[1] not in self.ircd.users:
+            self.socket.sendMessage(irc.ERR_NOSUCHNICK, "%s %s :No such nick" % (self.nickname, params[1]), prefix=self.socket.hostname)
+            return
+        cdata = self.ircd.channels[params[0]]
+        if params[1] not in cdata["users"]:
+            self.socket.sendMessage(irc.ERR_USERNOTINCHANNEL, "%s %s %s :They are not on that channel" (self.nickname, params[1], cdata["name"]), prefix=self.socket.hostname)
+            return
+        udata = cdata["users"][params[1]]
+        for u in cdata["users"].itervalues():
+            u.socket.sendMessage("KICK", "%s %s :%s" % (cdata["name"], udata.nickname, params[2]), prefix=self.prefix())
+        del cdata["users"][udata.nickname] # remove channel user entry
+        udata.channels.remove(cdata["name"])
+        if not cdata["users"]:
+            del self.ircd.channels[params[0]] # destroy the empty channel
 
     def irc_WHO(self, prefix, params):
         pass
