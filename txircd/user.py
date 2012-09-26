@@ -390,10 +390,10 @@ class IRCUser(object):
             u.socket.privmsg(self.prefix(), u.nickname, message)
         elif target in self.ircd.channels:
             c = self.ircd.channels[target]
-            if c.has('n') and self.nickname not in c["users"]:
+            if c["mode"].has('n') and self.nickname not in c["users"]:
                 self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, "%s %s :Cannot send to channel (no external messages)" % (self.nickname, c["name"]), prefix=self.socket.hostname)
                 return
-            if c.has('m') and not self.hasAccess(c["name"], 'v'):
+            if c["mode"].has('m') and not self.hasAccess(c["name"], 'v'):
                 self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, "%s %s :Cannot send to channel (+m)" % (self.nickname, c["name"]), prefix=self.socket.hostname)
                 return
             for u in c["users"].itervalues():
@@ -410,10 +410,10 @@ class IRCUser(object):
             u.socket.notice(self.prefix(), u.nickname, message)
         elif target in self.ircd.channels:
             c = self.ircd.channels[target]
-            if c.has('n') and self.nickname not in c["users"]:
+            if c["mode"].has('n') and self.nickname not in c["users"]:
                 self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, "%s %s :Cannot send to channel (no external messages)" % (self.nickname, c["name"]), prefix=self.socket.hostname)
                 return
-            if c.has('m') and not self.hasAccess(c["name"], 'v'):
+            if c["mode"].has('m') and not self.hasAccess(c["name"], 'v'):
                 self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, "%s %s :Cannot send to channel (+m)" % (self.nickname, c["name"]), prefix=self.socket.hostname)
                 return
             for u in c["users"].itervalues():
