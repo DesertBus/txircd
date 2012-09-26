@@ -83,6 +83,10 @@ class IRCProtocol(irc.IRC):
 
     def irc_QUIT(self, prefix, params):
         self.transport.loseConnection()
+        
+    def connectionLost(self, reason):
+        if self.type:
+            self.type.connectionLost(reason)
 
 class IRCD(Factory):
     protocol = IRCProtocol

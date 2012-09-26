@@ -49,6 +49,9 @@ class IRCUser(object):
         self.socket.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.nickname, self.ircd.name, self.ircd.version, self.mode.allowed(), chanmodes), prefix=self.ircd.hostname) # usermodes & channel modes
         self.socket.sendMessage(irc.RPL_ISUPPORT, "%s CASEMAPPING=rfc1459 CHANMODES=%s CHANTYPES=%s MODES=20 NICKLEN=32 PREFIX=(%s)%s STATUSMSG=%s :are supported by this server" % (self.nickname, chanmodes2, self.ircd.channel_prefixes, self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order]), "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])), prefix=self.ircd.hostname)
     
+    def connectionLost(self, reason):
+        self.irc_QUIT(None,["Client connection lost"])
+    
     #=====================
     #== Utility Methods ==
     #=====================
@@ -214,6 +217,8 @@ class IRCUser(object):
             self.socket.sendMessage(irc.RPL_YOUREOPER, "%s :You are now an IRC operator" % self.nickname, prefix=self.ircd.hostname)
     
     def irc_QUIT(self, prefix, params):
+        if not self.nickname in self.ircd.users:
+            return # Can't quit twice
         reason = params[0] if params else "Client exited"
         for c in self.channels:
             self.quit(c,reason)
