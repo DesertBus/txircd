@@ -8,7 +8,7 @@ from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
-import uuid, time
+import uuid, time, socket
 
 irc.RPL_CREATIONTIME = '329'
 
@@ -76,10 +76,13 @@ class IRCProtocol(irc.IRC):
         self.type = self.factory.types['server'](self, params, self.password)
 
     def irc_PING(self, prefix, params):
-        pass
+        if params:
+            self.sendMessage("PONG", "%s :%s" % (self.factory.hostname, params[0]), prefix=self.factory.hostname)
+        else:
+            self.sendMessage(irc.ERR_NOORIGIN, "%s :No origin specified" % self.nickname, prefix=self.factory.hostname)
 
     def irc_QUIT(self, prefix, params):
-        self.loseConnection()
+        self.transport.loseConnection()
 
 class IRCD(Factory):
     protocol = IRCProtocol
@@ -102,6 +105,7 @@ class IRCD(Factory):
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
         self.name = name
+        self.hostname = socket.getfqdn()
         self.version = "0.1"
         self.created = time.time()
         self.token = uuid.uuid1()
@@ -111,6 +115,11 @@ class IRCD(Factory):
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.createChannel)
 
+    def buildProtocol(self, addr):
+        p = Factory.buildProtocol(self, addr)
+        p.hostname = self.hostname
+        return p
+    
     def createChannel(self, name):
         c = {
             "name": name,
@@ -124,7 +133,3 @@ class IRCD(Factory):
         }
         c["mode"] = ChannelModes(self, c, "nt", name)
         return c
-
-    def broadcast(self, channel, message):
-        for u in self.channels[channel]["users"].iterkeys():
-            self.users[u].socket.sendLine(message)
