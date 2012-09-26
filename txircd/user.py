@@ -340,8 +340,14 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NOSUCHNICK, "%s %s :No such nick" % (self.nickname, params[1]), prefix=self.socket.hostname)
             return
         cdata = self.ircd.channels[params[0]]
+        if self.nickname not in cdata["users"]:
+            self.socket.sendMessage(irc.ERR_NOTONCHANNEL, "%s %s :You're not on that channel!" % (self.nickname, cdata["names"]), prefix=self.socket.hostname)
+            return
         if params[1] not in cdata["users"]:
             self.socket.sendMessage(irc.ERR_USERNOTINCHANNEL, "%s %s %s :They are not on that channel" (self.nickname, params[1], cdata["name"]), prefix=self.socket.hostname)
+            return
+        if not self.hasAccess(params[0], "h") and not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must be a channel half-operator" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
         udata = cdata["users"][params[1]]
         for u in cdata["users"].itervalues():
