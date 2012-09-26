@@ -164,7 +164,7 @@ class UserModes(Modes):
         return mode != 'o' and mode != 'a' # r is handled by rejecting the mode command entirely
 
 class ChannelModes(Modes):
-    bool_modes = "imnst" # http://tools.ietf.org/html/rfc2811#section-4 
+    bool_modes = "imnpst" # http://tools.ietf.org/html/rfc2811#section-4 
     string_modes = "kl"
     list_modes = "aqohv"+"beI"
     hostmask_modes = "beI"
