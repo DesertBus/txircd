@@ -150,7 +150,10 @@ class Modes(object):
             changed += "+"+added[0]
         if removed[0]:
             changed += "-"+removed[0]
-        changed = ("%s %s %s" % (changed, " ".join(added[1:]), " ".join(removed[1:]))).strip()
+        if added[1:]:
+            changed += " " + " ".join(added[1:])
+        if removed[1:]:
+            changed += " " + " ".join(removed[1:])
         # Return the changes
         return changed, bad, forbidden
 
