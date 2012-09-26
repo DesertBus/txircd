@@ -130,6 +130,10 @@ class IRCUser(object):
         del cdata["users"][self.nickname]
         if not cdata["users"]:
             del self.ircd.channels[channel]
+        else:
+            for rank in self.ircd.prefix_order:
+                if self.nickname in cdata["mode"].get(rank):
+                    cdata["mode"].combine("-%s" % rank, [self.nickname], self.nickname)
     
     def quit(self, channel, reason = None):
         self.channels.remove(channel)
@@ -346,6 +350,10 @@ class IRCUser(object):
         udata.channels.remove(cdata["name"])
         if not cdata["users"]:
             del self.ircd.channels[params[0]] # destroy the empty channel
+        else:
+            for rank in self.ircd.prefix_order:
+                if self.nickname in cdata["mode"].get(rank):
+                    cdata["mode"].combine("-%s" % rank, [self.nickname], self.nickname)
 
     def irc_WHO(self, prefix, params):
         pass
