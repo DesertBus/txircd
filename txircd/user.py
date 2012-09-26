@@ -330,9 +330,11 @@ class IRCUser(object):
                 self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You do not have access to change the topic on this channel" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
     
     def irc_KICK(self, prefix, params):
-        if not params or len(params) < 3:
+        if not params or len(params) < 2:
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "%s KICK :Not enough parameters" % self.nickname, prefix=self.socket.hostname)
             return
+        if len(params) == 2:
+            params.append(self.nickname) # default reason used on many IRCds
         if params[0] not in self.ircd.channels:
             self.socket.sendMessage(irc.ERR_NOSUCHCHANNEL, "%s %s :No such channel" % (self.nickname, params[0]), prefix=self.socket.hostname)
             return
