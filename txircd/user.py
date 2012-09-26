@@ -41,8 +41,8 @@ class IRCUser(object):
         
         self.ircd.users[self.nickname] = self
         
-        chanmodes = ChannelModes.bool_modes + ChannelModes.string_modes + ChannelModes.hostmask_modes + self.ircd.prefix_order
-        chanmodes2 = ChannelModes.hostmask_modes + ",," + ChannelModes.string_modes + "," + ChannelModes.bool_modes
+        chanmodes = ChannelModes.bool_modes + ChannelModes.string_modes + ChannelModes.list_modes
+        chanmodes2 = ChannelModes.list_modes.translate(None, self.ircd.prefix_order) + ",," + ChannelModes.string_modes + "," + ChannelModes.bool_modes
         self.socket.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.nickname, self.nickname, self.username, self.hostname), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.nickname, self.ircd.name, self.ircd.version), prefix=self.socket.hostname)
         self.socket.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.nickname, self.ircd.created,), prefix=self.socket.hostname)
@@ -115,12 +115,9 @@ class IRCUser(object):
         if cmodes.has('k') and cmodes.get('k') != key:
             self.socket.sendMessage(irc.ERR_BADCHANNELKEY, "%s %s :Cannot join channel (Incorrect channel key)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
-        try:
-            if cmodes.has('l') and int(cmodes.get('l')) <= len(cdata["users"]):
-                self.socket.sendMessage(irc.ERR_CHANNELISFULL, "%s %s :Cannot join channel (Channel is full)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
-                return
-        except: # If the conversion to int fails, it wasn't a number for some reason
-            pass
+        if cmodes.has('l') and cmodes.get('l') <= len(cdata["users"]):
+            self.socket.sendMessage(irc.ERR_CHANNELISFULL, "%s %s :Cannot join channel (Channel is full)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
+            return
         if cmodes.has('i') and channel not in self.invites:
             # TODO: check for match in +I
             self.socket.sendMessage(irc.ERR_INVITEONLYCHAN, "%s %s :Cannot join channel (Invite only)" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
@@ -130,7 +127,7 @@ class IRCUser(object):
         if channel in self.invites:
             self.invites.remove(channel)
         if not cdata["users"]:
-            cdata["mode"].combine("+q",[self.nickname],self.nickname) # Set first user as founder
+            cdata["mode"].combine("+q",[self.nickname],cdata["name"]) # Set first user as founder
         cdata["users"][self.nickname] = self
         for u in cdata["users"].itervalues():
             u.socket.join(self.prefix(), channel)
@@ -139,28 +136,25 @@ class IRCUser(object):
             self.socket.topicAuthor(self.nickname, channel, cdata["topic"]["author"], cdata["topic"]["created"])
         self.report_names(channel)
     
-    def part(self, channel, reason = None):
-        self.channels.remove(channel)
+    def leave(self, channel):
         cdata = self.ircd.channels[channel]
-        for u in cdata["users"].itervalues():
-            u.socket.part(self.prefix(), channel, reason)
-        del cdata["users"][self.nickname]
+        self.channels.remove(channel)
+        del cdata["users"][self.nickname] # remove channel user entry
         if not cdata["users"]:
-            del self.ircd.channels[channel]
+            del self.ircd.channels[channel] # destroy the empty channel
         else:
-            for rank in self.ircd.prefix_order:
-                if cdata["mode"].has(rank) and self.nickname in cdata["mode"].get(rank):
-                    cdata["mode"].combine("-%s" % rank, [self.nickname], self.nickname)
+            mode = self.status(channel) # Clear modes
+            cdata["mode"].combine("-"+mode,[self.nickname for _ in mode],cdata["name"])
+    
+    def part(self, channel, reason = None):
+        for u in self.ircd.channels[channel]["users"].itervalues():
+            u.socket.part(self.prefix(), channel, reason)
+        self.leave(channel)
     
     def quit(self, channel, reason = None):
-        self.channels.remove(channel)
-        cdata = self.ircd.channels[channel]
-        del cdata["users"][self.nickname]
-        if not cdata["users"]:
-            del self.ircd.channels[channel]
-        else:
-            for u in cdata["users"].itervalues():
-                u.socket.sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
+        for u in self.ircd.channels[channel]["users"].itervalues():
+            u.socket.sendMessage("QUIT", ":%s" % reason, prefix=self.prefix())
+        self.leave(channel)
     
     #======================
     #== Protocol Methods ==
@@ -190,13 +184,14 @@ class IRCUser(object):
             tomsg = set() # Ensure users are only messaged once
             tomsg.add(irc_lower(newnick))
             for c in self.channels:
+                cdata = self.ircd.channels[c]
                 # Change reference in users map
-                del self.ircd.channels[c]["users"][oldnick]
+                del cdata["users"][oldnick]
                 self.ircd.channels[c]["users"][newnick] = self
                 # Transfer modes
                 mode = self.status(c)
-                self.ircd.channels[c]["mode"].combine("+"+mode,[newnick for _ in mode],oldnick)
-                self.ircd.channels[c]["mode"].combine("-"+mode,[oldnick for _ in mode],oldnick)
+                cdata["mode"].combine("+"+mode,[newnick for _ in mode],cdata["name"])
+                cdata["mode"].combine("-"+mode,[oldnick for _ in mode],cdata["name"])
                 # Add channel members to message queue
                 for u in self.ircd.channels[c]["users"].iterkeys():
                     tomsg.add(u)
@@ -367,19 +362,12 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_USERNOTINCHANNEL, "%s %s %s :They are not on that channel" (self.nickname, params[1], cdata["name"]), prefix=self.socket.hostname)
             return
         udata = cdata["users"][params[1]]
-        if (not self.hasAccess(params[0], "h") or not self.hasAccess(params[0], self.ircd.prefix_order[len(self.ircd.prefix_order) - udata.accessLevel(params[0])])) and not self.mode.has("o"):
+        if not self.hasAccess(params[0], "h") or (not self.accessLevel(params[0]) > udata.accessLevel(params[0]) and not self.mode.has("o")):
             self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, "%s %s :You must be a channel half-operator" % (self.nickname, cdata["name"]), prefix=self.socket.hostname)
             return
         for u in cdata["users"].itervalues():
             u.socket.sendMessage("KICK", "%s %s :%s" % (cdata["name"], udata.nickname, params[2]), prefix=self.prefix())
-        del cdata["users"][udata.nickname] # remove channel user entry
-        udata.channels.remove(cdata["name"])
-        if not cdata["users"]:
-            del self.ircd.channels[params[0]] # destroy the empty channel
-        else:
-            for rank in self.ircd.prefix_order:
-                if cdata["mode"].has(rank) and udata.nickname in cdata["mode"].get(rank):
-                    cdata["mode"].combine("-%s" % rank, [udata.nickname], self.nickname)
+        udata.leave(params[0])
 
     def irc_WHO(self, prefix, params):
         pass
