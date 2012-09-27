@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from txircd.utils import CaseInsensitiveDictionary, now
+from txircd.utils import CaseInsensitiveDictionary, now, irc_lower
 import copy, fnmatch
 
 def fix_hostmask(hostmask):

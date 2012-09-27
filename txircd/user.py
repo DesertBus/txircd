@@ -238,6 +238,10 @@ class IRCUser(object):
             self.ircd.users[newnick] = self
             tomsg = set() # Ensure users are only messaged once
             tomsg.add(irc_lower(newnick))
+            # Prefix shenanigans
+            oldprefix = self.prefix()
+            self.nickname = newnick
+            hostmask = irc_lower(self.prefix())
             for c in self.channels.iterkeys():
                 cdata = self.ircd.channels[c]
                 # Change reference in users map
@@ -247,12 +251,23 @@ class IRCUser(object):
                 mode = self.status(c)
                 cdata["mode"].combine("+"+mode,[newnick for _ in mode],cdata["name"])
                 cdata["mode"].combine("-"+mode,[oldnick for _ in mode],cdata["name"])
+                # Update ban/exempt status
+                banned = False
+                exempt = False
+                if cdata["mode"].has('b'):
+                    for pattern in cdata["mode"].get('b').iterkeys():
+                        if fnmatch.fnmatch(hostmask, pattern):
+                            banned = True
+                if cdata["mode"].has('e'):
+                    for pattern in cdata["mode"].get('e').iterkeys():
+                        if fnmatch.fnmatch(hostmask, pattern):
+                            exempt = True
+                self.channels[c] = {"banned":banned,"exempt":exempt}
                 # Add channel members to message queue
                 for u in self.ircd.channels[c]["users"].iterkeys():
                     tomsg.add(u)
             for u in tomsg:
-                self.ircd.users[u].socket.sendMessage("NICK", newnick, prefix=self.prefix())
-            self.nickname = newnick
+                self.ircd.users[u].socket.sendMessage("NICK", newnick, prefix=oldprefix)
     
     def irc_USER(self, prefix, params):
         self.socket.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)", prefix=self.ircd.hostname)
