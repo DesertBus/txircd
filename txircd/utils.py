@@ -1,13 +1,21 @@
 # -*- coding: utf-8 -*-
 from collections import MutableMapping
 from twisted.internet import reactor
-import re
+import re, datetime
 
 VALID_USERNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{3,31}$") # 4-32 char nicks
 
 def irc_lower(str):
     return str.lower().replace('[','{').replace(']','}').replace('/','|').replace('~','^')
 
+def now():
+    return datetime.datetime.utcnow().replace(microsecond=0)
+
+UNIX_EPOCH = datetime.datetime(1970, 1, 1, 0, 0)
+def epoch(utc_datetime):
+  delta = utc_datetime - UNIX_EPOCH
+  return delta.total_seconds()
+  
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
         self._data = {}
