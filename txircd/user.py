@@ -3,8 +3,20 @@
 from twisted.words.protocols import irc
 from twisted.internet.task import Cooperator
 from txircd.mode import UserModes, ChannelModes
-from txircd.utils import irc_lower, VALID_USERNAME
-import time
+from txircd.utils import irc_lower, VALID_USERNAME, now, epoch
+
+def chunk_motd(motd, chunk_size):
+    chunks = []
+    motd += "\n"
+    while motd:
+        index = motd.find("\n",0,chunk_size)
+        if index < 0:
+            index = motd.rfind(" ",0,chunk_size)
+        if index < 0:
+            index = chunk_size
+        chunks.append(motd[:index])
+        motd = motd[index+1:]
+    return chunks
 
 class IRCUser(object):
     cap = {
@@ -32,8 +44,8 @@ class IRCUser(object):
         self.realname = realname
         self.hostname = parent.transport.getHandle().getpeername()[0]
         self.server = parent.factory.name
-        self.signon = time.time()
-        self.lastactivity = time.time()
+        self.signon = now()
+        self.lastactivity = now()
         self.mode = UserModes(self.ircd, self, mode, self.nickname)
         self.channels = []
         self.invites = []
@@ -45,9 +57,10 @@ class IRCUser(object):
         chanmodes2 = ChannelModes.list_modes.translate(None, self.ircd.prefix_order) + ",," + ChannelModes.string_modes + "," + ChannelModes.bool_modes
         self.socket.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.nickname, self.nickname, self.username, self.hostname), prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_YOURHOST, "%s :Your host is %s, running version %s" % (self.nickname, self.ircd.name, self.ircd.version), prefix=self.ircd.hostname)
-        self.socket.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.nickname, self.ircd.created,), prefix=self.ircd.hostname)
+        self.socket.sendMessage(irc.RPL_CREATED, "%s :This server was created %s" % (self.nickname, self.ircd.created), prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_MYINFO, "%s %s %s %s %s" % (self.nickname, self.ircd.name, self.ircd.version, self.mode.allowed(), chanmodes), prefix=self.ircd.hostname) # usermodes & channel modes
         self.socket.sendMessage(irc.RPL_ISUPPORT, "%s CASEMAPPING=rfc1459 CHANMODES=%s CHANTYPES=%s MODES=20 NICKLEN=32 PREFIX=(%s)%s STATUSMSG=%s :are supported by this server" % (self.nickname, chanmodes2, self.ircd.channel_prefixes, self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order]), "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])), prefix=self.ircd.hostname)
+        self.send_motd()
     
     def connectionLost(self, reason):
         self.irc_QUIT(None,["Client connection lost"])
@@ -89,6 +102,16 @@ class IRCUser(object):
             if self.nickname in modes.get(mode):
                 status += mode
         return status
+    
+    def send_motd(self):
+        if self.ircd.motd:
+            chunks = chunk_motd(self.ircd.motd, self.ircd.motd_length)
+            self.socket.sendMessage(irc.RPL_MOTDSTART, "%s :- %s Message of the day - " % (self.nickname, self.ircd.name), prefix=self.ircd.hostname)
+            for chunk in chunks:
+                self.socket.sendMessage(irc.RPL_MOTD, "%s :- %s" % (self.nickname, chunk), prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_ENDOFMOTD, "%s :End of MOTD command" % self.nickname, prefix=self.ircd.hostname)
+        else:
+            self.socket.sendMessage(irc.ERR_NOMOTD, "%s :MOTD File is missing" % self.nickname, prefix=self.ircd.hostname)
     
     def report_names(self, channel):
         cdata = self.ircd.channels[channel]
@@ -289,7 +312,7 @@ class IRCUser(object):
         cdata = self.ircd.channels[params[0]]
         modeStr = str(cdata["mode"])
         self.socket.sendMessage(irc.RPL_CHANNELMODEIS, "%s %s +%s" % (self.nickname, cdata["name"], modeStr), prefix=self.ircd.hostname)
-        self.socket.sendMessage(irc.RPL_CREATIONTIME, "%s %s %d" % (self.nickname, cdata["name"], cdata["created"]), prefix=self.ircd.hostname)
+        self.socket.sendMessage(irc.RPL_CREATIONTIME, "%s %s %d" % (self.nickname, cdata["name"], epoch(cdata["created"])), prefix=self.ircd.hostname)
     
     def irc_MODE_channel_change(self, params):
         cdata = self.ircd.channels[params.pop(0)]
@@ -307,17 +330,17 @@ class IRCUser(object):
         if 'b' in params[1]:
             if cdata["mode"].has("b"):
                 for banmask, settertime in cdata["mode"].get("b").iteritems():
-                    self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], banmask, settertime[0], settertime[1]), prefix=self.ircd.hostname)
+                    self.socket.sendMessage(irc.RPL_BANLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], banmask, settertime[0], epoch(settertime[1])), prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFBANLIST, "%s %s :End of channel ban list" % (self.nickname, cdata["name"]), prefix=self.ircd.hostname)
         if 'e' in params[1]:
             if cdata["mode"].has("e"):
                 for exceptmask, settertime in cdata["mode"].get("e").iteritems():
-                    self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], exceptmask, settertime[0], settertime[1]), prefix=self.ircd.hostname)
+                    self.socket.sendMessage(irc.RPL_EXCEPTLIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], exceptmask, settertime[0], epoch(settertime[1])), prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFEXCEPTLIST, "%s %s :End of channel exception list" % (self.nickname, cdata["name"]), prefix=self.ircd.hostname)
         if 'I' in params[1]:
             if cdata["mode"].has("I"):
                 for invexmask, settertime in cdata["mode"].get("I").iteritems():
-                    self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], invexmask, settertime[0], settertime[1]), prefix=self.ircd.hostname)
+                    self.socket.sendMessage(irc.RPL_INVITELIST, "%s %s %s %s %d" % (self.nickname, cdata["name"], invexmask, settertime[0], epoch(settertime[1])), prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFINVITELIST, "%s %s :End of channel invite exception list" % (self.nickname, cdata["name"]), prefix=self.ircd.hostname)
 
     def irc_TOPIC(self, prefix, params):
@@ -331,7 +354,7 @@ class IRCUser(object):
         if len(params) == 1:
             self.socket.topic(self.nickname, cdata["name"], cdata["topic"]["message"])
             if cdata["topic"]["message"] is not None:
-                self.socket.topicAuthor(self.nickname, cdata["name"], cdata["topic"]["author"], cdata["topic"]["created"])
+                self.socket.topicAuthor(self.nickname, cdata["name"], cdata["topic"]["author"], epoch(cdata["topic"]["created"]))
         else:
             if self.nickname not in cdata["users"]:
                 self.socket.sendMessage(irc.ERR_NOTONCHANNEL, "%s %s :You're not in that channel" % (self.nickname, cdata["name"]), prefix=self.ircd.hostname)
@@ -340,7 +363,7 @@ class IRCUser(object):
                 cdata["topic"] = {
                     "message": params[1],
                     "author": self.nickname,
-                    "created": time.time()
+                    "created": now()
                 }
                 for u in cdata["users"].itervalues():
                     u.socket.topic(u.nickname, cdata["name"], params[1], self.prefix())
@@ -458,6 +481,9 @@ class IRCUser(object):
             self.socket.sendMessage(irc.RPL_INVITING, "%s %s" % (params[1], u.nickname), prefix=self.ircd.hostname)
             u.socket.sendMessage("INVITE", "%s %s" % (u.nickname, params[1]), prefix=self.prefix())
             u.invites.append(params[1])
+    
+    def irc_MOTD(self, prefix, params):
+        self.send_motd()
     
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, "%s :Unknown command" % command, prefix=self.ircd.hostname)
