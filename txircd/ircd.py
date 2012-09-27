@@ -11,6 +11,7 @@ from txircd.user import IRCUser
 import uuid, socket
 
 irc.RPL_CREATIONTIME = '329'
+irc.RPL_TOPICWHOTIME = '333'
 
 class IRCProtocol(irc.IRC):
     UNREGISTERED_COMMANDS = ['PASS', 'USER', 'SERVICE', 'SERVER', 'NICK', 'PING', 'QUIT']
@@ -135,11 +136,6 @@ class IRCD(Factory):
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.createChannel)
-
-    def buildProtocol(self, addr):
-        p = Factory.buildProtocol(self, addr)
-        p.hostname = self.hostname
-        return p
     
     def createChannel(self, name):
         c = {

@@ -189,14 +189,16 @@ class ChannelModes(Modes):
             getter = self.ircd.users[param]
             if param not in self.parent["users"]:
                 return False # Can't set modes on somebody not in the channel
-            if user not in self.parent["users"] and not setter.mode.has("o"):
-                return False # Only opers can set modes without being in the channel
             if not adding and getter.mode.has("o"):
                 return False # Can't demote opers, not that it matters
-            if adding and not setter.hasAccess(self.parent["name"], mode):
-                return False # Need the access to set the access
-            if not adding and not setter.accessLevel(self.parent["name"]) > getter.accessLevel(self.parent["name"]):
-                return False # Can only demote those below you
+            if not setter.mode.has("o"):
+                # Let OPERs get away with all of this
+                if user not in self.parent["users"]:
+                    return False # Can't set modes without being in the channel
+                if adding and not setter.hasAccess(self.parent["name"], mode):
+                    return False # Need the access to set the access
+                if not adding and not setter.accessLevel(self.parent["name"]) > getter.accessLevel(self.parent["name"]):
+                    return False # Can only demote those below you
         if mode == "l":
             try:
                 int(param)
