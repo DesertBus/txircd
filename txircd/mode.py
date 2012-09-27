@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from txircd.utils import CaseInsensitiveDictionary, now
-import copy
+from txircd.utils import CaseInsensitiveDictionary, now, irc_lower
+import copy, fnmatch
 
 def fix_hostmask(hostmask):
     if ' ' in hostmask:
@@ -13,7 +13,7 @@ def fix_hostmask(hostmask):
             hostmask += "!*@*"
     elif '@' not in hostmask:
         hostmask += "@*"
-    return hostmask
+    return irc_lower(hostmask)
 
 class Modes(object):
     bool_modes = ""
@@ -45,7 +45,7 @@ class Modes(object):
     def perm_checker(self, adding, mode, user, param = None):
         return True
     
-    def prep_param(self, mode, param):
+    def prep_param(self, adding, mode, param):
         return param
     
     def has(self, mode):
@@ -79,7 +79,7 @@ class Modes(object):
                     forbidden.add(mode)
             elif mode in self.string_modes:
                 if adding:
-                    param = self.prep_param(mode, params.pop(0))
+                    param = self.prep_param(adding, mode, params.pop(0))
                 else:
                     param = False
                 if self.perm_checker(adding,mode,user,param):
@@ -89,7 +89,7 @@ class Modes(object):
                 else:
                     forbidden.add(mode)
             elif mode in self.list_modes:
-                param = self.prep_param(mode, params.pop(0))
+                param = self.prep_param(adding, mode, params.pop(0))
                 if self.perm_checker(adding,mode,user,param):
                     if mode not in self.modes:
                         self.modes[mode] = CaseInsensitiveDictionary()
@@ -204,9 +204,18 @@ class ChannelModes(Modes):
                 return False
         return True
     
-    def prep_param(self, mode, param):
+    def prep_param(self, adding, mode, param):
         if mode in "beI":
-            return fix_hostmask(param)
+            hostmask = fix_hostmask(param)
+            if mode == "b":
+                for u in self.parent["users"].itervalues():
+                    if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
+                        u.channels[self.parent["name"]]["banned"] = adding
+            elif mode == "e":
+                for u in self.parent["users"].itervalues():
+                    if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
+                        u.channels[self.parent["name"]]["exempt"] = adding
+            return hostmask
         if mode == "l":
             return int(param)
         return param
