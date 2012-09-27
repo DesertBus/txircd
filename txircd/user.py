@@ -150,7 +150,7 @@ class IRCUser(object):
             return self.socket.sendMessage(irc.ERR_BADCHANMASK, "%s :Bad Channel Mask" % channel, prefix=self.ircd.hostname)
         cdata = self.ircd.channels[channel]
         cmodes = cdata["mode"]
-        hostmask = self.prefix()
+        hostmask = irc_lower(self.prefix())
         banned = False
         exempt = False
         invited = channel in self.invites

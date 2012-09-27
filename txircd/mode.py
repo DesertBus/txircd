@@ -13,7 +13,7 @@ def fix_hostmask(hostmask):
             hostmask += "!*@*"
     elif '@' not in hostmask:
         hostmask += "@*"
-    return hostmask
+    return irc_lower(hostmask)
 
 class Modes(object):
     bool_modes = ""
@@ -209,11 +209,11 @@ class ChannelModes(Modes):
             hostmask = fix_hostmask(param)
             if mode == "b":
                 for u in self.parent["users"].itervalues():
-                    if fnmatch.fnmatch(u.prefix(), hostmask):
+                    if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
                         u.channels[self.parent["name"]]["banned"] = adding
             elif mode == "e":
                 for u in self.parent["users"].itervalues():
-                    if fnmatch.fnmatch(u.prefix(), hostmask):
+                    if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
                         u.channels[self.parent["name"]]["exempt"] = adding
             return hostmask
         if mode == "l":
