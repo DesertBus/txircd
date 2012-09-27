@@ -144,20 +144,11 @@ class IRCUser(object):
                 else:
                     userlist.append(user.nickname)
         # Copy of irc.IRC.names
-        prefixLength = len(self.ircd.hostname) + len(irc.RPL_NAMREPLY) + len(channel) + len(user) + 10 # 10 characters for CRLF, =, : and spaces
+        prefixLength = len(self.ircd.hostname) + len(irc.RPL_NAMREPLY) + len(channel) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
         namesLength = 512 - prefixLength # May get messed up with unicode
-        L = []
-        count = 0
-        for n in userlist:
-            if count + len(n) + 1 > namesLength:
-                self.socket.sendMessage(irc.RPL_NAMREPLY, self.nickname, channel, ":"+" ".join(L), prefix=self.ircd.hostname)
-                L = [n]
-                count = len(n)
-            else:
-                L.append(n)
-                count += len(n) + 1
-        if L:
-            self.socket.sendMessage(irc.RPL_NAMREPLY, self.nickname, channel, ":"+" ".join(L), prefix=self.ircd.hostname)
+        lines = chunk_motd(" ".join(userlist), namesLength)
+        for l in lines:
+            self.socket.sendMessage(irc.RPL_NAMREPLY, self.nickname, '=', channel, ":"+l, prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_ENDOFNAMES, self.nickname, channel, ":End of /NAMES list", prefix=self.ircd.hostname)
     
     def join(self, channel, key):
