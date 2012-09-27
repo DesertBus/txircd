@@ -14,7 +14,7 @@ def now():
 UNIX_EPOCH = datetime.datetime(1970, 1, 1, 0, 0)
 def epoch(utc_datetime):
   delta = utc_datetime - UNIX_EPOCH
-  return delta.total_seconds()
+  return int(delta.total_seconds())
   
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):

@@ -25,7 +25,7 @@ class IRCProtocol(irc.IRC):
     def handleCommand(self, command, prefix, params):
         log.msg('handleCommand: %r %r %r' % (command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
-            return self.sendMessage(irc.ERR_NOTREGISTERED, "%s :You have not registered" % command, prefix=self.hostname)
+            return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.hostname)
         elif not self.type:
             return irc.IRC.handleCommand(self, command, prefix, params)
         else:
@@ -48,16 +48,16 @@ class IRCProtocol(irc.IRC):
 
     def irc_PASS(self, prefix, params):
         if not params:
-            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS :Not enough parameters", prefix=self.hostname)
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.hostname)
         self.password = params
 
     def irc_NICK(self, prefix, params):
         if not params:
             self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.hostname)
         elif params[0] in self.factory.users:
-            self.sendMessage(irc.ERR_NICKNAMEINUSE, "%s :Nickname is already in use" % params[0], prefix=self.hostname)
+            self.sendMessage(irc.ERR_NICKNAMEINUSE, params[0], ":Nickname is already in use", prefix=self.hostname)
         elif not VALID_USERNAME.match(params[0]):
-            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, "%s :Erroneous nickname" % params[0], prefix=self.hostname)
+            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.hostname)
         else:
             self.nick = params[0]
             if self.user:
@@ -69,7 +69,7 @@ class IRCProtocol(irc.IRC):
 
     def irc_USER(self, prefix, params):
         if len(params) < 4:
-            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER :Not enough parameters", prefix=self.hostname)
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Not enough parameters", prefix=self.hostname)
         self.user = params
         if self.nick:
             try:
@@ -94,9 +94,9 @@ class IRCProtocol(irc.IRC):
 
     def irc_PING(self, prefix, params):
         if params:
-            self.sendMessage("PONG", "%s :%s" % (self.factory.hostname, params[0]), prefix=self.factory.hostname)
-        else:
-            self.sendMessage(irc.ERR_NOORIGIN, "%s :No origin specified" % self.nickname, prefix=self.factory.hostname)
+            self.sendMessage("PONG", self.factory.hostname, ":%s" % params[0], prefix=self.factory.hostname)
+        else: # TODO: There's no nickname here, what do?
+            self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.hostname)
 
     def irc_QUIT(self, prefix, params):
         self.transport.loseConnection()
