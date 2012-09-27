@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from txircd.utils import CaseInsensitiveDictionary, now
-import copy
+import copy, fnmatch
 
 def fix_hostmask(hostmask):
     if ' ' in hostmask:
@@ -206,7 +206,16 @@ class ChannelModes(Modes):
     
     def prep_param(self, mode, param):
         if mode in "beI":
-            return fix_hostmask(param)
+            hostmask = fix_hostmask(param)
+            if mode == "b":
+                for u in self.parent["users"].itervalues():
+                    if fnmatch.fnmatch(u.hostname, hostmask):
+                        u.channels[self.parent["name"]]["banned"] = adding
+            elif mode == "e":
+                for u in self.parent["users"].itervalues():
+                    if fnmatch.fnmatch(u.hostname, hostmask):
+                        u.channels[self.parent["name"]]["exempt"] = adding
+            return hostmask
         if mode == "l":
             return int(param)
         return param

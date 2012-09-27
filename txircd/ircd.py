@@ -72,7 +72,7 @@ class IRCProtocol(irc.IRC):
         self.user = params
         if self.nick:
             try:
-                self.type = self.factory.types['user'](self, self.user, self.password, self.nick))
+                self.type = self.factory.types['user'](self, self.user, self.password, self.nick)
             except ValueError:
                 self.type = None
                 self.transport.loseConnection()
