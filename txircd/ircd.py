@@ -3,12 +3,12 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Factory
 from twisted.python import log
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME
+from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, now
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
-import uuid, time, socket
+import uuid, socket
 
 irc.RPL_CREATIONTIME = '329'
 
@@ -60,20 +60,36 @@ class IRCProtocol(irc.IRC):
         else:
             self.nick = params[0]
             if self.user:
-                self.type = IRCUser(self, self.user, self.password, self.nick)
+                try:
+                    self.type = IRCUser(self, self.user, self.password, self.nick)
+                except ValueError:
+                    self.type = None
+                    self.transport.loseConnection()
 
     def irc_USER(self, prefix, params):
         if len(params) < 4:
             return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER :Not enough parameters", prefix=self.hostname)
         self.user = params
         if self.nick:
-            self.type = self.factory.types['user'](self, self.user, self.password, self.nick)
+            try:
+                self.type = self.factory.types['user'](self, self.user, self.password, self.nick)
+            except ValueError:
+                self.type = None
+                self.transport.loseConnection()
 
     def irc_SERVICE(self, prefix, params):
-        self.type = self.factory.types['service'](self, params, self.password)
+        try:
+            self.type = self.factory.types['service'](self, params, self.password)
+        except ValueError:
+            self.type = None
+            self.transport.loseConnection()
 
     def irc_SERVER(self, prefix, params):
-        self.type = self.factory.types['server'](self, params, self.password)
+        try:
+            self.type = self.factory.types['server'](self, params, self.password)
+        except ValueError:
+            self.type = None
+            self.transport.loseConnection()
 
     def irc_PING(self, prefix, params):
         if params:
@@ -111,9 +127,10 @@ class IRCD(Factory):
         self.name = name
         self.hostname = socket.getfqdn()
         self.version = "0.1"
-        self.created = time.time()
+        self.created = now()
         self.token = uuid.uuid1()
-        self.description = description
+        self.motd = description
+        self.motd_length = 80
         self.client_timeout = client_timeout
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
@@ -127,11 +144,11 @@ class IRCD(Factory):
     def createChannel(self, name):
         c = {
             "name": name,
-            "created": time.time(),
+            "created": now(),
             "topic": {
                 "message": None,
                 "author": "",
-                "created": time.time()
+                "created": now()
             },
             "users": CaseInsensitiveDictionary(),
         }
