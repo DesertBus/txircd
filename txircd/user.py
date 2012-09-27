@@ -24,6 +24,14 @@ class IRCUser(object):
     }
     
     def __init__(self, parent, user, password, nick):
+        if nick in parent.factory.users:
+            # Race condition, we checked their nick but now it is unavailable
+            # Just give up and crash hard
+            parent.sendMessage(irc.ERR_NICKNAMEINUSE, "%s :Nickname is already in use" % nick, prefix=parent.factory.hostname)
+            parent.sendMessage("ERROR","Closing Link: %s" % nick)
+            parent.transport.loseConnection()
+            raise ValueError("Invalid nickname")
+        # Parse USER params
         password = password[0] if password else None
         username = user[0]
         # RFC 2812 allows setting modes in the USER command but RFC 1459 does not
@@ -35,8 +43,9 @@ class IRCUser(object):
         except ValueError:
             pass
         realname = user[3]
-        assert nick not in parent.factory.users, "Nickname in use"
         #TODO: Check password
+        
+        # Set attributes
         self.ircd = parent.factory
         self.socket = parent
         self.nickname = nick
@@ -51,8 +60,10 @@ class IRCUser(object):
         self.invites = []
         self.service = False
         
+        # Add self to user list
         self.ircd.users[self.nickname] = self
         
+        # Send all those lovely join messages
         chanmodes = ChannelModes.bool_modes + ChannelModes.string_modes + ChannelModes.list_modes
         chanmodes2 = ChannelModes.list_modes.translate(None, self.ircd.prefix_order) + ",," + ChannelModes.string_modes + "," + ChannelModes.bool_modes
         self.socket.sendMessage(irc.RPL_WELCOME, "%s :Welcome to the Internet Relay Network %s!%s@%s" % (self.nickname, self.nickname, self.username, self.hostname), prefix=self.ircd.hostname)
@@ -258,10 +269,11 @@ class IRCUser(object):
         else:
             channels = params[0].split(',')
             keys = params[1].split(',') if len(params) > 1 else []
-            for i in range(len(channels)):
-                c = channels[i]
-                k = keys[i] if i < len(keys) else None
-                assert c not in self.channels, "User '%s' already in channel '%s'" % (self.nickname, c)
+            for c in channels:
+                if c in self.channels:
+                    continue # don't join it twice
+                cdata = self.ircd.channels[c]
+                k = keys.pop(0) if keys and cdata["mode"].has("k") else None
                 self.join(c,k)
 
     def irc_PART(self, prefix, params):

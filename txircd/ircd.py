@@ -60,20 +60,36 @@ class IRCProtocol(irc.IRC):
         else:
             self.nick = params[0]
             if self.user:
-                self.type = IRCUser(self, self.user, self.password, self.nick)
+                try:
+                    self.type = IRCUser(self, self.user, self.password, self.nick)
+                except ValueError:
+                    self.type = None
+                    self.transport.loseConnection()
 
     def irc_USER(self, prefix, params):
         if len(params) < 4:
             return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER :Not enough parameters", prefix=self.hostname)
         self.user = params
         if self.nick:
-            self.type = self.factory.types['user'](self, self.user, self.password, self.nick)
+            try:
+                self.type = self.factory.types['user'](self, self.user, self.password, self.nick))
+            except ValueError:
+                self.type = None
+                self.transport.loseConnection()
 
     def irc_SERVICE(self, prefix, params):
-        self.type = self.factory.types['service'](self, params, self.password)
+        try:
+            self.type = self.factory.types['service'](self, params, self.password)
+        except ValueError:
+            self.type = None
+            self.transport.loseConnection()
 
     def irc_SERVER(self, prefix, params):
-        self.type = self.factory.types['server'](self, params, self.password)
+        try:
+            self.type = self.factory.types['server'](self, params, self.password)
+        except ValueError:
+            self.type = None
+            self.transport.loseConnection()
 
     def irc_PING(self, prefix, params):
         if params:
