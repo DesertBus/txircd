@@ -112,6 +112,7 @@ class IRCD(Factory):
     channel_prefixes = "#"
     oper_hosts = ["127.0.0.1","129.161.209.91"]
     opers = {"Fugiman":"test"}
+    vhosts = {"127.0.0.1":"localhost","129.161.209.91":"I.Created.You"}
     types = {
         "user": IRCUser,
         "server": IRCServer,

@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.task import Cooperator
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message
-import fnmatch
+import fnmatch, socket, hashlib
 
 class IRCUser(object):
     cap = {
@@ -33,13 +34,29 @@ class IRCUser(object):
         realname = user[3]
         #TODO: Check password
         
+        # Mask the IP
+        ip = parent.transport.getHandle().getpeername()[0]
+        if ip in parent.factory.vhosts:
+            hostname = parent.factory.vhosts[ip]
+        else:
+            hostname = socket.gethostbyaddr(ip)[0]
+            index = hostname.find(ip)
+            index = hostname.find(".") if index < 0 else index + len(ip)
+            if index < 0:
+                # Give up
+                log.msg("Gave up on {}, reverting to {}".format(hostname,ip))
+                hostname = ip
+            else:
+                mask = "tx{}".format(hashlib.md5(hostname[:index]).hexdigest()[12:20])
+                hostname = "{}{}".format(mask, hostname[index:])
+        
         # Set attributes
         self.ircd = parent.factory
         self.socket = parent
         self.nickname = nick
         self.username = username
         self.realname = realname
-        self.hostname = parent.transport.getHandle().getpeername()[0]
+        self.hostname = hostname
         self.server = parent.factory.name
         self.signon = now()
         self.lastactivity = now()
