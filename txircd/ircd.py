@@ -54,10 +54,10 @@ class IRCProtocol(irc.IRC):
     def irc_NICK(self, prefix, params):
         if not params:
             self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.hostname)
-        elif params[0] in self.factory.users:
-            self.sendMessage(irc.ERR_NICKNAMEINUSE, params[0], ":Nickname is already in use", prefix=self.hostname)
         elif not VALID_USERNAME.match(params[0]):
             self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.hostname)
+        elif params[0] in self.factory.users:
+            self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.hostname)
         else:
             self.nick = params[0]
             if self.user:

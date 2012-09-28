@@ -28,8 +28,8 @@ class IRCUser(object):
         if nick in parent.factory.users:
             # Race condition, we checked their nick but now it is unavailable
             # Just give up and crash hard
-            parent.sendMessage(irc.ERR_NICKNAMEINUSE, nick, ":Nickname is already in use", prefix=parent.factory.hostname)
-            parent.sendMessage("ERROR","Closing Link: %s" % nick)
+            parent.sendMessage(irc.ERR_NICKNAMEINUSE, parent.factory.users[nick].nickname, ":Nickname is already in use", prefix=parent.factory.hostname)
+            parent.sendMessage("ERROR","Closing Link: %s" % parent.factory.users[nick].nickname)
             parent.transport.loseConnection()
             raise ValueError("Invalid nickname")
         # Parse USER params
@@ -132,7 +132,7 @@ class IRCUser(object):
         userlist = []
         if self.cap["multi-prefix"]:
             for user in cdata["users"].itervalues():
-                ranks = user.status(channel)
+                ranks = user.status(cdata["name"])
                 name = ''
                 for p in ranks:
                     name += self.ircd.PREFIX_SYMBOLS[p]
@@ -140,18 +140,18 @@ class IRCUser(object):
                 userlist.append(name)
         else:
             for user in cdata["users"].itervalues():
-                ranks = user.status(channel)
+                ranks = user.status(cdata["name"])
                 if ranks:
                     userlist.append(self.ircd.prefix_symbols[ranks[0]] + user.nickname)
                 else:
                     userlist.append(user.nickname)
         # Copy of irc.IRC.names
-        prefixLength = len(self.ircd.hostname) + len(irc.RPL_NAMREPLY) + len(channel) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
+        prefixLength = len(self.ircd.hostname) + len(irc.RPL_NAMREPLY) + len(cdata["name"]) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
         namesLength = 512 - prefixLength # May get messed up with unicode
         lines = chunk_motd(" ".join(userlist), namesLength)
         for l in lines:
-            self.socket.sendMessage(irc.RPL_NAMREPLY, self.nickname, '=', channel, ":%s"%l, prefix=self.ircd.hostname)
-        self.socket.sendMessage(irc.RPL_ENDOFNAMES, self.nickname, channel, ":End of /NAMES list", prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_NAMREPLY, self.nickname, '=', cdata["name"], ":%s"%l, prefix=self.ircd.hostname)
+        self.socket.sendMessage(irc.RPL_ENDOFNAMES, self.nickname, cdata["name"], ":End of /NAMES list", prefix=self.ircd.hostname)
     
     def join(self, channel, key):
         if channel[0] not in self.ircd.channel_prefixes:
@@ -161,7 +161,7 @@ class IRCUser(object):
         hostmask = irc_lower(self.prefix())
         banned = False
         exempt = False
-        invited = channel in self.invites
+        invited = cdata["name"] in self.invites
         if cmodes.has('b'):
             for pattern in cmodes.get('b').iterkeys():
                 if fnmatch.fnmatch(hostmask, pattern):
@@ -186,34 +186,34 @@ class IRCUser(object):
         if banned and not exempt and not self.mode.has("o"):
             self.socket.sendMessage(irc.ERR_BANNEDFROMCHAN, self.nickname, cdata["name"], ":Cannot join channel (Banned)", prefix=self.ircd.hostname)
             return
-        self.channels[channel] = {"banned":banned,"exempt":exempt}
-        if channel in self.invites:
-            self.invites.remove(channel)
+        self.channels[cdata["name"]] = {"banned":banned,"exempt":exempt}
+        if cdata["name"] in self.invites:
+            self.invites.remove(cdata["name"])
         if not cdata["users"]:
             cdata["mode"].combine("+q",[self.nickname],cdata["name"]) # Set first user as founder
         cdata["users"][self.nickname] = self
         for u in cdata["users"].itervalues():
-            u.socket.sendMessage("JOIN", channel, prefix=self.prefix())
+            u.socket.sendMessage("JOIN", cdata["name"], prefix=self.prefix())
         if cdata["topic"]["message"] is None:
-            self.socket.sendMessage(irc.RPL_NOTOPIC, self.nickname, channel, 'No topic is set', prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_NOTOPIC, self.nickname, cdata["name"], 'No topic is set', prefix=self.ircd.hostname)
         else:
-            self.socket.sendMessage(irc.RPL_TOPIC, self.nickname, channel, ':%s'%cdata["topic"]["message"], prefix=self.ircd.hostname)
-            self.socket.sendMessage(irc.RPL_TOPICWHOTIME, self.nickname, channel, cdata["topic"]["author"], str(epoch(cdata["topic"]["created"])), prefix=self.ircd.hostname)
-        self.report_names(channel)
+            self.socket.sendMessage(irc.RPL_TOPIC, self.nickname, cdata["name"], ':%s'%cdata["topic"]["message"], prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_TOPICWHOTIME, self.nickname, cdata["name"], cdata["topic"]["author"], str(epoch(cdata["topic"]["created"])), prefix=self.ircd.hostname)
+        self.report_names(cdata["name"])
     
     def leave(self, channel):
         cdata = self.ircd.channels[channel]
-        del self.channels[channel]
+        del self.channels[cdata["name"]]
         del cdata["users"][self.nickname] # remove channel user entry
         if not cdata["users"]:
-            del self.ircd.channels[channel] # destroy the empty channel
+            del self.ircd.channels[cdata["name"]] # destroy the empty channel
         else:
-            mode = self.status(channel) # Clear modes
+            mode = self.status(cdata["name"]) # Clear modes
             cdata["mode"].combine("-%s"%mode,[self.nickname for _ in mode],cdata["name"])
     
     def part(self, channel, reason):
         for u in self.ircd.channels[channel]["users"].itervalues():
-            u.socket.sendMessage("PART", channel, ':%s'%reason, prefix=self.prefix())
+            u.socket.sendMessage("PART", self.ircd.channels[channel]["name"], ':%s'%reason, prefix=self.prefix())
         self.leave(channel)
     
     def quit(self, channel, reason):
@@ -237,9 +237,9 @@ class IRCUser(object):
         if not params:
             self.socket.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.ircd.hostname)
         elif params[0] in self.ircd.users and irc_lower(params[0]) != irc_lower(self.nickname): # Just changing case on your own nick is fine
-            self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, params[0], ":Nickname is already in use", prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, self.ircd.users[params[0]].nickname, ":Nickname is already in use", prefix=self.ircd.hostname)
         elif not VALID_USERNAME.match(params[0]):
-            self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.ircd.users[params[0]].nickname, ":Erroneous nickname", prefix=self.ircd.hostname)
         else:
             oldnick = self.nickname
             newnick = params[0]
@@ -440,13 +440,13 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, params[1], ":No such nick", prefix=self.ircd.hostname)
             return
         cdata = self.ircd.channels[params[0]]
+        udata = self.ircd.users[params[1]]
         if self.nickname not in cdata["users"]:
             self.socket.sendMessage(irc.ERR_NOTONCHANNEL, self.nickname, cdata["names"], ":You're not on that channel!", prefix=self.ircd.hostname)
             return
-        if params[1] not in cdata["users"]:
-            self.socket.sendMessage(irc.ERR_USERNOTINCHANNEL, self.nickname, params[1], cdata["name"], ":They are not on that channel", prefix=self.ircd.hostname)
+        if udata.nickname not in cdata["users"]:
+            self.socket.sendMessage(irc.ERR_USERNOTINCHANNEL, self.nickname, udata.nickname, cdata["name"], ":They are not on that channel", prefix=self.ircd.hostname)
             return
-        udata = cdata["users"][params[1]]
         if not self.hasAccess(params[0], "h") or (not self.accessLevel(params[0]) > udata.accessLevel(params[0]) and not self.mode.has("o")):
             self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.nickname, cdata["name"], ":You must be a channel half-operator", prefix=self.ircd.hostname)
             return
@@ -533,19 +533,23 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "INVITE", ":Not enough parameters", prefix=self.ircd.hostname)
         elif params[0] not in self.ircd.users:
             self.socket.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick/channel", prefix=self.ircd.hostname)
-        elif params[1] in self.ircd.users[params[0]].channels:
-            self.socket.sendMessage(irc.ERR_USERONCHANNEL, params[0], params[1], ":is already on channel", prefix=self.ircd.hostname)
-        elif params[1] in self.ircd.channels and params[1] not in self.channels:
-            self.socket.sendMessage(irc.ERR_NOTONCHANNEL, params[1], ":You're not on that channel", prefix=self.ircd.hostname)
-        elif params[1] in self.ircd.channels and self.ircd.channels[params[1]]["mode"].has("i") and not self.hasAccess(params[1], "h"):
-            self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[1], ":You're not channel operator", prefix=self.ircd.hostname)
-        elif self.ircd.users[params[0]].mode.has("a"):
-            self.socket.sendMessage(irc.RPL_AWAY, params[0], ":%s" % self.ircd.users[params[0]].mode.get("a"), prefix=self.ircd.hostname)
+        elif params[1] not in self.ircd.channels:
+            self.socket.sendMessage(irc.ERR_NOSUCHNICK, params[1], ":No such nick/channel", prefix=self.ircd.hostname)
+        
+        udata = self.ircd.users[params[0]]
+        cdata = self.ircd.channels[params[1]]
+        elif cdata["name"] in udata.channels:
+            self.socket.sendMessage(irc.ERR_USERONCHANNEL, udata.nickname, cdata["name"], ":is already on channel", prefix=self.ircd.hostname)
+        elif cdata["name"] not in self.channels:
+            self.socket.sendMessage(irc.ERR_NOTONCHANNEL,cdata["name"], ":You're not on that channel", prefix=self.ircd.hostname)
+        elif cdata["mode"].has("i") and not self.hasAccess(cdata["name"], "h"):
+            self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata["name"], ":You're not channel operator", prefix=self.ircd.hostname)
+        elif udata.mode.has("a"):
+            self.socket.sendMessage(irc.RPL_AWAY, udata.nickname, ":%s" % udata.mode.get("a"), prefix=self.ircd.hostname)
         else:
-            u = self.ircd.users[params[0]]
-            self.socket.sendMessage(irc.RPL_INVITING, params[1], u.nickname, prefix=self.ircd.hostname)
-            u.socket.sendMessage("INVITE", u.nickname, params[1], prefix=self.prefix())
-            u.invites.append(params[1])
+            self.socket.sendMessage(irc.RPL_INVITING, cdata["name"], udata.nickname, prefix=self.ircd.hostname)
+            udata.socket.sendMessage("INVITE", udata.nickname, cdata["name"], prefix=self.prefix())
+            udata.invites.append(cdata["name"])
     
     def irc_MOTD(self, prefix, params):
         self.send_motd()
