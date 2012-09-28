@@ -4,14 +4,14 @@ from txircd.utils import CaseInsensitiveDictionary, now, irc_lower
 import copy, fnmatch
 
 def fix_hostmask(hostmask):
-    if ' ' in hostmask:
-        hostmask = hostmask[:hostmask.find(' ')]
-    if '!' not in hostmask:
-        if '@' in hostmask:
-            hostmask = '*!' + hostmask
+    if " " in hostmask:
+        hostmask = hostmask[:hostmask.find(" ")]
+    if "!" not in hostmask:
+        if "@" in hostmask:
+            hostmask = "*!" + hostmask
         else:
             hostmask += "!*@*"
-    elif '@' not in hostmask:
+    elif "@" not in hostmask:
         hostmask += "@*"
     return irc_lower(hostmask)
 
@@ -66,9 +66,9 @@ class Modes(object):
         for mode in modes:
             if changes >= 20:
                 break
-            elif mode == '+':
+            elif mode == "+":
                 adding = True
-            elif mode == '-':
+            elif mode == "-":
                 adding = False
             elif mode in self.bool_modes:
                 if self.perm_checker(adding,mode,user):
@@ -182,21 +182,23 @@ class ChannelModes(Modes):
     def perm_checker(self, adding, mode, user, param = None):
         # Always allow the channel to set modes.
         # This means the server can set modes without fear of rejection
-        if user == self.parent["name"]:
+        if user == self.parent.name:
             return True
         if mode in "aqohv":
             setter = self.ircd.users[user]
             getter = self.ircd.users[param]
-            if param not in self.parent["users"]:
+            if param not in self.parent.users:
                 return False # Can't set modes on somebody not in the channel
-            if user not in self.parent["users"] and not setter.mode.has("o"):
-                return False # Only opers can set modes without being in the channel
             if not adding and getter.mode.has("o"):
                 return False # Can't demote opers, not that it matters
-            if adding and not setter.hasAccess(self.parent["name"], mode):
-                return False # Need the access to set the access
-            if not adding and not setter.accessLevel(self.parent["name"]) > getter.accessLevel(self.parent["name"]):
-                return False # Can only demote those below you
+            if not setter.mode.has("o"):
+                # Let OPERs get away with all of this
+                if user not in self.parent.users:
+                    return False # Can't set modes without being in the channel
+                if adding and not setter.hasAccess(self.parent.name, mode):
+                    return False # Need the access to set the access
+                if not adding and not setter.accessLevel(self.parent.name) > getter.accessLevel(self.parent.name):
+                    return False # Can only demote those below you
         if mode == "l":
             try:
                 int(param)
@@ -208,13 +210,13 @@ class ChannelModes(Modes):
         if mode in "beI":
             hostmask = fix_hostmask(param)
             if mode == "b":
-                for u in self.parent["users"].itervalues():
+                for u in self.parent.users.itervalues():
                     if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
-                        u.channels[self.parent["name"]]["banned"] = adding
+                        u.channels[self.parent.name]["banned"] = adding
             elif mode == "e":
                 for u in self.parent["users"].itervalues():
                     if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
-                        u.channels[self.parent["name"]]["exempt"] = adding
+                        u.channels[self.parent.name]["exempt"] = adding
             return hostmask
         if mode == "l":
             return int(param)
