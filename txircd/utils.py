@@ -6,7 +6,7 @@ import re, datetime
 VALID_USERNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{3,31}$") # 4-32 char nicks
 
 def irc_lower(str):
-    return str.lower().replace('[','{').replace(']','}').replace('/','|').replace('~','^')
+    return str.lower().replace("[","{").replace("]","}").replace("/","|").replace("~","^")
 
 def now():
     return datetime.datetime.utcnow().replace(microsecond=0)

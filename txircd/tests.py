@@ -27,4 +27,4 @@ class IRCDTests(unittest.TestCase):
             self.client = client
             return client
 
-        return creator.connectTCP('127.0.0.1', self.port.getHost().port).addCallback(cb)
+        return creator.connectTCP("127.0.0.1", self.port.getHost().port).addCallback(cb)

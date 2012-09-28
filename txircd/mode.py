@@ -4,14 +4,14 @@ from txircd.utils import CaseInsensitiveDictionary, now, irc_lower
 import copy, fnmatch
 
 def fix_hostmask(hostmask):
-    if ' ' in hostmask:
-        hostmask = hostmask[:hostmask.find(' ')]
-    if '!' not in hostmask:
-        if '@' in hostmask:
-            hostmask = '*!' + hostmask
+    if " " in hostmask:
+        hostmask = hostmask[:hostmask.find(" ")]
+    if "!" not in hostmask:
+        if "@" in hostmask:
+            hostmask = "*!" + hostmask
         else:
             hostmask += "!*@*"
-    elif '@' not in hostmask:
+    elif "@" not in hostmask:
         hostmask += "@*"
     return irc_lower(hostmask)
 
@@ -66,9 +66,9 @@ class Modes(object):
         for mode in modes:
             if changes >= 20:
                 break
-            elif mode == '+':
+            elif mode == "+":
                 adding = True
-            elif mode == '-':
+            elif mode == "-":
                 adding = False
             elif mode in self.bool_modes:
                 if self.perm_checker(adding,mode,user):

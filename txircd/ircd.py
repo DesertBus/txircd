@@ -10,11 +10,11 @@ from txircd.service import IRCService
 from txircd.user import IRCUser
 import uuid, socket
 
-irc.RPL_CREATIONTIME = '329'
-irc.RPL_TOPICWHOTIME = '333'
+irc.RPL_CREATIONTIME = "329"
+irc.RPL_TOPICWHOTIME = "333"
 
 class IRCProtocol(irc.IRC):
-    UNREGISTERED_COMMANDS = ['PASS', 'USER', 'SERVICE', 'SERVER', 'NICK', 'PING', 'QUIT']
+    UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "QUIT"]
 
     def __init__(self, *args, **kwargs):
         self.type = None
@@ -23,7 +23,7 @@ class IRCProtocol(irc.IRC):
         self.user = None
 
     def handleCommand(self, command, prefix, params):
-        log.msg('handleCommand: %r %r %r' % (command, prefix, params))
+        log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
             return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.hostname)
         elif not self.type:
@@ -32,7 +32,7 @@ class IRCProtocol(irc.IRC):
             return self.delegateCommand(self.type, command, prefix, params)
     
     def delegateCommand(self, delegate, command, prefix, params):
-        method = getattr(delegate, "irc_%s" % command, None)
+        method = getattr(delegate, "irc_{}".format(command), None)
         try:
             if method is not None:
                 method(prefix, params)
@@ -43,7 +43,7 @@ class IRCProtocol(irc.IRC):
         
 
     def sendLine(self, line):
-        log.msg('sendLine: %r' % line)
+        log.msg("sendLine: {!r}".format(line))
         return irc.IRC.sendLine(self, line)
 
     def irc_PASS(self, prefix, params):
@@ -73,28 +73,28 @@ class IRCProtocol(irc.IRC):
         self.user = params
         if self.nick:
             try:
-                self.type = self.factory.types['user'](self, self.user, self.password, self.nick)
+                self.type = self.factory.types["user"](self, self.user, self.password, self.nick)
             except ValueError:
                 self.type = None
                 self.transport.loseConnection()
 
     def irc_SERVICE(self, prefix, params):
         try:
-            self.type = self.factory.types['service'](self, params, self.password)
+            self.type = self.factory.types["service"](self, params, self.password)
         except ValueError:
             self.type = None
             self.transport.loseConnection()
 
     def irc_SERVER(self, prefix, params):
         try:
-            self.type = self.factory.types['server'](self, params, self.password)
+            self.type = self.factory.types["server"](self, params, self.password)
         except ValueError:
             self.type = None
             self.transport.loseConnection()
 
     def irc_PING(self, prefix, params):
         if params:
-            self.sendMessage("PONG", self.factory.hostname, ":%s" % params[0], prefix=self.factory.hostname)
+            self.sendMessage("PONG", self.factory.hostname, ":{}".format(params[0]), prefix=self.factory.hostname)
         else: # TODO: There's no nickname here, what do?
             self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.hostname)
 
@@ -111,17 +111,17 @@ class IRCD(Factory):
     oper_hosts = ["127.0.0.1","129.161.209.91"]
     opers = {"Fugiman":"test"}
     types = {
-        'user': IRCUser,
-        'server': IRCServer,
-        'service': IRCService,
+        "user": IRCUser,
+        "server": IRCServer,
+        "service": IRCService,
     }
     prefix_order = "qaohv" # Hardcoded into modes :(
     prefix_symbols = {
-        'q': '~',
-        'a': '&',
-        'o': '@',
-        'h': '%',
-        'v': '+'
+        "q": "~",
+        "a": "&",
+        "o": "@",
+        "h": "%",
+        "v": "+"
     }
 
     def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
