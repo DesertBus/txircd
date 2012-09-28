@@ -3,21 +3,8 @@
 from twisted.words.protocols import irc
 from twisted.internet.task import Cooperator
 from txircd.mode import UserModes, ChannelModes
-from txircd.utils import irc_lower, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary
+from txircd.utils import irc_lower, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message
 import fnmatch
-
-def chunk_motd(motd, chunk_size):
-    chunks = []
-    motd += "\n"
-    while motd:
-        index = motd.find("\n",0,chunk_size)
-        if index < 0:
-            index = motd.rfind(" ",0,chunk_size)
-        if index < 0:
-            index = chunk_size
-        chunks.append(motd[:index])
-        motd = motd[index+1:] if motd[index] in " \n" else motd[index:] # I THINK THIS WILL WORK?!?
-    return chunks
 
 class IRCUser(object):
     cap = {
@@ -119,7 +106,7 @@ class IRCUser(object):
     
     def send_motd(self):
         if self.ircd.motd:
-            chunks = chunk_motd(self.ircd.motd, self.ircd.motd_length)
+            chunks = chunk_message(self.ircd.motd, self.ircd.motd_length)
             self.socket.sendMessage(irc.RPL_MOTDSTART, self.nickname, ":- {} Message of the day - ".format(self.ircd.name), prefix=self.ircd.hostname)
             for chunk in chunks:
                 line = ":- {{:{!s}}} -".format(self.ircd.motd_length).format(chunk) # Dynamically inject the line length as a width argument for the line
@@ -149,7 +136,7 @@ class IRCUser(object):
         # Copy of irc.IRC.names
         prefixLength = len(self.ircd.hostname) + len(irc.RPL_NAMREPLY) + len(cdata.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
         namesLength = 512 - prefixLength # May get messed up with unicode
-        lines = chunk_motd(" ".join(userlist), namesLength)
+        lines = chunk_message(" ".join(userlist), namesLength)
         for l in lines:
             self.socket.sendMessage(irc.RPL_NAMREPLY, self.nickname, "=", cdata.name, ":{}".format(l), prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_ENDOFNAMES, self.nickname, cdata.name, ":End of /NAMES list", prefix=self.ircd.hostname)

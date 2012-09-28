@@ -16,6 +16,19 @@ def epoch(utc_datetime):
     delta = utc_datetime - UNIX_EPOCH
     return int(delta.total_seconds())
 
+def chunk_message(msg, chunk_size):
+    chunks = []
+    msg += "\n"
+    while msg:
+        index = msg.find("\n",0,chunk_size)
+        if index < 0:
+            index = msg.rfind(" ",0,chunk_size)
+        if index < 0:
+            index = chunk_size
+        chunks.append(msg[:index])
+        msg = msg[index+1:] if msg[index] in " \n" else msg[index:] # I THINK THIS WILL WORK?!?
+    return chunks
+
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
         self._data = {}
