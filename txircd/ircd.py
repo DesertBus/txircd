@@ -8,10 +8,12 @@ from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
-import uuid, socket
+import uuid, socket, collections
 
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_TOPICWHOTIME = "333"
+
+Channel = collections.namedtuple("Channel",["name","created","topic","users","mode"])
 
 class IRCProtocol(irc.IRC):
     UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "QUIT"]
@@ -135,18 +137,10 @@ class IRCD(Factory):
         self.client_timeout = client_timeout
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
-        self.channels = DefaultCaseInsensitiveDictionary(self.createChannel)
-    
-    def createChannel(self, name):
-        c = {
-            "name": name,
-            "created": now(),
-            "topic": {
-                "message": None,
-                "author": "",
-                "created": now()
-            },
-            "users": CaseInsensitiveDictionary(),
-        }
-        c["mode"] = ChannelModes(self, c, "nt", name)
+        self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
+
+    def ChannelFactory(self, name):
+        c = Channel(name,now(),{"message":None,"author":"","created":now()},CaseInsensitiveDictionary(),ChannelModes(self,None))
+        c.mode.parent = c
+        c.mode.combine("nt",[],name)
         return c
