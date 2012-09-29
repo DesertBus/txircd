@@ -313,7 +313,7 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "JOIN", ":Not enough parameters", prefix=self.ircd.hostname)
         elif params[0] == "0":
             for c in self.channels.keys():
-                self.part(c)
+                self.part(c, "Parting all channels")
         else:
             channels = params[0].split(",")
             keys = params[1].split(",") if len(params) > 1 else []
