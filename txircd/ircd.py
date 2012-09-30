@@ -11,6 +11,7 @@ from txircd.user import IRCUser
 import uuid, socket, collections
 
 irc.RPL_CREATIONTIME = "329"
+irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode"])
