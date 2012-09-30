@@ -480,6 +480,15 @@ class IRCUser(object):
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname:
                     u.socket.sendMessage("PRIVMSG", c.name, ":{}".format(message), prefix=self.prefix())
+        elif target[1:] in self.ircd.channels:
+            symbol_prefix = {v:k for k, v in self.ircd.prefix_symbols.items()}
+            if target[0] not in symbol_prefix:
+                return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname) # I don't know what they were trying to send to.
+            min_status = symbol_prefix[target[0]]
+            c = self.ircd.channels[target[1:]]
+            for u in c.users.itervalues():
+                if u.nickname is not self.nickname and u.hasAccess(c.name, min_status):
+                    u.socket.sendMessage("PRIVMSG", "{}{}".format(target[0], c.name), ":{}".format(message), prefix=self.prefix())
         else:
             return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
     
@@ -504,6 +513,15 @@ class IRCUser(object):
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname:
                     u.socket.sendMessage("NOTICE", c.name, ":{}".format(message), prefix=self.prefix())
+        elif target[1:] in self.ircd.channels:
+            symbol_prefix = {v:k for k, v in self.ircd.prefix_symbols.items()}
+            if target[0] not in symbol_prefix:
+                return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
+            min_status = symbol_prefix[target[0]]
+            c = self.ircd.channels[target[1:]]
+            for u in c.users.itervalues():
+                if u.nickname is not self.nickname and u.hasAccess(c.name, min_status):
+                    u.socket.sendMessage("NOTICE", "{}{}".format(target[0], c.name), ":{}".format(message), prefix=self.prefix())
         else:
             return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
     
