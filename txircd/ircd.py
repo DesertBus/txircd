@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory
+from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
 from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, now
@@ -24,6 +25,7 @@ class IRCProtocol(irc.IRC):
         self.password = None
         self.nick = None
         self.user = None
+        self.secure = ISSLTransport(self.transport, None) is not None
 
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
