@@ -504,9 +504,8 @@ class IRCUser(object):
                 self.socket.sendMessage(irc.RPL_WHOISOPERATOR, self.nickname, udata.nickname, ":is an IRC operator", prefix=self.ircd.hostname)
             if udata.account:
                 self.socket.sendMessage(irc.RPL_WHOISACCOUNT, self.nickname, udata.nickname, udata.account, ":is logged in as", prefix=self.ircd.hostname)
-            # Numeric 671: Uncomment this when the secure check is done
-            # if udata.socket.secure:
-            #   self.socket.sendMessage(irc.RPL_WHOISSECURE, self.nickname, udata.nickname, ":is using a secure connection", prefix=self.ircd.hostname)
+            if udata.socket.secure:
+                self.socket.sendMessage(irc.RPL_WHOISSECURE, self.nickname, udata.nickname, ":is using a secure connection", prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_WHOISIDLE, self.nickname, udata.nickname, str(epoch(now()) - epoch(udata.lastactivity)), str(epoch(udata.signon)), ":seconds idle, signon time", prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFWHOIS, self.nickname, udata.nickname, ":End of /WHOIS list.", prefix=self.ircd.hostname)
     
