@@ -475,14 +475,16 @@ class IRCUser(object):
             if udata.channels:
                 chanlist = []
                 for channel in udata.channels.iterkeys():
-                    cname = self.ircd.channels[channel].name
-                    level = udata.accessLevel(cname)
-                    if level == 0:
-                        chanlist.append(cname)
-                    else:
-                        symbol = self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - level]]
-                        chanlist.append("{}{}".format(symbol, cname))
-                self.socket.sendMessage(irc.RPL_WHOISCHANNELS, self.nickname, udata.nickname, ":{}".format(" ".join(chanlist)), prefix=self.ircd.hostname)
+                    cdata = self.ircd.channels[channel]
+                    if cdata.name in self.channels or (not cdata.mode.has("s") and not cdata.mode.has("p")):
+                        level = udata.accessLevel(cdata.name)
+                        if level == 0:
+                            chanlist.append(cdata.name)
+                        else:
+                            symbol = self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - level]]
+                            chanlist.append("{}{}".format(symbol, cdata.name))
+                if chanlist:
+                    self.socket.sendMessage(irc.RPL_WHOISCHANNELS, self.nickname, udata.nickname, ":{}".format(" ".join(chanlist)), prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_WHOISSERVER, self.nickname, udata.nickname, self.ircd.hostname, ":{}".format(self.ircd.name), prefix=self.ircd.hostname)
             if udata.mode.has("o"):
                 self.socket.sendMessage(irc.RPL_WHOISOPERATOR, self.nickname, udata.nickname, ":is an IRC operator", prefix=self.ircd.hostname)
