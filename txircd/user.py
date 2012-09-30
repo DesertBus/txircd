@@ -498,6 +498,8 @@ class IRCUser(object):
                 if chanlist:
                     self.socket.sendMessage(irc.RPL_WHOISCHANNELS, self.nickname, udata.nickname, ":{}".format(" ".join(chanlist)), prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_WHOISSERVER, self.nickname, udata.nickname, self.ircd.hostname, ":{}".format(self.ircd.name), prefix=self.ircd.hostname)
+            if udata.mode.has("a"):
+                self.socket.sendMessage(irc.RPL_AWAY, self.nickname, udata.nickname, ":{}".format(udata.mode.get("a")), prefix=self.ircd.hostname)
             if udata.mode.has("o"):
                 self.socket.sendMessage(irc.RPL_WHOISOPERATOR, self.nickname, udata.nickname, ":is an IRC operator", prefix=self.ircd.hostname)
             if udata.account:
