@@ -64,6 +64,7 @@ class IRCUser(object):
         self.channels = CaseInsensitiveDictionary()
         self.invites = []
         self.service = False
+        self.account = None
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
@@ -82,6 +83,18 @@ class IRCUser(object):
     
     def connectionLost(self, reason):
         self.irc_QUIT(None,["Client connection lost"])
+    
+    def handleCommand(self, command, prefix, params):
+        method = getattr(self, "irc_{}".format(command), None)
+        if command != "PING" and command != "PONG":
+            self.lastactivity = now()
+        try:
+            if method is not None:
+                method(prefix, params)
+            else:
+                self.irc_unknown(prefix, command, params)
+        except:
+            log.deferr()
     
     #=====================
     #== Utility Methods ==
@@ -352,7 +365,9 @@ class IRCUser(object):
             else:
                 response, bad, forbidden = user.mode.combine(params[1], params[2:], self.nickname)
                 if response:
-                    self.socket.sendMessage("MODE", user.nickname, response)
+                    self.socket.sendMessage("MODE", user.nickname, response, prefix=self.prefix())
+                    if user.nickname != self.nickname: # Also send the mode change to the user if an oper is changing it
+                        user.socket.sendMessage("MODE", user.nickname, response, prefix=self.prefix())
                 for mode in bad:
                     self.socket.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, user.nickname, mode, ":is unknown mode char to me", prefix=self.ircd.hostname)
                 for mode in forbidden:
@@ -458,6 +473,43 @@ class IRCUser(object):
 
     def irc_WHO(self, prefix, params):
         pass
+    
+    def irc_WHOIS(self, prefix, params):
+        if not params:
+            self.socket.sendMessage(irc.ERR_NONICKNAMEGIVEN, self.nickname, ":No nickname given", prefix=self.ircd.hostname)
+            return
+        users = params[0].split(",")
+        for uname in users:
+            if uname not in self.ircd.users:
+                self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, uname, ":No such nick/channel", prefix=self.ircd.hostname)
+                self.socket.sendMessage(irc.RPL_ENDOFWHOIS, self.nickname, "*", ":End of /WHOIS list.", prefix=self.ircd.hostname)
+                continue
+            udata = self.ircd.users[uname]
+            self.socket.sendMessage(irc.RPL_WHOISUSER, self.nickname, udata.nickname, udata.username, udata.hostname, "*", ":{}".format(udata.realname), prefix=self.ircd.hostname)
+            if udata.channels:
+                chanlist = []
+                for channel in udata.channels.iterkeys():
+                    cdata = self.ircd.channels[channel]
+                    if cdata.name in self.channels or (not cdata.mode.has("s") and not cdata.mode.has("p")):
+                        level = udata.accessLevel(cdata.name)
+                        if level == 0:
+                            chanlist.append(cdata.name)
+                        else:
+                            symbol = self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - level]]
+                            chanlist.append("{}{}".format(symbol, cdata.name))
+                if chanlist:
+                    self.socket.sendMessage(irc.RPL_WHOISCHANNELS, self.nickname, udata.nickname, ":{}".format(" ".join(chanlist)), prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_WHOISSERVER, self.nickname, udata.nickname, self.ircd.hostname, ":{}".format(self.ircd.name), prefix=self.ircd.hostname)
+            if udata.mode.has("a"):
+                self.socket.sendMessage(irc.RPL_AWAY, self.nickname, udata.nickname, ":{}".format(udata.mode.get("a")), prefix=self.ircd.hostname)
+            if udata.mode.has("o"):
+                self.socket.sendMessage(irc.RPL_WHOISOPERATOR, self.nickname, udata.nickname, ":is an IRC operator", prefix=self.ircd.hostname)
+            if udata.account:
+                self.socket.sendMessage(irc.RPL_WHOISACCOUNT, self.nickname, udata.nickname, udata.account, ":is logged in as", prefix=self.ircd.hostname)
+            if udata.socket.secure:
+                self.socket.sendMessage(irc.RPL_WHOISSECURE, self.nickname, udata.nickname, ":is using a secure connection", prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_WHOISIDLE, self.nickname, udata.nickname, str(epoch(now()) - epoch(udata.lastactivity)), str(epoch(udata.signon)), ":seconds idle, signon time", prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_ENDOFWHOIS, self.nickname, udata.nickname, ":End of /WHOIS list.", prefix=self.ircd.hostname)
     
     def irc_PRIVMSG(self, prefix, params):
         if not params:

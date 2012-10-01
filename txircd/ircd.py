@@ -12,6 +12,7 @@ from txircd.user import IRCUser
 import uuid, socket, collections
 
 irc.RPL_CREATIONTIME = "329"
+irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode"])
@@ -33,17 +34,7 @@ class IRCProtocol(irc.IRC):
         elif not self.type:
             return irc.IRC.handleCommand(self, command, prefix, params)
         else:
-            return self.delegateCommand(self.type, command, prefix, params)
-    
-    def delegateCommand(self, delegate, command, prefix, params):
-        method = getattr(delegate, "irc_{}".format(command), None)
-        try:
-            if method is not None:
-                method(prefix, params)
-            else:
-                delegate.irc_unknown(prefix, command, params)
-        except:
-            log.deferr()
+            return self.type.handleCommand(command, prefix, params)
         
 
     def sendLine(self, line):
