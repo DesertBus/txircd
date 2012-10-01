@@ -366,6 +366,8 @@ class IRCUser(object):
                 response, bad, forbidden = user.mode.combine(params[1], params[2:], self.nickname)
                 if response:
                     self.socket.sendMessage("MODE", user.nickname, response, prefix=self.prefix())
+                    if user.nickname != self.nickname: # Also send the mode change to the user if an oper is changing it
+                        user.socket.sendMessage("MODE", user.nickname, response, prefix=self.prefix())
                 for mode in bad:
                     self.socket.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, user.nickname, mode, ":is unknown mode char to me", prefix=self.ircd.hostname)
                 for mode in forbidden:
