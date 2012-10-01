@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from twisted.internet import reactor
+from twisted.internet import reactor, ssl
 from twisted.python import log
 from txircd.ircd import IRCD
 
@@ -18,5 +18,6 @@ if __name__ == "__main__":
         log.startLogging(sys.stdout)
     ircd = IRCD(args.name, client_timeout=args.client_timeout, description=args.welcome)
     reactor.listenTCP(args.ircport, ircd)
+    reactor.listenSSL(args.ircport+30, ircd, ssl.DefaultOpenSSLContextFactory('test.key','test.pem'))
     reactor.run()
 
