@@ -14,6 +14,7 @@ import uuid, socket, collections
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
+irc.RPL_WHOISSECURE  = "671"
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode"])
 
@@ -25,6 +26,9 @@ class IRCProtocol(irc.IRC):
         self.password = None
         self.nick = None
         self.user = None
+        self.secure = False
+    
+    def connectionMade(self):
         self.secure = ISSLTransport(self.transport, None) is not None
 
     def handleCommand(self, command, prefix, params):

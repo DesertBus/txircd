@@ -35,7 +35,7 @@ class IRCUser(object):
         #TODO: Check password
         
         # Mask the IP
-        ip = parent.transport.getHandle().getpeername()[0]
+        ip = parent.transport.getPeer().host
         if ip in parent.factory.vhosts:
             hostname = parent.factory.vhosts[ip]
         else:
