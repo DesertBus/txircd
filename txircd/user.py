@@ -470,7 +470,39 @@ class IRCUser(object):
         udata.leave(params[0])
 
     def irc_WHO(self, prefix, params):
-        pass
+        # When server-to-server is implemented, replace self.ircd.hostname in the replies with a way to get the (real or masked) server name for each user
+        # We don't need to worry about fixing the hopcount since most IRCds always send 0
+        if not params:
+            for u in self.ircd.users.itervalues():
+                if u.mode.has("i"):
+                    continue
+                common_channel = False
+                for c in self.channels.iterkeys():
+                    if c in u.channels:
+                        common_channel = True
+                        break
+                if not common_channel:
+                    self.socket.sendMessage(irc.RPL_WHOREPLY, self.nickname, "*", u.username, u.hostname, self.ircd.hostname, u.nickname, "{}{}".format("G" if u.mode.has("a") else "H", "*" if u.mode.has("o") else ""), ":0", u.realname, prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_ENDOFWHO, self.nickname, "*", ":End of /WHO list.", prefix=self.ircd.hostname)
+        else:
+            filters = ""
+            if len(params) >= 2:
+                filters = params[1]
+            if params[0] in self.ircd.channels:
+                cdata = self.ircd.channels[params[0]]
+                in_channel = cdata.name in self.channels # cache this value instead of searching self.channels every iteration
+                for user in cdata.users.itervalues():
+                    if (in_channel or not user.mode.has("i")) and ("o" not in filters or user.mode.has("o")):
+                        self.socket.sendMessage(irc.RPL_WHOREPLY, self.nickname, cdata.name, user.username, user.hostname, self.ircd.hostname, user.nickname, "{}{}{}".format("G" if user.mode.has("a") else "H", "*" if user.mode.has("o") else "", self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - user.accessLevel(cdata.name)]] if user.accessLevel(cdata.name) > 0 else ""), ":0", user.realname, prefix=self.ircd.hostname)
+                self.socket.sendMessage(irc.RPL_ENDOFWHO, self.nickname, cdata.name, ":End of /WHO list.", prefix=self.ircd.hostname)
+            elif params[0][0] in self.ircd.channel_prefixes:
+                self.socket.sendMessage(irc.RPL_ENDOFWHO, self.nickname, params[0], ":End of /WHO list.", prefix=self.ircd.hostname)
+            else:
+                for user in self.ircd.users.itervalues():
+                    if not user.mode.has("i") and (fnmatch.fnmatch(irc_lower(user.nickname), irc_lower(params[0])) or fnmatch.fnmatch(irc_lower(user.hostname), irc_lower(params[0]))):
+                        self.socket.sendMessage(irc.RPL_WHOREPLY, self.nickname, params[0], user.username, user.hostname, self.ircd.hostname, user.nickname, "{}{}".format("G" if user.mode.has("a") else "H", "*" if user.mode.has("o") else ""), ":0", user.realname, prefix=self.ircd.hostname)
+                self.socket.sendMessage(irc.RPL_ENDOFWHO, self.nickname, params[0], ":End of /WHO list.", prefix=self.ircd.hostname)
+                # params[0] is used here for the target so that the original glob pattern is returned
     
     def irc_WHOIS(self, prefix, params):
         if not params:
