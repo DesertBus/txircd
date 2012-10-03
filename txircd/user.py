@@ -17,7 +17,7 @@ class IRCUser(object):
             # Race condition, we checked their nick but now it is unavailable
             # Just give up and crash hard
             parent.sendMessage(irc.ERR_NICKNAMEINUSE, parent.factory.users[nick].nickname, ":Nickname is already in use", prefix=parent.factory.hostname)
-            parent.sendMessage("ERROR","Closing Link: {}".format(parent.factory.users[nick].nickname))
+            parent.sendMessage("ERROR",":Closing Link: {}".format(parent.factory.users[nick].nickname))
             parent.transport.loseConnection()
             raise ValueError("Invalid nickname")
         # Parse USER params
@@ -318,7 +318,7 @@ class IRCUser(object):
         for c in self.channels.keys():
             self.quit(c,reason)
         del self.ircd.users[self.nickname]
-        self.socket.sendMessage("ERROR","Closing Link: {}".format(self.prefix()))
+        self.socket.sendMessage("ERROR",":Closing Link: {}".format(self.prefix()))
         self.socket.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
