@@ -17,7 +17,7 @@ class IRCUser(object):
             # Race condition, we checked their nick but now it is unavailable
             # Just give up and crash hard
             parent.sendMessage(irc.ERR_NICKNAMEINUSE, parent.factory.users[nick].nickname, ":Nickname is already in use", prefix=parent.factory.hostname)
-            parent.sendMessage("ERROR","Closing Link: {}".format(parent.factory.users[nick].nickname))
+            parent.sendMessage("ERROR",":Closing Link: {}".format(parent.factory.users[nick].nickname))
             parent.transport.loseConnection()
             raise ValueError("Invalid nickname")
         # Parse USER params
@@ -318,7 +318,7 @@ class IRCUser(object):
         for c in self.channels.keys():
             self.quit(c,reason)
         del self.ircd.users[self.nickname]
-        self.socket.sendMessage("ERROR","Closing Link: {}".format(self.prefix()))
+        self.socket.sendMessage("ERROR",":Closing Link: {}".format(self.prefix()))
         self.socket.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
@@ -666,6 +666,19 @@ class IRCUser(object):
         else:
             self.mode.modes["a"] = params[0]
             self.socket.sendMessage(irc.RPL_NOWAWAY, self.nickname, ":You have been marked as being away", prefix=self.ircd.hostname)
+    
+    def irc_KILL(self, prefix, params):
+        if not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission Denied - You do not have the required operator privileges", prefix=self.ircd.hostname)
+            return
+        if not params or len(params) < 2:
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "KILL", ":Not enough parameters.", prefix=self.ircd.hostname)
+        elif params[0] not in self.ircd.users:
+            self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, params[0], ":No such nick", prefix=self.ircd.hostname)
+        else:
+            udata = self.ircd.users[params[0]]
+            udata.socket.sendMessage("KILL", udata.nickname, ":{} ({})".format(self.nickname, params[1]), prefix=self.ircd.hostname)
+            udata.irc_QUIT(None, ["Killed by {} ({})".format(self.nickname, params[1])])
     
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command", prefix=self.ircd.hostname)
