@@ -661,10 +661,10 @@ class IRCUser(object):
     def irc_AWAY(self, prefix, params):
         if not params:
             self.mode.combine("-a", [], self.nickname)
-            self.socket.sendMessage(irc.RPL_UNAWAY, self.nickname, ":You are no longer marked as being away")
+            self.socket.sendMessage(irc.RPL_UNAWAY, self.nickname, ":You are no longer marked as being away", prefix=self.ircd.hostname)
         else:
             self.mode.combine("+a", [params[0]], self.nickname)
-            self.socket.sendMessage(irc.RPL_NOWAWAY, self.nickname, ":You have been marked as being away")
+            self.socket.sendMessage(irc.RPL_NOWAWAY, self.nickname, ":You have been marked as being away", prefix=self.ircd.hostname)
     
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command", prefix=self.ircd.hostname)
