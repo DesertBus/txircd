@@ -658,6 +658,14 @@ class IRCUser(object):
     def irc_MOTD(self, prefix, params):
         self.send_motd()
     
+    def irc_AWAY(self, prefix, params):
+        if not params:
+            self.mode.combine("-a", [], self.nickname)
+            self.socket.sendMessage(irc.RPL_UNAWAY, self.nickname, ":You are no longer marked as being away")
+        else:
+            self.mode.combine("+a", [params[0]], self.nickname)
+            self.socket.sendMessage(irc.RPL_NOWAWAY, self.nickname, ":You have been marked as being away")
+    
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command", prefix=self.ircd.hostname)
         raise NotImplementedError(command, prefix, params)
