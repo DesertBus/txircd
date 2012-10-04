@@ -54,9 +54,10 @@ class IRCUser(object):
         self.ircd = parent.factory
         self.socket = parent
         self.nickname = nick
-        self.username = username
+        self.username = username.lstrip("-")
         self.realname = realname
         self.hostname = hostname
+        self.ip = "" # placeholder for now
         self.server = parent.factory.name
         self.signon = now()
         self.lastactivity = now()

@@ -148,6 +148,14 @@ class IRCD(Factory):
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
+        self.xlines = {
+            "G": CaseInsensitiveDictionary(),
+            "K": CaseInsensitiveDictionary(),
+            "Z": CaseInsensitiveDictionary(),
+            "E": CaseInsensitiveDictionary(),
+            "Q": CaseInsensitiveDictionary(),
+            "SHUN": CaseInsensitiveDictionary()
+        }
     
     def rehash(self):
         try:
