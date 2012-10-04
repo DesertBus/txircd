@@ -138,7 +138,7 @@ class IRCD(Factory):
 
     def __init__(self, config, options = None):
         self.config = config
-        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts"]
+        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts","ban_msg"]
         if not options:
             options = {}
         self.load_options(options)

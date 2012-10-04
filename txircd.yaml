@@ -16,3 +16,4 @@ verbose: false
 vhosts:
   127.0.0.1: localhost
   129.161.51.222: I.Created.You
+ban_msg: You're banned!
