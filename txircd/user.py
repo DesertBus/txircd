@@ -720,8 +720,14 @@ class IRCUser(object):
                 for user in self.ircd.users.itervalues():
                     usermask = irc_lower("{}@{}".format(user.username, user.hostname))
                     if fnmatch.fnmatch(usermask, banmask):
-                        user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname) # perhaps configurable notice?
-                        user.irc_QUIT(None, ["G:Lined: {}".format(params[2])])
+                        excepted = False
+                        for mask in self.ircd.xlines["E"].iterkeys():
+                            if fnmatch.fnmatch(usermask, mask):
+                                excepted = True
+                                break
+                        if not excepted:
+                            user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
+                            user.irc_QUIT(None, ["G:Lined: {}".format(params[2])])
     
     def irc_KLINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -737,8 +743,14 @@ class IRCUser(object):
                 for user in self.ircd.users.itervalues():
                     usermask = irc_lower("{}@{}".format(user.username, user.hostname))
                     if fnmatch.fnmatch(usermask, banmask):
-                        user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
-                        user.irc_QUIT(None, ["K:Lined: {}".format(params[2])])
+                        excepted = False
+                        for mask in self.ircd.xlines["E"].iterkeys():
+                            if fnmatch.fnmatch(usermask, mask):
+                                excepted = True
+                                break
+                        if not excepted:
+                            user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
+                            user.irc_QUIT(None, ["K:Lined: {}".format(params[2])])
     
     def irc_ZLINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -750,8 +762,15 @@ class IRCUser(object):
             if self.add_xline("Z", params[0], parse_duration(params[1]), params[2]):
                 for user in self.ircd.users.itervalues():
                     if fnmatch.fnmatch(user.ip, params[0]):
-                        user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
-                        user.irc_QUIT(None, ["Z:Lined: {}".format(params[2])])
+                        excepted = False
+                        usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+                        for mask in self.ircd.xlines["E"].iterkeys():
+                            if fnmatch.fnmatch(usermask, mask):
+                                excepted = True
+                                break
+                        if not excepted:
+                            user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
+                            user.irc_QUIT(None, ["Z:Lined: {}".format(params[2])])
     
     def irc_ELINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -812,7 +831,13 @@ class IRCUser(object):
                 for user in self.ircd.users.itervalues():
                     usermask = irc_lower("{}@{}".format(user.username, user.hostname))
                     if fnmatch.fnmatch(usermask, banmask):
-                        user.shunned = True
+                        excepted = False
+                        for mask in self.ircd.xlines["E"].iterkeys():
+                            if fnmatch.fnmatch(usermask, mask):
+                                excepted = True
+                                break
+                        if not excepted:
+                            user.shunned = True
     
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command", prefix=self.ircd.hostname)
