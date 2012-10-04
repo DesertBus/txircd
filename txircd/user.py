@@ -57,7 +57,7 @@ class IRCUser(object):
         self.username = username.lstrip("-")
         self.realname = realname
         self.hostname = hostname
-        self.ip = "" # placeholder for now
+        self.ip = ip
         self.server = parent.factory.name
         self.signon = now()
         self.lastactivity = now()
