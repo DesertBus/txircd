@@ -3,3 +3,4 @@ argparse==1.2.1
 wsgiref==0.1.2
 zope.interface==4.0.1
 pyopenssl==0.13
+pyyaml>=3.10
