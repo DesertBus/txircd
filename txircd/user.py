@@ -66,6 +66,7 @@ class IRCUser(object):
         self.invites = []
         self.service = False
         self.account = None
+        self.shunned = False
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
@@ -134,6 +135,30 @@ class IRCUser(object):
             if self.nickname in modes.get(mode):
                 status += mode
         return status
+    
+    def parse_duration(self, duration_string):
+        pass
+    
+    def add_xline(self, linetype, mask, duration, reason):
+        if mask in self.ircd.xlines[linetype]:
+            self.socket.sendMessage("NOTICE", self.nickname, ":*** Failed to add line for {}: already exists".format(mask), prefix=self.ircd.hostname)
+            return False
+        else:
+            self.ircd.xlines[linetype][mask] = {
+                "created": now(),
+                "duration": duration,
+                "setter": self.nickname,
+                "reason": reason
+            }
+            return True
+    
+    def remove_xline(self, linetype, mask):
+        if mask not in self.ircd.xlines[linetype]:
+            self.socket.sendMessage("NOTICE", self.nickname, ":*** Failed to remove line for {}: not found in list".format(mask), prefix=self.ircd.hostname)
+            return False
+        else:
+            del self.ircd.xlines[linetype][mask]
+            return True
     
     def send_motd(self):
         if self.ircd.motd:
@@ -680,6 +705,114 @@ class IRCUser(object):
             udata = self.ircd.users[params[0]]
             udata.socket.sendMessage("KILL", udata.nickname, ":{} ({})".format(self.nickname, params[1]), prefix=self.ircd.hostname)
             udata.irc_QUIT(None, ["Killed by {} ({})".format(self.nickname, params[1])])
+    
+    def irc_GLINE(self, prefix, params):
+        if not params or (params[0][0] != "-" and len(params) < 3):
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "GLINE", ":Not enough parameters", prefix=self.ircd.hostname)
+            return
+        if params[0][0] == "-":
+            self.remove_xline("G", params[0][1:])
+        else:
+            banmask = irc_lower(params[0])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
+            if self.add_xline("G", banmask, parse_duration(params[1]), params[2]):
+                for user in self.ircd.users.itervalues():
+                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+                    if fnmatch.fnmatch(usermask, banmask):
+                        user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname) # perhaps configurable notice?
+                        user.irc_QUIT(None, ["G:Lined: {}".format(params[2])])
+    
+    def irc_KLINE(self, prefix, params):
+        if not params or (params[0][0] != "-" and len(params) < 3):
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "KLINE", ":Not enough parameters", prefix=self.ircd.hostname)
+            return
+        if params[0][0] == "-":
+            self.remove_xline("K", params[0][1:])
+        else:
+            banmask = irc_lower(params[0])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
+            if self.add_xline("K", banmask, parse_duration(params[1]), params[2]):
+                for user in self.ircd.users.itervalues():
+                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+                    if fnmatch.fnmatch(usermask, banmask):
+                        user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
+                        user.irc_QUIT(None, ["K:Lined: {}".format(params[2])])
+    
+    def irc_ZLINE(self, prefix, params):
+        if not params or (params[0][0] != "-" and len(params) < 3):
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "ZLINE", ":Not enough parameters", prefix=self.ircd.hostname)
+            return
+        if params[0][0] == "-":
+            self.remove_xline("Z", params[0][1:])
+        else:
+            if self.add_xline("Z", params[0], parse_duration(params[1]), params[2]):
+                for user in self.ircd.users.itervalues():
+                    if fnmatch.fnmatch(user.ip, params[0]):
+                        user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
+                        user.irc_QUIT(None, ["Z:Lined: {}".format(params[2])])
+    
+    def irc_ELINE(self, prefix, params):
+        if not params or (params[0][0] != "-" and len(params) < 3):
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "ELINE", ":Not enough parameters", prefix=self.ircd.hostname)
+            return
+        if params[0][0] == "-":
+            self.remove_xline("E", params[0][1:])
+        else:
+            banmask = irc_lower(params[0])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
+            self.add_xline("E", banmask, parse_duration(params[1]), params[2])
+    
+    def irc_QLINE(self, prefix, params):
+        if not params or (params[0][0] != "-" and len(params) < 3):
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "QLINE", ":Not enough parameters", prefix=self.ircd.hostname)
+            return
+        if params[0][0] == "-":
+            self.remove_xline("Q", params[0][1:])
+        else:
+            nickmask = irc_lower(params[0])
+            if self.add_xline("Q", nickmask, parse_duration(params[1]), params[2]):
+                if "?" not in nickmask and "*" not in nickmask:
+                    if nickmask in self.ircd.users:
+                        user = self.ircd.users[nickmask]
+                        user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
+                        user.irc_QUIT(None, ["Q:Lined: {}".format(params[2])])
+                else:
+                    for lower_nick, user in self.ircd.users.iteritems():
+                        if fnmatch.fnmatch(lower_nick, nickmask):
+                            user.socket.sendMessage("NOTICE", user.nickname, ":*** You're banned!", prefix=self.ircd.hostname)
+                            user.irc_QUIT(None, ["Q:Lined: {}".format(params[2])])
+    
+    def irc_SHUN(self, prefix, params):
+        if not params or (params[0][0] != "-" and len(params) < 3):
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "SHUN", ":Not enough parameters", prefix=self.ircd.hostname)
+            return
+        if params[0][0] == "-":
+            banmask = irc_lower(params[0][1:])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
+            if self.remove_xline("SHUN", banmask):
+                for user in self.ircd.users.itervalues():
+                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+                    if fnmatch.fnmatch(usermask, banmask):
+                        matches_other = False
+                        for shun in self.ircd.xlines["SHUN"].iterkeys():
+                            if fnmatch.fnmatch(usermask, shun):
+                                matches_other = True
+                                break
+                        if not matches_other:
+                            user.shunned = False
+        else:
+            banmask = irc_lower(params[0])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
+            if self.add_xline("SHUN", banmask, parse_duration(params[1]), params[2]):
+                for user in self.ircd.users.itervalues():
+                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+                    if fnmatch.fnmatch(usermask, banmask):
+                        user.shunned = True
     
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command", prefix=self.ircd.hostname)
