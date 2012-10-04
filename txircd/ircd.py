@@ -9,12 +9,27 @@ from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
-import uuid, socket, collections
+import uuid, socket, collections, yaml
 
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
 irc.RPL_WHOISSECURE  = "671"
+
+
+default_options = {
+    "verbose": False,
+    "irc_port": 6667,
+    "ssl_port": 6697,
+    "name": "txircd",
+    "hostname": socket.getfqdn(),
+    "motd": "Welcome to txIRCD",
+    "motd_line_length": 80,
+    "client_timeout": 180,
+    "oper_hosts": ["127.0.0.1","localhost"],
+    "opers": {"admin":"password"},
+    "vhosts": {"127.0.0.1":"localhost"},
+}
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode"])
 
@@ -107,9 +122,6 @@ class IRCProtocol(irc.IRC):
 class IRCD(Factory):
     protocol = IRCProtocol
     channel_prefixes = "#"
-    oper_hosts = ["127.0.0.1","129.161.209.91"]
-    opers = {"Fugiman":"test"}
-    vhosts = {"127.0.0.1":"localhost","129.161.209.91":"I.Created.You"}
     types = {
         "user": IRCUser,
         "server": IRCServer,
@@ -124,19 +136,47 @@ class IRCD(Factory):
         "v": "+"
     }
 
-    def __init__(self, name, client_timeout=5 * 60, description="Welcome to TXIRCd"):
-        self.name = name
-        self.hostname = socket.getfqdn()
+    def __init__(self, config, options = None):
+        self.config = config
+        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts"]
+        if not options:
+            options = {}
+        self.load_options(options)
         self.version = "0.1"
         self.created = now()
         self.token = uuid.uuid1()
-        self.motd = description
-        self.motd_length = 80
-        self.client_timeout = client_timeout
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
-
+    
+    def rehash(self):
+        try:
+            with open(self.config) as f:
+                self.load_options(yaml.safe_load(f))
+        except:
+            return False
+        return True
+    
+    def load_options(self, options):
+        for var in self.config_vars:
+            setattr(self, var, options[var] if var in options else default_options[var])
+    
+    def save_options(self):
+        options = {}
+        try:
+            with open(self.config) as f:
+                options = yaml.safe_load(f)
+        except:
+            return False
+        for var in self.config_vars:
+            options[var] = getattr(self, var, None)
+        try:
+            with open(self.config,"w") as f:
+                yaml.dump(options, f, default_flow_style=False)
+        except:
+            return False
+        return True
+    
     def ChannelFactory(self, name):
         c = Channel(name,now(),{"message":None,"author":"","created":now()},CaseInsensitiveDictionary(),ChannelModes(self,None))
         c.mode.parent = c

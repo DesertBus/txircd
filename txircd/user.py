@@ -136,10 +136,10 @@ class IRCUser(object):
     
     def send_motd(self):
         if self.ircd.motd:
-            chunks = chunk_message(self.ircd.motd, self.ircd.motd_length)
+            chunks = chunk_message(self.ircd.motd, self.ircd.motd_line_length)
             self.socket.sendMessage(irc.RPL_MOTDSTART, self.nickname, ":- {} Message of the day - ".format(self.ircd.name), prefix=self.ircd.hostname)
             for chunk in chunks:
-                line = ":- {{:{!s}}} -".format(self.ircd.motd_length).format(chunk) # Dynamically inject the line length as a width argument for the line
+                line = ":- {{:{!s}}} -".format(self.ircd.motd_line_length).format(chunk) # Dynamically inject the line length as a width argument for the line
                 self.socket.sendMessage(irc.RPL_MOTD, self.nickname, line, prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFMOTD, self.nickname, ":End of MOTD command", prefix=self.ircd.hostname)
         else:
