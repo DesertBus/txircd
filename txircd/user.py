@@ -832,7 +832,36 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "ELINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
         if params[0][0] == "-":
+            banmask = irc_lower(params[0][1:])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
             self.remove_xline("E", params[0][1:])
+            kill_users = []
+            for user in self.ircd.users.itervalues():
+                usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+                if fnmatch.fnmatch(usermask, banmask):
+                    # match G/K lines and SHUN
+                    match = False
+                    for mask, linedata in self.ircd.xlines["G"].iteritems():
+                        if fnmatch.fnmatch(usermask, mask):
+                           users.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                           match = True
+                           break
+                    if match:
+                        kill_users.append([user, linedata["reason"]])
+                        break
+                    for mask, linedata in self.ircd.xlines["K"].iteritems():
+                        if fnmatch.fnmatch(usermask, mask):
+                            users.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                            match = True
+                            break
+                    if match:
+                        kill_users.append([user, linedata["reason"]])
+                        break
+                    for mask, linedata in self.ircd.xlines["SHUN"].iteritems():
+                        if fnmatch.fnmatch(usermask, mask):
+                            user.shunned = True
+                            break
         else:
             banmask = irc_lower(params[0])
             if "@" not in banmask:
