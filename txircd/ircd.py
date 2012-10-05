@@ -36,6 +36,8 @@ default_options = {
     "max_data": 5, # Bytes per 5 seconds
     "maxConnectionsPerPeer": 3,
     "maxConnectionExempt": {"127.0.0.1":0},
+    "ping_interval": 30,
+    "timeout_delay": 90,
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -51,19 +53,32 @@ class IRCProtocol(irc.IRC):
         self.secure = False
         self.data = 0
         self.data_checker = LoopingCall(self.checkData)
+        self.pinger = LoopingCall(self.ping)
+        self.last_message = None
     
     def connectionMade(self):
         self.secure = ISSLTransport(self.transport, None) is not None
         self.data_checker.start(5)
+        self.last_message = now()
+        self.pinger.start(self.factory.ping_interval)
 
     def dataReceived(self, data):
         self.data += len(data)
+        self.last_message = now()
+        if self.pinger.running:
+            self.pinger.reset()
         irc.IRC.dataReceived(self, data)
     
     def checkData(self):
         if self.type:
             self.type.checkData(self.data)
         self.data = 0
+    
+    def ping(self):
+        if (now() - self.last_message).total_seconds() > self.factory.timeout_delay:
+            self.transport.loseConnection()
+        else:
+            self.sendMessage("PING",":{}".format(self.factory.hostname), prefix=self.factory.hostname)
     
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
@@ -139,6 +154,8 @@ class IRCProtocol(irc.IRC):
             self.type.connectionLost(reason)
         if self.data_checker.running:
             self.data_checker.stop()
+        if self.pinger.running:
+            self.pinger.stop()
 
 class IRCD(Factory):
     protocol = IRCProtocol
@@ -159,7 +176,9 @@ class IRCD(Factory):
 
     def __init__(self, config, options = None):
         self.config = config
-        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer","maxConnectionExempt"]
+        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout",
+            "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
+            "maxConnectionExempt","ping_interval","timeout_delay"]
         if not options:
             options = {}
         self.load_options(options)

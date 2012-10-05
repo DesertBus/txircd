@@ -16,7 +16,9 @@ oper_hosts:
 opers:
   Fugiman: test
   admin: password
+ping_interval: 30
 ssl_port: 6697
+timeout_delay: 90
 verbose: true
 vhosts:
   127.0.0.1: localhost
