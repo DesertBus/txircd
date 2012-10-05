@@ -198,7 +198,7 @@ class IRCUser(object):
         for unit, amount in timeparts.iteritems():
             if amount is not None:
                 try:
-                    duration += int(amount) * mult_factor
+                    duration += int(amount) * mult_factor[unit]
                 except:
                     pass
         return duration
