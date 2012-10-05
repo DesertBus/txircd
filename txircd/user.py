@@ -762,15 +762,8 @@ class IRCUser(object):
             if self.add_xline("Z", params[0], parse_duration(params[1]), params[2]):
                 for user in self.ircd.users.itervalues():
                     if fnmatch.fnmatch(user.ip, params[0]):
-                        excepted = False
-                        usermask = irc_lower("{}@{}".format(user.username, user.hostname))
-                        for mask in self.ircd.xlines["E"].iterkeys():
-                            if fnmatch.fnmatch(usermask, mask):
-                                excepted = True
-                                break
-                        if not excepted:
-                            user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                            user.irc_QUIT(None, ["Z:Lined: {}".format(params[2])])
+                        user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                        user.irc_QUIT(None, ["Z:Lined: {}".format(params[2])])
     
     def irc_ELINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
