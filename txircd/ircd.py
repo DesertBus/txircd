@@ -46,10 +46,10 @@ class IRCProtocol(irc.IRC):
     def connectionMade(self):
         self.secure = ISSLTransport(self.transport, None) is not None
         ip = self.transport.getPeer().host
-        for mask in self.factory.xlines["Z"].iterkeys():
+        for mask, linedata in self.factory.xlines["Z"].iteritems():
             if fnmatch.fnmatch(ip, mask):
                 self.sendMessage("NOTICE", "*", ":{}".format(self.factory.ban_msg), prefix=self.factory.hostname)
-                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined]".format(ip), prefix=self.factory.hostname)
+                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]), prefix=self.factory.hostname)
                 self.transport.loseConnection()
 
     def handleCommand(self, command, prefix, params):
