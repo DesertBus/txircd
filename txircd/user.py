@@ -68,6 +68,28 @@ class IRCUser(object):
         self.account = None
         self.shunned = False
         
+        excepted = False
+        usermask = irc_lower("{}@{}".format(self.username, self.hostname))
+        for mask in self.ircd.xlines["E"].iterkeys():
+            if fnmatch.fnmatch(usermask, mask):
+                excepted = True
+                break
+        if not excepted:
+            for mask, linedata in self.ircd.xlines["G"].iteritems():
+                if fnmatch.fnmatch(usermask, mask):
+                    self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                    self.socket.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), linedata["reason"]), prefix=self.ircd.hostname)
+                    raise ValueError("Banned user") # Abort user!
+            for mask, linedata in self.ircd.xlines["K"].iteritems():
+                if fnmatch.fnmatch(usermask, mask):
+                    self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                    self.socket.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), linedata["reason"]), prefix=self.ircd.hostname)
+                    raise ValueError("Banned user")
+            for mask in self.ircd.xlines["SHUN"].iterkeys():
+                if fnmatch.fnmatch(usermask, mask):
+                    self.shunned = True
+                    break
+        
         # Add self to user list
         self.ircd.users[self.nickname] = self
         
