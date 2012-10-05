@@ -213,6 +213,7 @@ class IRCUser(object):
                 "setter": self.nickname,
                 "reason": reason
             }
+            self.socket.sendMessage("NOTICE", self.nickname, ":*** Added line {} on mask {}".format(linetype, mask), prefix=self.ircd.hostname)
             applymethod = getattr(self, "applyline_{}".format(linetype), None)
             if applymethod is not None:
                 applymethod(irc_lower(mask), reason)
@@ -222,6 +223,7 @@ class IRCUser(object):
             self.socket.sendMessage("NOTICE", self.nickname, ":*** Failed to remove line for {}: not found in list".format(mask), prefix=self.ircd.hostname)
         else:
             del self.ircd.xlines[linetype][mask]
+            self.socket.sendMessage("NOTICE", self.nickname, ":*** Removed line {} on mask {}".format(linetype, mask), prefix=self.ircd.hostname)
             removemethod = getattr(self, "removeline_{}".format(linetype), None)
             if removemethod is not None:
                 removemethod(irc_lower(mask))
