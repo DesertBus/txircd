@@ -68,6 +68,12 @@ class IRCUser(object):
         self.account = None
         self.shunned = False
         
+        if not self.matches_xline("E"):
+            if self.matches_xline("G") or self.matches_xline("K"):
+                raise ValueError("Banned user")
+            if self.matches_xline("SHUN"):
+                self.shunned = True
+        
         # Add self to user list
         self.ircd.users[self.nickname] = self
         
