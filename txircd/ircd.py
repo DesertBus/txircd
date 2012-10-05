@@ -9,7 +9,7 @@ from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
-import uuid, socket, collections, yaml
+import fnmatch, uuid, socket, collections, yaml
 
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
@@ -45,6 +45,10 @@ class IRCProtocol(irc.IRC):
     
     def connectionMade(self):
         self.secure = ISSLTransport(self.transport, None) is not None
+        ip = self.transport.getPeer().host
+        for mask in self.factory.xlines["Z"].iterkeys():
+            if fnmatch.fnmatch(ip, mask):
+                self.transport.loseConnection()
 
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
