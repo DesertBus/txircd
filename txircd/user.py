@@ -70,25 +70,41 @@ class IRCUser(object):
         
         excepted = False
         usermask = irc_lower("{}@{}".format(self.username, self.hostname))
-        for mask in self.ircd.xlines["E"].iterkeys():
+        expired = { "E": [], "G": [], "K": [], "SHUN": [] }
+        for mask, linedata in self.ircd.xlines["E"].iteritems():
+            if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
+                expired["E"].append(mask)
+                continue
             if fnmatch.fnmatch(usermask, mask):
                 excepted = True
                 break
         if not excepted:
             for mask, linedata in self.ircd.xlines["G"].iteritems():
+                if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
+                    expired["G"].append(mask)
+                    continue
                 if fnmatch.fnmatch(usermask, mask):
                     self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                     self.socket.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), linedata["reason"]), prefix=self.ircd.hostname)
                     raise ValueError("Banned user") # Abort user!
             for mask, linedata in self.ircd.xlines["K"].iteritems():
+                if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
+                    expired["K"].append(mask)
+                    continue
                 if fnmatch.fnmatch(usermask, mask):
                     self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                     self.socket.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), linedata["reason"]), prefix=self.ircd.hostname)
                     raise ValueError("Banned user")
             for mask in self.ircd.xlines["SHUN"].iterkeys():
+                if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
+                    expired["SHUN"].append(mask)
+                    continue
                 if fnmatch.fnmatch(usermask, mask):
                     self.shunned = True
                     break
+        for linetype, masklist in expired:
+            for mask in masklist:
+                del self.ircd.xlines[linetype][mask]
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
@@ -297,10 +313,16 @@ class IRCUser(object):
     
     def removeline_E(self, mask):
         for linetype in ["G", "K", "SHUN"]:
+            expired = []
             for banmask, linedata in self.ircd.xlines[linetype].iteritems():
+                if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
+                    expired.append(banmask)
+                    continue
                 applymethod = getattr(self, "applyline_{}".format(linetype), None)
                 if applymethod is not None:
                     applymethod(banmask, linedata["reason"])
+            for mask in expired:
+                del self.ircd.xlines[linetype][mask]
     
     def removeline_SHUN(self, mask):
         for user in self.ircd.users.itervalues():

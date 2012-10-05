@@ -46,11 +46,17 @@ class IRCProtocol(irc.IRC):
     def connectionMade(self):
         self.secure = ISSLTransport(self.transport, None) is not None
         ip = self.transport.getPeer().host
+        expired = []
         for mask, linedata in self.factory.xlines["Z"].iteritems():
+            if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
+                expired.append(mask)
+                continue
             if fnmatch.fnmatch(ip, mask):
                 self.sendMessage("NOTICE", "*", ":{}".format(self.factory.ban_msg), prefix=self.factory.hostname)
                 self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]), prefix=self.factory.hostname)
                 self.transport.loseConnection()
+        for mask in expired:
+            del self.factory.xlines["Z"][mask]
 
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
