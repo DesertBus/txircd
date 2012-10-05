@@ -894,7 +894,10 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "GLINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
         if params[0][0] == "-":
-            self.remove_xline("G", params[0][1:])
+            banmask = irc_lower(params[0][1:])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
+            self.remove_xline("G", banmask)
         else:
             banmask = irc_lower(params[0])
             if "@" not in banmask:
@@ -906,7 +909,10 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "KLINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
         if params[0][0] == "-":
-            self.remove_xline("K", params[0][1:])
+            banmask = irc_lower(params[0][1:])
+            if "@" not in banmask:
+                banmask = "*@{}".format(banmask)
+            self.remove_xline("K", banmask)
         else:
             banmask = irc_lower(params[0])
             if "@" not in banmask:
