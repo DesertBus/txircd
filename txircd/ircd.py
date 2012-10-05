@@ -173,6 +173,14 @@ class IRCD(Factory):
             "Q": CaseInsensitiveDictionary(),
             "SHUN": CaseInsensitiveDictionary()
         }
+        self.xline_match = {
+            "G": "{ident}@{host}",
+            "K": "{ident}@{host}",
+            "Z": "{ip}",
+            "E": "{ident}@{host}",
+            "Q": "{nick}",
+            "SHUN": "{ident}@{host}"
+        }
     
     def rehash(self):
         try:
