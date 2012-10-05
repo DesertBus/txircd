@@ -55,7 +55,7 @@ class IRCProtocol(irc.IRC):
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
-            return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.hostname)
+            return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.factory.hostname)
         elif not self.type:
             return irc.IRC.handleCommand(self, command, prefix, params)
         else:
@@ -68,16 +68,16 @@ class IRCProtocol(irc.IRC):
 
     def irc_PASS(self, prefix, params):
         if not params:
-            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.hostname)
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.factory.hostname)
         self.password = params
 
     def irc_NICK(self, prefix, params):
         if not params:
-            self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.hostname)
+            self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.factory.hostname)
         elif not VALID_USERNAME.match(params[0]):
-            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.hostname)
+            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.factory.hostname)
         elif params[0] in self.factory.users:
-            self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.hostname)
+            self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.factory.hostname)
         else:
             self.nick = params[0]
             if self.user:
@@ -89,7 +89,7 @@ class IRCProtocol(irc.IRC):
 
     def irc_USER(self, prefix, params):
         if len(params) < 4:
-            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Not enough parameters", prefix=self.hostname)
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Not enough parameters", prefix=self.factory.hostname)
         self.user = params
         if self.nick:
             try:
