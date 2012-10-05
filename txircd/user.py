@@ -3,6 +3,7 @@
 from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.task import Cooperator
+from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message
 import fnmatch, socket, hashlib
@@ -65,6 +66,7 @@ class IRCUser(object):
         self.invites = []
         self.service = False
         self.account = None
+        self.disconnected = Deferred()
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
@@ -83,6 +85,7 @@ class IRCUser(object):
     
     def connectionLost(self, reason):
         self.irc_QUIT(None,["Client connection lost"])
+        self.disconnected.callback(None)
     
     def handleCommand(self, command, prefix, params):
         method = getattr(self, "irc_{}".format(command), None)
@@ -218,13 +221,16 @@ class IRCUser(object):
             self.socket.sendMessage(irc.RPL_TOPIC, self.nickname, cdata.name, ":{}".format(cdata.topic["message"]), prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_TOPICWHOTIME, self.nickname, cdata.name, cdata.topic["author"], str(epoch(cdata.topic["created"])), prefix=self.ircd.hostname)
         self.report_names(cdata.name)
+        cdata.log.write("[{:02d}:{:02d}:{:02d}] {} joined the channel\n".format(now().hour, now().minute, now().second, self.nickname))
     
     def leave(self, channel):
         cdata = self.ircd.channels[channel]
+        cdata.log.write("[{:02d}:{:02d}:{:02d}] {} left the channel\n".format(now().hour, now().minute, now().second, self.nickname))
         del self.channels[cdata.name]
         del cdata.users[self.nickname] # remove channel user entry
         if not cdata.users:
             del self.ircd.channels[cdata.name] # destroy the empty channel
+            cdata.log.close()
         else:
             mode = self.status(cdata.name) # Clear modes
             cdata.mode.combine("-{}".format(mode),[self.nickname for _ in mode],cdata.name)
@@ -257,7 +263,7 @@ class IRCUser(object):
         elif params[0] in self.ircd.users and irc_lower(params[0]) != irc_lower(self.nickname): # Just changing case on your own nick is fine
             self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, self.ircd.users[params[0]].nickname, ":Nickname is already in use", prefix=self.ircd.hostname)
         elif not VALID_USERNAME.match(params[0]):
-            self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.ircd.users[params[0]].nickname, ":Erroneous nickname", prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.ircd.hostname)
         else:
             oldnick = self.nickname
             newnick = params[0]
@@ -294,6 +300,7 @@ class IRCUser(object):
                 # Add channel members to message queue
                 for u in self.ircd.channels[c].users.iterkeys():
                     tomsg.add(u)
+                cdata.log.write("[{:02d}:{:02d}:{:02d}] {} is now known as {}\n".format(now().hour, now().minute, now().second, oldnick, newnick))
             for u in tomsg:
                 self.ircd.users[u].socket.sendMessage("NICK", newnick, prefix=oldprefix)
     
@@ -396,6 +403,7 @@ class IRCUser(object):
         for mode in forbidden:
             self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission denied - only operators may set mode {}".format(mode), prefix=self.ircd.hostname)
         if modes:
+            cdata.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, self.nickname, modes))
             for u in cdata.users.itervalues():
                 u.socket.sendMessage("MODE", cdata.name, modes, prefix=self.prefix())
 
@@ -441,6 +449,7 @@ class IRCUser(object):
                 cdata.topic["created"] = now()
                 for u in cdata.users.itervalues():
                     u.socket.sendMessage(irc.RPL_TOPIC, u.nickname, cdata.name, ":{}".format(cdata.topic["message"]), prefix=self.prefix())
+                cdata.log.write("[{:02d}:{:02d}:{:02d}] {} changed the topic to {}\n".format(now().hour, now().minute, now().second, self.nickname, params[1]))
             else:
                 self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.nickname, cdata.name, ":You do not have access to change the topic on this channel", prefix=self.ircd.hostname)
     
@@ -564,6 +573,7 @@ class IRCUser(object):
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname:
                     u.socket.sendMessage("PRIVMSG", c.name, ":{}".format(message), prefix=self.prefix())
+            c.log.write("[{:02d}:{:02d}:{:02d}] <{}>: {}\n".format(now().hour, now().minute, now().second, self.nickname, message))
         elif target[1:] in self.ircd.channels:
             symbol_prefix = {v:k for k, v in self.ircd.prefix_symbols.items()}
             if target[0] not in symbol_prefix:
@@ -573,6 +583,7 @@ class IRCUser(object):
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname and u.hasAccess(c.name, min_status):
                     u.socket.sendMessage("PRIVMSG", "{}{}".format(target[0], c.name), ":{}".format(message), prefix=self.prefix())
+            c.log.write("[{:02d}:{:02d}:{:02d}] <{}>: {}\n".format(now().hour, now().minute, now().second, self.nickname, message))
         else:
             return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
     
@@ -597,6 +608,7 @@ class IRCUser(object):
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname:
                     u.socket.sendMessage("NOTICE", c.name, ":{}".format(message), prefix=self.prefix())
+            c.log.write("[{:02d}:{:02d}:{:02d}] -{}-: {}\n".format(now().hour, now().minute, now().second, self.nickname, message))
         elif target[1:] in self.ircd.channels:
             symbol_prefix = {v:k for k, v in self.ircd.prefix_symbols.items()}
             if target[0] not in symbol_prefix:
@@ -606,6 +618,7 @@ class IRCUser(object):
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname and u.hasAccess(c.name, min_status):
                     u.socket.sendMessage("NOTICE", "{}{}".format(target[0], c.name), ":{}".format(message), prefix=self.prefix())
+            c.log.write("[{:02d}:{:02d}:{:02d}] -{}-: {}\n".format(now().hour, now().minute, now().second, self.nickname, message))
         else:
             return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
     

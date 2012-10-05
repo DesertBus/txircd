@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 from twisted.internet import reactor
+from twisted.internet.defer import DeferredList
 from twisted.internet.protocol import Factory
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
+from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, now
+from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, now, irc_lower
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.user import IRCUser
-import uuid, socket, collections, yaml
+import uuid, socket, collections, yaml, os
 
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
@@ -29,9 +31,10 @@ default_options = {
     "oper_hosts": ["127.0.0.1","localhost"],
     "opers": {"admin":"password"},
     "vhosts": {"127.0.0.1":"localhost"},
+    "log_dir": "logs"
 }
 
-Channel = collections.namedtuple("Channel",["name","created","topic","users","mode"])
+Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
 
 class IRCProtocol(irc.IRC):
     UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "QUIT"]
@@ -138,7 +141,7 @@ class IRCD(Factory):
 
     def __init__(self, config, options = None):
         self.config = config
-        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts"]
+        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts","log_dir"]
         if not options:
             options = {}
         self.load_options(options)
@@ -148,6 +151,7 @@ class IRCD(Factory):
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
+        reactor.addSystemEventTrigger('before', 'shutdown', self.cleanup)
     
     def rehash(self):
         try:
@@ -177,8 +181,30 @@ class IRCD(Factory):
             return False
         return True
     
+    def cleanup(self):
+        # Track the disconnections so we know they get done
+        deferreds = []
+        # Cleanly disconnect all clients
+        log.msg("Disconnecting clients...")
+        for u in self.users.values():
+            u.irc_QUIT(None,["Server shutting down"])
+            deferreds.append(u.disconnected)
+        # Without any clients, all channels should be gone
+        # But make sure the logs are closed, just in case
+        log.msg("Closing logs...")
+        for c in self.channels.itervalues():
+            c.log.close()
+        # Finally, save the config. Just in case.
+        log.msg("Saving options...")
+        self.save_options()
+        # Return deferreds
+        return DeferredList(deferreds)
+    
     def ChannelFactory(self, name):
-        c = Channel(name,now(),{"message":None,"author":"","created":now()},CaseInsensitiveDictionary(),ChannelModes(self,None))
+        logfile = "{}/{}".format(self.log_dir,irc_lower(name))
+        if not os.path.exists(logfile):
+            os.makedirs(logfile)
+        c = Channel(name,now(),{"message":None,"author":"","created":now()},CaseInsensitiveDictionary(),ChannelModes(self,None),DailyLogFile("log",logfile))
         c.mode.parent = c
         c.mode.combine("nt",[],name)
         return c

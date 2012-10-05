@@ -1,6 +1,7 @@
 client_timeout: 180
 hostname: test.txircd.com
 irc_port: 6667
+log_dir: logs
 motd: Welcome to txIRCD
 motd_line_length: 80
 name: DBTestServ
@@ -12,7 +13,7 @@ opers:
   Fugiman: test
   admin: password
 ssl_port: 6697
-verbose: false
+verbose: true
 vhosts:
   127.0.0.1: localhost
   129.161.51.222: I.Created.You
