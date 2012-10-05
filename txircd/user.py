@@ -109,6 +109,8 @@ class IRCUser(object):
         self.irc_QUIT(None,["Client connection lost"])
     
     def handleCommand(self, command, prefix, params):
+        if self.shunned and command not in ["PING", "PONG", "JOIN", "PART", "QUIT"]:
+            return
         method = getattr(self, "irc_{}".format(command), None)
         if command != "PING" and command != "PONG":
             self.lastactivity = now()
