@@ -69,7 +69,15 @@ class IRCUser(object):
         self.shunned = False
         
         if not self.matches_xline("E"):
-            if self.matches_xline("G") or self.matches_xline("K"):
+            xline_match = self.matches_xline("G")
+            if xline_match != None:
+                self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                self.socket.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), prefix=self.ircd.hostname)
+                raise ValueError("Banned user")
+            xline_match = self.matches_xline("K") # We're still here, so try the next one
+            if xline_match:
+                self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                self.socket.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), prefix=self.ircd.hostname)
                 raise ValueError("Banned user")
             if self.matches_xline("SHUN"):
                 self.shunned = True
@@ -205,18 +213,21 @@ class IRCUser(object):
     def applyline_G(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o") and not user.matches_xline("E"):
+                user.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                 user.socket.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["G:Lined: {}".format(reason)])
     
     def applyline_K(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o") and not user.matches_xline("E"):
+                user.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                 user.socket.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["K:Lined: {}".format(reason)])
     
     def applyline_Z(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o") and not user.matches_xline("E"):
+                user.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                 user.socket.sendMessage("ERROR", ":Closing Link: {} [Z:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["Z:Lined: {}".format(reason)])
     
@@ -227,6 +238,7 @@ class IRCUser(object):
     def applyline_Q(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o"):
+                user.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                 user.socket.sendMessage("ERROR", ":Closing Link: {} [Q:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["Q:Lined: {}".format(reason)])
     
@@ -260,13 +272,13 @@ class IRCUser(object):
     def matches_xline(self, linetype):
         usermask = self.ircd.xline_match[linetype].format(nick=self.nickname, ident=self.username, host=self.hostname, ip=self.ip)
         expired = []
-        matched = False
+        matched = None
         for mask, linedata in self.ircd.xlines[linetype]:
             if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
                 expired.append(mask)
                 continue
             if fnmatch.fnmatch(usermask, mask):
-                matched = True
+                matched = linedata["reason"]
                 break # If there are more expired x:lines, they'll get removed later if necessary
         for mask in expired:
             del self.ircd.xlines[linetype][mask]
