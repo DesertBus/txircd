@@ -2,6 +2,10 @@ client_timeout: 180
 hostname: test.txircd.com
 irc_port: 6667
 log_dir: logs
+maxConnectionExempt:
+  127.0.0.1: 1
+maxConnectionsPerPeer: 3
+max_data: 100
 motd: Welcome to txIRCD
 motd_line_length: 80
 name: DBTestServ

@@ -2,6 +2,7 @@
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 from twisted.internet.protocol import Factory
+from twisted.internet.task import LoopingCall
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.python.logfile import DailyLogFile
@@ -31,7 +32,10 @@ default_options = {
     "oper_hosts": ["127.0.0.1","localhost"],
     "opers": {"admin":"password"},
     "vhosts": {"127.0.0.1":"localhost"},
-    "log_dir": "logs"
+    "log_dir": "logs",
+    "max_data": 5, # Bytes per 5 seconds
+    "maxConnectionsPerPeer": 3,
+    "maxConnectionExempt": {"127.0.0.1":0},
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -45,10 +49,22 @@ class IRCProtocol(irc.IRC):
         self.nick = None
         self.user = None
         self.secure = False
+        self.data = 0
+        self.data_checker = LoopingCall(self.checkData)
     
     def connectionMade(self):
         self.secure = ISSLTransport(self.transport, None) is not None
+        self.data_checker.start(5)
 
+    def dataReceived(self, data):
+        self.data += len(data)
+        irc.IRC.dataReceived(self, data)
+    
+    def checkData(self):
+        if self.type:
+            self.type.checkData(self.data)
+        self.data = 0
+    
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
@@ -121,6 +137,8 @@ class IRCProtocol(irc.IRC):
     def connectionLost(self, reason):
         if self.type:
             self.type.connectionLost(reason)
+        if self.data_checker.running:
+            self.data_checker.stop()
 
 class IRCD(Factory):
     protocol = IRCProtocol
@@ -141,7 +159,7 @@ class IRCD(Factory):
 
     def __init__(self, config, options = None):
         self.config = config
-        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts","log_dir"]
+        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout","oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer","maxConnectionExempt"]
         if not options:
             options = {}
         self.load_options(options)
@@ -151,6 +169,7 @@ class IRCD(Factory):
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
+        self.peerConnections = {}
         reactor.addSystemEventTrigger('before', 'shutdown', self.cleanup)
     
     def rehash(self):
@@ -199,6 +218,15 @@ class IRCD(Factory):
         self.save_options()
         # Return deferreds
         return DeferredList(deferreds)
+    
+    def buildProtocol(self, addr):
+        ip = addr.host
+        conn = self.peerConnections.get(ip,0)
+        max = self.maxConnectionExempt[ip] if ip in self.maxConnectionExempt else self.maxConnectionsPerPeer
+        if max and conn >= max:
+            return None
+        self.peerConnections[ip] = conn + 1
+        return Factory.buildProtocol(self, addr)
     
     def ChannelFactory(self, name):
         logfile = "{}/{}".format(self.log_dir,irc_lower(name))

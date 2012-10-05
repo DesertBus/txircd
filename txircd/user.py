@@ -83,6 +83,10 @@ class IRCUser(object):
         self.socket.sendMessage(irc.RPL_ISUPPORT, self.nickname, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), ":are supported by this server", prefix=self.ircd.hostname)
         self.send_motd()
     
+    def checkData(self, data):
+        if data > self.ircd.max_data and not self.mode.has("o"):
+            self.irc_QUIT(None,["Killed for flooding"])
+    
     def connectionLost(self, reason):
         self.irc_QUIT(None,["Client connection lost"])
         self.disconnected.callback(None)
