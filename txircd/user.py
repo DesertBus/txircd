@@ -867,6 +867,10 @@ class IRCUser(object):
             if "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("E", banmask, self.parse_duration(params[1]), params[2])
+            for user in self.ircd.users.itervalues():
+                usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+                if fnmatch.fnmatch(usermas, banmask):
+                    user.shunned = False
     
     def irc_QLINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
