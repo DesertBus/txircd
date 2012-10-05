@@ -4,7 +4,7 @@ from twisted.internet.protocol import Factory
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, now
+from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, irc_lower, now
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
