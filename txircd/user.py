@@ -95,14 +95,14 @@ class IRCUser(object):
                     self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                     self.socket.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), linedata["reason"]), prefix=self.ircd.hostname)
                     raise ValueError("Banned user")
-            for mask in self.ircd.xlines["SHUN"].iterkeys():
+            for mask, linedata in self.ircd.xlines["SHUN"].iteritems():
                 if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
                     expired["SHUN"].append(mask)
                     continue
                 if fnmatch.fnmatch(usermask, mask):
                     self.shunned = True
                     break
-        for linetype, masklist in expired:
+        for linetype, masklist in expired.iteritems():
             for mask in masklist:
                 del self.ircd.xlines[linetype][mask]
         
