@@ -190,7 +190,6 @@ class IRCUser(object):
     def add_xline(self, linetype, mask, duration, reason):
         if mask in self.ircd.xlines[linetype]:
             self.socket.sendMessage("NOTICE", self.nickname, ":*** Failed to add line for {}: already exists".format(mask), prefix=self.ircd.hostname)
-            return False
         else:
             self.ircd.xlines[linetype][mask] = {
                 "created": now(),
@@ -198,15 +197,111 @@ class IRCUser(object):
                 "setter": self.nickname,
                 "reason": reason
             }
-            return True
+            applymethod = getattr(self, "applyline_{}".format(linetype), None)
+            if applymethod is not None:
+                applymethod(irc_lower(mask), reason)
     
     def remove_xline(self, linetype, mask):
         if mask not in self.ircd.xlines[linetype]:
             self.socket.sendMessage("NOTICE", self.nickname, ":*** Failed to remove line for {}: not found in list".format(mask), prefix=self.ircd.hostname)
-            return False
         else:
             del self.ircd.xlines[linetype][mask]
-            return True
+            removemethod = getattr(self, "removeline_{}".format(linetype), None)
+            if removemethod is not None:
+                removemethod(irc_lower(mask))
+    
+    def applyline_G(self, mask, reason):
+        kill_users = []
+        for user in self.ircd.users.itervalues():
+            usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+            if fnmatch.fnmatch(usermask, mask):
+                excepted = False
+                for exceptmask in self.ircd.xlines["E"].iterkeys():
+                    if fnmatch.fnmatch(usermask, exceptmask):
+                        excepted = True
+                        break
+                if not excepted:
+                    user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                    kill_users.append(user)
+        for user in kill_users:
+            user.irc_QUIT(None, ["G:Lined: {}".format(reason)])
+    
+    def applyline_K(self, mask, reason):
+        kill_users = []
+        for user in self.ircd.users.itervalues():
+            usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+            if fnmatch.fnmatch(usermask, mask):
+                excepted = False
+                for exceptmask in self.ircd.xlines["E"].iterkeys():
+                    if fnmatch.fnmatch(usermask, exceptmask):
+                        excepted = True
+                        break
+                if not excepted:
+                    user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                    kill_users.append(user)
+        for user in kill_users:
+            user.irc_QUIT(None, ["K:Lined: {}".format(reason)])
+    
+    def applyline_Z(self, mask, reason):
+        kill_users = []
+        for user in self.ircd.users.itervalues():
+            if fnmatch.fnmatch(user.ip, mask):
+                user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                kill_users.append(user)
+        for user in kill_users:
+            user.irc_QUIT(None, ["Z:Lined: {}".format(reason)])
+    
+    def applyline_E(self, mask, reason):
+        for user in self.ircd.users.itervalues():
+            usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+            if fnmatch.fnmatch(usermask, mask):
+                user.shunned = False
+    
+    def applyline_Q(self, mask, reason):
+        kill_users = []
+        if "?" not in nickmask and "*" not in nickmask: # avoid iterating if we can help it
+            if nickmask in self.ircd.users:
+                user = self.ircd.users[nickmask]
+                user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                kill_users.append(user)
+        else:
+            for lower_nick, user in self.ircd.users.iteritems():
+                if fnmatch.fnmatch(lower_nick, mask):
+                    user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                    kill_users.append(user)
+        for user in kill_users:
+            user.irc_QUIT(None, ["Q:Lined: {}".format(reason)])
+    
+    def applyline_SHUN(self, mask, reason):
+        for user in self.ircd.users.itervalues():
+            usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+            if fnmatch.fnmatch(usermask, mask):
+                excepted = False
+                for exceptmask in self.ircd.xlines["E"].iterkeys():
+                    if fnmatch.fnmatch(usermask, exceptmask):
+                        excepted = True
+                        break
+                if not excepted:
+                    user.shunned = True
+    
+    def removeline_E(self, mask):
+        for linetype in ["G", "K", "SHUN"]:
+            for banmask, linedata in self.ircd.xlines[linetype].iteritems():
+                applymethod = getattr(self, "applyline_{}".format(linetype), None)
+                if applymethod is not None:
+                    applymethod(banmask, linedata["reason"])
+    
+    def removeline_SHUN(self, mask):
+        for user in self.ircd.users.itervalues():
+            usermask = irc_lower("{}@{}".format(user.username, user.hostname))
+            if fnmatch.fnmatch(usermask, mask):
+                matches_other = False
+                for shun in self.ircd.xlines["SHUN"].iterkeys():
+                    if fnmatch.fnmatch(usermask, shun):
+                        matches_other = True
+                        break
+                if not matches_other:
+                    user.shunned = False
     
     def send_motd(self):
         if self.ircd.motd:
@@ -769,21 +864,7 @@ class IRCUser(object):
             banmask = irc_lower(params[0])
             if "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            if self.add_xline("G", banmask, self.parse_duration(params[1]), params[2]):
-                kill_users = []
-                for user in self.ircd.users.itervalues():
-                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
-                    if fnmatch.fnmatch(usermask, banmask):
-                        excepted = False
-                        for mask in self.ircd.xlines["E"].iterkeys():
-                            if fnmatch.fnmatch(usermask, mask):
-                                excepted = True
-                                break
-                        if not excepted:
-                            user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                            kill_users.append(user)
-                for user in kill_users:
-                    user.irc_QUIT(None, ["G:Lined: {}".format(params[2])])
+            self.add_xline("G", banmask, self.parse_duration(params[1]), params[2])
     
     def irc_KLINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -795,21 +876,7 @@ class IRCUser(object):
             banmask = irc_lower(params[0])
             if "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            if self.add_xline("K", banmask, self.parse_duration(params[1]), params[2]):
-                kill_users = []
-                for user in self.ircd.users.itervalues():
-                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
-                    if fnmatch.fnmatch(usermask, banmask):
-                        excepted = False
-                        for mask in self.ircd.xlines["E"].iterkeys():
-                            if fnmatch.fnmatch(usermask, mask):
-                                excepted = True
-                                break
-                        if not excepted:
-                            user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                            kill_users.append(user)
-                for user in kill_users:
-                    user.irc_QUIT(None, ["K:Lined: {}".format(params[2])])
+            self.add_xline("K", banmask, self.parse_duration(params[1]), params[2])
     
     def irc_ZLINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -818,14 +885,7 @@ class IRCUser(object):
         if params[0][0] == "-":
             self.remove_xline("Z", params[0][1:])
         else:
-            if self.add_xline("Z", params[0], self.parse_duration(params[1]), params[2]):
-                kill_users = []
-                for user in self.ircd.users.itervalues():
-                    if fnmatch.fnmatch(user.ip, params[0]):
-                        user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                        kill_users.append(user)
-                for user in kill_users:
-                    user.irc_QUIT(None, ["Z:Lined: {}".format(params[2])])
+            self.add_xline("Z", params[0], self.parse_duration(params[1]), params[2])
     
     def irc_ELINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -836,41 +896,11 @@ class IRCUser(object):
             if "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.remove_xline("E", params[0][1:])
-            kill_users = []
-            for user in self.ircd.users.itervalues():
-                usermask = irc_lower("{}@{}".format(user.username, user.hostname))
-                if fnmatch.fnmatch(usermask, banmask):
-                    # match G/K lines and SHUN
-                    match = False
-                    for mask, linedata in self.ircd.xlines["G"].iteritems():
-                        if fnmatch.fnmatch(usermask, mask):
-                           users.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                           match = True
-                           break
-                    if match:
-                        kill_users.append([user, linedata["reason"]])
-                        break
-                    for mask, linedata in self.ircd.xlines["K"].iteritems():
-                        if fnmatch.fnmatch(usermask, mask):
-                            users.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                            match = True
-                            break
-                    if match:
-                        kill_users.append([user, linedata["reason"]])
-                        break
-                    for mask, linedata in self.ircd.xlines["SHUN"].iteritems():
-                        if fnmatch.fnmatch(usermask, mask):
-                            user.shunned = True
-                            break
         else:
             banmask = irc_lower(params[0])
             if "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("E", banmask, self.parse_duration(params[1]), params[2])
-            for user in self.ircd.users.itervalues():
-                usermask = irc_lower("{}@{}".format(user.username, user.hostname))
-                if fnmatch.fnmatch(usermas, banmask):
-                    user.shunned = False
     
     def irc_QLINE(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -880,20 +910,7 @@ class IRCUser(object):
             self.remove_xline("Q", params[0][1:])
         else:
             nickmask = irc_lower(params[0])
-            if self.add_xline("Q", nickmask, self.parse_duration(params[1]), params[2]):
-                kill_users = []
-                if "?" not in nickmask and "*" not in nickmask:
-                    if nickmask in self.ircd.users:
-                        user = self.ircd.users[nickmask]
-                        user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                        kill_users.append(user)
-                else:
-                    for lower_nick, user in self.ircd.users.iteritems():
-                        if fnmatch.fnmatch(lower_nick, nickmask):
-                            user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                            kill_users.append(user)
-                for user in kill_users:
-                    user.irc_QUIT(None, ["Q:Lined: {}".format(params[2])])
+            self.add_xline("Q", nickmask, self.parse_duration(params[1]), params[2])
     
     def irc_SHUN(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
@@ -903,32 +920,12 @@ class IRCUser(object):
             banmask = irc_lower(params[0][1:])
             if "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            if self.remove_xline("SHUN", banmask):
-                for user in self.ircd.users.itervalues():
-                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
-                    if fnmatch.fnmatch(usermask, banmask):
-                        matches_other = False
-                        for shun in self.ircd.xlines["SHUN"].iterkeys():
-                            if fnmatch.fnmatch(usermask, shun):
-                                matches_other = True
-                                break
-                        if not matches_other:
-                            user.shunned = False
+            self.remove_xline("SHUN", banmask)
         else:
             banmask = irc_lower(params[0])
             if "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            if self.add_xline("SHUN", banmask, self.parse_duration(params[1]), params[2]):
-                for user in self.ircd.users.itervalues():
-                    usermask = irc_lower("{}@{}".format(user.username, user.hostname))
-                    if fnmatch.fnmatch(usermask, banmask):
-                        excepted = False
-                        for mask in self.ircd.xlines["E"].iterkeys():
-                            if fnmatch.fnmatch(usermask, mask):
-                                excepted = True
-                                break
-                        if not excepted:
-                            user.shunned = True
+            self.add_xline("SHUN", banmask, self.parse_duration(params[1]), params[2])
     
     def irc_unknown(self, prefix, command, params):
         self.socket.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command", prefix=self.ircd.hostname)
