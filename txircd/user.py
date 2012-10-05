@@ -165,6 +165,10 @@ class IRCUser(object):
         Parses a string duration given in 1y2w3d4h5m6s format
         returning the total number of seconds
         """
+        try: # attempt to parse as a number of seconds if we get just a number before we go through the parsing process
+            return int(duration_string)
+        except:
+            pass
         timeparts = DURATION_REGEX.match(duration_string).groupdict()
         mult_factor = {
             "years": 31557600, # 365.25 days to avoid leap year nonsense
