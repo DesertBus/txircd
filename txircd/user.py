@@ -4,7 +4,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.task import Cooperator
 from txircd.mode import UserModes, ChannelModes
-from txircd.utils import irc_lower, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message
+from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message
 import fnmatch, socket, hashlib
 
 class IRCUser(object):
@@ -161,7 +161,23 @@ class IRCUser(object):
         return status
     
     def parse_duration(self, duration_string):
-        pass
+        timeparts = DURATION_REGEX.match(duration_string).groupdict()
+        mult_factor = {
+            "years": 31557600,
+            "weeks": 604800,
+            "days": 86400,
+            "hours": 3600,
+            "minutes": 60,
+            "seconds": 1
+        }
+        duration = 0
+        for unit, amount in timeparts.iteritems():
+            if amount is not None:
+                try:
+                    duration += int(amount) * mult_factor
+                except:
+                    pass
+        return duration
     
     def add_xline(self, linetype, mask, duration, reason):
         if mask in self.ircd.xlines[linetype]:
