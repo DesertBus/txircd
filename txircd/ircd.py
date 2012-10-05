@@ -79,6 +79,11 @@ class IRCProtocol(irc.IRC):
         elif params[0] in self.factory.users:
             self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.factory.hostname)
         else:
+            lower_nick = irc_lower(params[0])
+            for mask, linedata in self.factory.xlines["Q"].iteritems():
+                if fnmatch.fnmatch(lower_nick, mask):
+                    self.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nick if self.nick else "*", params[0], ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.factory.hostname)
+                    return
             self.nick = params[0]
             if self.user:
                 try:
