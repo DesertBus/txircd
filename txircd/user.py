@@ -397,7 +397,7 @@ class IRCUser(object):
         for c in self.channels.keys():
             self.quit(c,reason)
         del self.ircd.users[self.nickname]
-        self.socket.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), params[0]))
+        self.socket.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason))
         self.socket.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
