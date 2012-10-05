@@ -1,3 +1,4 @@
+ban_msg: You're banned!
 client_timeout: 180
 hostname: test.txircd.com
 irc_port: 6667
@@ -16,4 +17,3 @@ verbose: false
 vhosts:
   127.0.0.1: localhost
   129.161.51.222: I.Created.You
-ban_msg: You're banned!
