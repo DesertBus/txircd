@@ -213,6 +213,8 @@ class IRCUser(object):
     def applyline_G(self, mask, reason):
         kill_users = []
         for user in self.ircd.users.itervalues():
+            if user.mode.has("o"):
+                continue # do not match opers
             usermask = irc_lower("{}@{}".format(user.username, user.hostname))
             if fnmatch.fnmatch(usermask, mask):
                 excepted = False
@@ -229,6 +231,8 @@ class IRCUser(object):
     def applyline_K(self, mask, reason):
         kill_users = []
         for user in self.ircd.users.itervalues():
+            if user.mode.has("o"):
+                continue # do not match opers
             usermask = irc_lower("{}@{}".format(user.username, user.hostname))
             if fnmatch.fnmatch(usermask, mask):
                 excepted = False
@@ -245,6 +249,8 @@ class IRCUser(object):
     def applyline_Z(self, mask, reason):
         kill_users = []
         for user in self.ircd.users.itervalues():
+            if user.mode.has("o"):
+                continue # do not match opers
             if fnmatch.fnmatch(user.ip, mask):
                 user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                 kill_users.append(user)
@@ -262,10 +268,13 @@ class IRCUser(object):
         if "?" not in nickmask and "*" not in nickmask: # avoid iterating if we can help it
             if nickmask in self.ircd.users:
                 user = self.ircd.users[nickmask]
-                user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
-                kill_users.append(user)
+                if not user.mode.has("o"):
+                    user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
+                    kill_users.append(user)
         else:
             for lower_nick, user in self.ircd.users.iteritems():
+                if user.mode.has("o"):
+                    continue # do not kill opers
                 if fnmatch.fnmatch(lower_nick, mask):
                     user.socket.sendMessage("NOTICE", user.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                     kill_users.append(user)
@@ -274,6 +283,8 @@ class IRCUser(object):
     
     def applyline_SHUN(self, mask, reason):
         for user in self.ircd.users.itervalues():
+            if user.mode.has("o"):
+                continue # DEFINITELY do not shun opers
             usermask = irc_lower("{}@{}".format(user.username, user.hostname))
             if fnmatch.fnmatch(usermask, mask):
                 excepted = False
