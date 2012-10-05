@@ -205,16 +205,19 @@ class IRCUser(object):
     def applyline_G(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o") and not user.matches_xline("E"):
+                user.socket.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["G:Lined: {}".format(reason)])
     
     def applyline_K(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o") and not user.matches_xline("E"):
+                user.socket.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["K:Lined: {}".format(reason)])
     
     def applyline_Z(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o") and not user.matches_xline("E"):
+                user.socket.sendMessage("ERROR", ":Closing Link: {} [Z:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["Z:Lined: {}".format(reason)])
     
     def applyline_E(self, userlist, reason):
@@ -224,6 +227,7 @@ class IRCUser(object):
     def applyline_Q(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o"):
+                user.socket.sendMessage("ERROR", ":Closing Link: {} [Q:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["Q:Lined: {}".format(reason)])
     
     def applyline_SHUN(self, userlist, reason):
