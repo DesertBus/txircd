@@ -161,9 +161,13 @@ class IRCUser(object):
         return status
     
     def parse_duration(self, duration_string):
+        """
+        Parses a string duration given in 1y2w3d4h5m6s format
+        returning the total number of seconds
+        """
         timeparts = DURATION_REGEX.match(duration_string).groupdict()
         mult_factor = {
-            "years": 31557600,
+            "years": 31557600, # 365.25 days to avoid leap year nonsense
             "weeks": 604800,
             "days": 86400,
             "hours": 3600,
