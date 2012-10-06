@@ -897,7 +897,10 @@ class IRCUser(object):
             self.remove_xline("Q", params[0][1:])
         else:
             nickmask = irc_lower(params[0])
-            self.add_xline("Q", nickmask, self.parse_duration(params[1]), params[2])
+            if VALID_USERNAME.match(nickmask.replace("*","").replace("?","a"):
+                self.add_xline("Q", nickmask, self.parse_duration(params[1]), params[2])
+            else:
+                self.socket.sendMessage("NOTICE", self.nickname, ":*** Could not set Q:Line: invalid nickmask", prefix=self.ircd.hostname)
     
     def irc_SHUN(self, prefix, params):
         if not params or (params[0][0] != "-" and len(params) < 3):
