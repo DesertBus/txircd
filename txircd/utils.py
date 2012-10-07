@@ -30,6 +30,38 @@ def chunk_message(msg, chunk_size):
         msg = msg[index+1:] if msg[index] in " \n" else msg[index:]
     return chunks
 
+def strip_colors(msg):
+    msg = msg.replace(chr(2), "").replace(chr(29), "").replace(chr(31), "").replace(chr(15), "").replace(chr(22), "") # bold, italic, underline, plain, reverse
+    while chr(3) in msg:
+        color_pos = msg.index(chr(3))
+        strip_length = 1
+        color = 0
+        second_color = 0
+        comma = False
+        for i in range(color_pos + 1, len(msg) if len(msg) <= color_pos + 5 else color_pos + 5):
+            if msg[i] == ',':
+                if comma:
+                    msg = "{}{}".format(msg[:color_pos], msg[color_pos + strip_length:])
+                    break
+                else:
+                    comma = True
+                    strip_length += 1
+            elif msg[i].isdigit():
+                if (color == 2 and not comma) or second_color == 2:
+                    msg = "{}{}".format(msg[:color_pos], msg[color_pos + strip_length:])
+                    break
+                elif comma:
+                    second_color += 1
+                else:
+                    color = 1
+                strip_length += 1
+            else:
+                msg = "{}{}".format(msg[:color_pos], msg[color_pos + strip_length:])
+                break
+        if len(msg) >= color_pos and msg[color_pos] == chr(3): # The color wasn't stripped yet
+            msg = "{}{}".format(msg[:color_pos], msg[color_pos + strip_length:])
+    return msg
+
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
         self._data = {}

@@ -5,7 +5,7 @@ from twisted.words.protocols import irc
 from twisted.internet.task import Cooperator
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
-from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message
+from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
 import fnmatch, socket, hashlib
 
 class IRCUser(object):
@@ -719,6 +719,8 @@ class IRCUser(object):
                 return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (+m)", prefix=self.ircd.hostname)
             if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
                 return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (banned)", prefix=self.ircd.hostname)
+            if c.mode.has("S") and (not self.hasAccess(c.name, "h") or "S" not in self.ircd.exempt_chanops):
+                message = strip_colors(message)
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname:
                     u.socket.sendMessage("PRIVMSG", c.name, ":{}".format(message), prefix=self.prefix())
