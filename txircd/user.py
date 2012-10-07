@@ -731,6 +731,12 @@ class IRCUser(object):
                 return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname) # I don't know what they were trying to send to.
             min_status = symbol_prefix[target[0]]
             c = self.ircd.channels[target[1:]]
+            if c.mode.has("n") and self.nickname not in c.users:
+                return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (no external messages)", prefix=self.ircd.hostname)
+            if c.mode.has("m") and not self.hasAccess(c.name, "v"):
+                return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (+m)", prefix=self.ircd.hostname)
+            if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
+                return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (banned)", prefix=self.ircd.hostname)
             if c.mode.has("S") and (not self.hasAccess(c.name, "h") or "S" not in self.ircd.exempt_chanops):
                 message = strip_colors(message)
             for u in c.users.itervalues():
@@ -770,6 +776,12 @@ class IRCUser(object):
                 return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
             min_status = symbol_prefix[target[0]]
             c = self.ircd.channels[target[1:]]
+            if c.mode.has("n") and self.nickname not in c.users:
+                return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (no external messages)", prefix=self.ircd.hostname)
+            if c.mode.has("m") and not self.hasAccess(c.name, "v"):
+                return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (+m)", prefix=self.ircd.hostname)
+            if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
+                return self.socket.sendMessage(irc.ERR_CANNOTSENDTOCHAN, self.nickname, c.name, ":Cannot send to channel (banned)", prefix=self.ircd.hostname)
             if c.mode.has("S") and (not self.hasAccess(c.name, "h") or "S" not in self.ircd.exempt_chanops):
                 message = strip_colors(message)
             for u in c.users.itervalues():
