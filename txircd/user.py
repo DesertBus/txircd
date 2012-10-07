@@ -591,7 +591,7 @@ class IRCUser(object):
                 cdata.topic["author"] = self.nickname
                 cdata.topic["created"] = now()
                 for u in cdata.users.itervalues():
-                    u.socket.sendMessage(irc.RPL_TOPIC, u.nickname, cdata.name, ":{}".format(cdata.topic["message"]), prefix=self.prefix())
+                    u.socket.sendMessage("TOPIC", u.nickname, cdata.name, ":{}".format(cdata.topic["message"]), prefix=self.prefix())
                 cdata.log.write("[{:02d}:{:02d}:{:02d}] {} changed the topic to {}\n".format(now().hour, now().minute, now().second, self.nickname, params[1]))
             else:
                 self.socket.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.nickname, cdata.name, ":You do not have access to change the topic on this channel", prefix=self.ircd.hostname)
