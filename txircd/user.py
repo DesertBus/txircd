@@ -189,7 +189,7 @@ class IRCUser(object):
             match_mask = irc_lower(mask)
             match_list = []
             for user in self.ircd.users.itervalues():
-                usermask = self.ircd.xline_match[linetype].format(nick=user.nickname, ident=user.username, host=user.hostname, ip=user.ip)
+                usermask = self.ircd.xline_match[linetype].format(nick=irc_lower(user.nickname), ident=irc_lower(user.username), host=irc_lower(user.hostname), ip=irc_lower(user.ip))
                 if fnmatch.fnmatch(usermask, match_mask):
                     match_list.append(user)
             applymethod = getattr(self, "applyline_{}".format(linetype), None)
@@ -250,7 +250,7 @@ class IRCUser(object):
             self.applyline_SHUN(matching_users["SHUN"], "Exception removed")
     
     def matches_xline(self, linetype):
-        usermask = self.ircd.xline_match[linetype].format(nick=self.nickname, ident=self.username, host=self.hostname, ip=self.ip)
+        usermask = self.ircd.xline_match[linetype].format(nick=irc_lower(self.nickname), ident=irc_lower(self.username), host=irc_lower(self.hostname), ip=irc_lower(self.ip))
         expired = []
         matched = None
         for mask, linedata in self.ircd.xlines[linetype].iteritems():
