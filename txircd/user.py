@@ -85,6 +85,7 @@ class IRCUser(object):
     
     def checkData(self, data):
         if data > self.ircd.max_data and not self.mode.has("o"):
+            log.msg("Killing user '{}' for flooding".format(self.nickname))
             self.irc_QUIT(None,["Killed for flooding"])
     
     def connectionLost(self, reason):

@@ -1,14 +1,22 @@
 client_timeout: 180
+db_database: txircd
+db_library: pymysql
+db_marker: '%s'
+db_password: txircd
+db_username: txircd
 hostname: test.txircd.com
 irc_port: 6667
 log_dir: logs
 maxConnectionExempt:
-  127.0.0.1: 1
+  127.0.0.1: 0
 maxConnectionsPerPeer: 3
-max_data: 100
+max_data: 100000
 motd: Welcome to txIRCD
 motd_line_length: 80
 name: DBTestServ
+nickserv_guest_prefix: Guest
+nickserv_limit: 5
+nickserv_timeout: 40
 oper_hosts:
 - 127.0.0.1
 - localhost

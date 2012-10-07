@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 from twisted.internet.protocol import Factory
@@ -11,7 +12,7 @@ from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictio
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
-from txircd.user import IRCUser
+from txircd.desertbus import DBUser
 import uuid, socket, collections, yaml, os
 
 irc.RPL_CREATIONTIME = "329"
@@ -38,6 +39,14 @@ default_options = {
     "maxConnectionExempt": {"127.0.0.1":0},
     "ping_interval": 30,
     "timeout_delay": 90,
+    "db_library": None,
+    "db_marker": "?",
+    "db_username": None,
+    "db_password": None,
+    "db_database": None,
+    "nickserv_timeout": 40,
+    "nickserv_limit": 5,
+    "nickserv_guest_prefix": "Guest"
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -110,7 +119,7 @@ class IRCProtocol(irc.IRC):
             self.nick = params[0]
             if self.user:
                 try:
-                    self.type = IRCUser(self, self.user, self.password, self.nick)
+                    self.type = self.factory.types["user"](self, self.user, self.password, self.nick)
                 except ValueError:
                     self.type = None
                     self.transport.loseConnection()
@@ -150,6 +159,7 @@ class IRCProtocol(irc.IRC):
         self.transport.loseConnection()
         
     def connectionLost(self, reason):
+        self.factory.unregisterProtocol(self)
         if self.type:
             self.type.connectionLost(reason)
         if self.data_checker.running:
@@ -161,7 +171,7 @@ class IRCD(Factory):
     protocol = IRCProtocol
     channel_prefixes = "#"
     types = {
-        "user": IRCUser,
+        "user": DBUser,
         "server": IRCServer,
         "service": IRCService,
     }
@@ -178,10 +188,9 @@ class IRCD(Factory):
         self.config = config
         self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout",
             "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
-            "maxConnectionExempt","ping_interval","timeout_delay"]
-        if not options:
-            options = {}
-        self.load_options(options)
+            "maxConnectionExempt","ping_interval","timeout_delay",
+            "db_library","db_marker","db_username","db_password","db_database",
+            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix"]
         self.version = "0.1"
         self.created = now()
         self.token = uuid.uuid1()
@@ -189,7 +198,11 @@ class IRCD(Factory):
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
         self.peerConnections = {}
+        self.db = None
         reactor.addSystemEventTrigger('before', 'shutdown', self.cleanup)
+        if not options:
+            options = {}
+        self.load_options(options)
     
     def rehash(self):
         try:
@@ -202,6 +215,10 @@ class IRCD(Factory):
     def load_options(self, options):
         for var in self.config_vars:
             setattr(self, var, options[var] if var in options else default_options[var])
+        if self.db:
+            self.db.close()
+        if self.db_library:
+            self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password)
     
     def save_options(self):
         options = {}
@@ -246,6 +263,12 @@ class IRCD(Factory):
             return None
         self.peerConnections[ip] = conn + 1
         return Factory.buildProtocol(self, addr)
+
+    def unregisterProtocol(self, p):
+        peerHost = p.transport.getPeer().host
+        self.peerConnections[peerHost] -= 1
+        if self.peerConnections[peerHost] == 0:
+            del self.peerConnections[peerHost]
     
     def ChannelFactory(self, name):
         logfile = "{}/{}".format(self.log_dir,irc_lower(name))
