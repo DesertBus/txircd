@@ -52,7 +52,7 @@ default_options = {
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
 
 class IRCProtocol(irc.IRC):
-    UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "QUIT"]
+    UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "PONG", "QUIT"]
 
     def __init__(self, *args, **kwargs):
         self.type = None
@@ -87,7 +87,7 @@ class IRCProtocol(irc.IRC):
         if (now() - self.last_message).total_seconds() > self.factory.timeout_delay:
             self.transport.loseConnection()
         else:
-            self.sendMessage("PING",":{}".format(self.factory.hostname), prefix=self.factory.hostname)
+            self.sendMessage("PING",":{}".format(self.factory.hostname))
     
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
@@ -106,7 +106,7 @@ class IRCProtocol(irc.IRC):
     def irc_PASS(self, prefix, params):
         if not params:
             return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.hostname)
-        self.password = params
+        self.password = params[0]
 
     def irc_NICK(self, prefix, params):
         if not params:
@@ -155,6 +155,9 @@ class IRCProtocol(irc.IRC):
         else: # TODO: There's no nickname here, what do?
             self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.hostname)
 
+    def irc_PONG(self, prefix, params):
+        pass
+    
     def irc_QUIT(self, prefix, params):
         self.transport.loseConnection()
         

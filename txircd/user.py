@@ -262,6 +262,9 @@ class IRCUser(object):
         else:
             self.socket.sendMessage(irc.ERR_NOORIGIN, self.nickname, ":No origin specified", prefix=self.ircd.hostname)
     
+    def irc_PONG(self, prefix, params):
+        pass
+    
     def irc_NICK(self, prefix, params):
         if not params:
             self.socket.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.ircd.hostname)

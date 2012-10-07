@@ -38,8 +38,10 @@ class DBUser(IRCUser):
         if password:
             if ":" in password:
                 username, chaff, password = password.partition(":")
+                print("AUTH", username, password)
                 self.auth(username, password)
             else:
+                print("TOKEN", password)
                 self.token(password)
         else:
             self.checkNick()
@@ -69,13 +71,17 @@ class DBUser(IRCUser):
         if self.auth_timer is None:
             IRCUser.handleCommand(self, command, prefix, params)
         # Allow some basic command, plus PRIVMSG so they can identify
-        elif command in ["PING","PONG","NICK","PRIVMSG","QUIT","NS"]:
+        elif command in ["PING","PONG","NICK","PRIVMSG","QUIT","NS","NICKSERV"]:
             IRCUser.handleCommand(self, command, prefix, params)
         else:
             self.socket.sendMessage("NOTICE", self.nickname, ":You can not use command \x02{}\x0F while identifying a registered nick.".format(command), prefix=self.ircd.hostname)
     
     # Aliases to make life easier on people
     def irc_NS(self, prefix, params):
+        message = " ".join(params)
+        self.irc_PRIVMSG(prefix, ["NickServ", message])
+    
+    def irc_NICKSERV(self, prefix, params):
         message = " ".join(params)
         self.irc_PRIVMSG(prefix, ["NickServ", message])
     
