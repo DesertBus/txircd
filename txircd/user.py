@@ -273,7 +273,7 @@ class IRCUser(object):
         usermask = self.ircd.xline_match[linetype].format(nick=self.nickname, ident=self.username, host=self.hostname, ip=self.ip)
         expired = []
         matched = None
-        for mask, linedata in self.ircd.xlines[linetype]:
+        for mask, linedata in self.ircd.xlines[linetype].iteritems():
             if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
                 expired.append(mask)
                 continue
