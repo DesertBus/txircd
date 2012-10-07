@@ -66,7 +66,6 @@ class IRCUser(object):
         self.invites = []
         self.service = False
         self.account = None
-        self.shunned = False
         
         if not self.matches_xline("E"):
             xline_match = self.matches_xline("G")
@@ -79,8 +78,6 @@ class IRCUser(object):
                 self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                 self.socket.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), prefix=self.ircd.hostname)
                 raise ValueError("Banned user")
-            if self.matches_xline("SHUN"):
-                self.shunned = True
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
@@ -231,21 +228,12 @@ class IRCUser(object):
                 user.socket.sendMessage("ERROR", ":Closing Link: {} [Z:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["Z:Lined: {}".format(reason)])
     
-    def applyline_E(self, userlist, reason):
-        for user in userlist:
-            user.shunned = False
-    
     def applyline_Q(self, userlist, reason):
         for user in userlist:
             if not user.mode.has("o"):
                 user.socket.sendMessage("NOTICE", self.nickname, ":{}".format(self.ircd.ban_msg), prefix=self.ircd.hostname)
                 user.socket.sendMessage("ERROR", ":Closing Link: {} [Q:Lined: {}]".format(self.prefix(), reason), prefix=self.ircd.hostname)
                 user.irc_QUIT(None, ["Q:Lined: {}".format(reason)])
-    
-    def applyline_SHUN(self, userlist, reason):
-        for user in userlist:
-            if not user.mode.has("o") and not user.matches_xline("E"):
-                user.shunned = True
     
     def removeline_E(self):
         matching_users = { "G": [], "K": [], "SHUN": [] }
@@ -261,13 +249,6 @@ class IRCUser(object):
             self.applyline_K(matching_users["K"], "Exception removed")
         if matching_users["SHUN"]:
             self.applyline_SHUN(matching_users["SHUN"], "Exception removed")
-    
-    def removeline_SHUN(self):
-        for user in self.ircd.users.itervalues():
-            if user.matches_line("SHUN"):
-                user.shunned = True
-            else:
-                user.shunned = False
     
     def matches_xline(self, linetype):
         usermask = self.ircd.xline_match[linetype].format(nick=self.nickname, ident=self.username, host=self.hostname, ip=self.ip)
