@@ -120,6 +120,8 @@ class Modes(object):
                 elif k in self.list_modes:
                     for n in v.iterkeys():
                         added[0] += k
+                        if n in self.ircd.users:
+                            n = self.ircd.users[n].nickname
                         added.append(n)
             else:
                 if k in self.bool_modes:
@@ -141,10 +143,14 @@ class Modes(object):
                     for n in v.iterkeys():
                         if n not in old_modes[k]:
                             added[0] += k
+                            if n in self.ircd.users:
+                                n = self.ircd.users[n].nickname
                             added.append(n)
                     for n in old_modes[k].iterkeys():
                         if n not in v:
                             removed[0] += k
+                            if n in self.ircd.users:
+                                n = self.ircd.users[n].nickname
                             removed.append(n)
         if added[0]:
             changed += "+"+added[0]

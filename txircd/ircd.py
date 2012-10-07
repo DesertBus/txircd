@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 from twisted.internet.protocol import Factory
@@ -11,8 +12,9 @@ from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictio
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
-from txircd.user import IRCUser
+from txircd.desertbus import DBUser
 import uuid, socket, collections, yaml, os, fnmatch
+import uuid, socket, collections, yaml, os
 
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
@@ -39,12 +41,20 @@ default_options = {
     "ping_interval": 30,
     "timeout_delay": 90,
     "ban_msg": "You're banned!",
+    "db_library": None,
+    "db_marker": "?",
+    "db_username": None,
+    "db_password": None,
+    "db_database": None,
+    "nickserv_timeout": 40,
+    "nickserv_limit": 5,
+    "nickserv_guest_prefix": "Guest"
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
 
 class IRCProtocol(irc.IRC):
-    UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "QUIT"]
+    UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "PONG", "QUIT"]
 
     def __init__(self, *args, **kwargs):
         self.type = None
@@ -91,7 +101,7 @@ class IRCProtocol(irc.IRC):
         if (now() - self.last_message).total_seconds() > self.factory.timeout_delay:
             self.transport.loseConnection()
         else:
-            self.sendMessage("PING",":{}".format(self.factory.hostname), prefix=self.factory.hostname)
+            self.sendMessage("PING",":{}".format(self.factory.hostname))
     
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
@@ -110,7 +120,7 @@ class IRCProtocol(irc.IRC):
     def irc_PASS(self, prefix, params):
         if not params:
             return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.factory.hostname)
-        self.password = params
+        self.password = params[0]
 
     def irc_NICK(self, prefix, params):
         if not params:
@@ -128,7 +138,7 @@ class IRCProtocol(irc.IRC):
             self.nick = params[0]
             if self.user:
                 try:
-                    self.type = IRCUser(self, self.user, self.password, self.nick)
+                    self.type = self.factory.types["user"](self, self.user, self.password, self.nick)
                 except ValueError:
                     self.type = None
                     self.transport.loseConnection()
@@ -164,10 +174,14 @@ class IRCProtocol(irc.IRC):
         else: # TODO: There's no nickname here, what do?
             self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.hostname)
 
+    def irc_PONG(self, prefix, params):
+        pass
+    
     def irc_QUIT(self, prefix, params):
         self.transport.loseConnection()
         
     def connectionLost(self, reason):
+        self.factory.unregisterProtocol(self)
         if self.type:
             self.type.connectionLost(reason)
         if self.data_checker.running:
@@ -179,7 +193,7 @@ class IRCD(Factory):
     protocol = IRCProtocol
     channel_prefixes = "#"
     types = {
-        "user": IRCUser,
+        "user": DBUser,
         "server": IRCServer,
         "service": IRCService,
     }
@@ -196,7 +210,9 @@ class IRCD(Factory):
         self.config = config
         self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout",
             "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
-            "maxConnectionExempt","ping_interval","timeout_delay","ban_msg"]
+            "maxConnectionExempt","ping_interval","timeout_delay","ban_msg",
+            "db_library","db_marker","db_username","db_password","db_database",
+            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix"]
         self.version = "0.1"
         self.created = now()
         self.token = uuid.uuid1()
@@ -204,6 +220,7 @@ class IRCD(Factory):
         self.users = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
         self.peerConnections = {}
+        self.db = None
         reactor.addSystemEventTrigger('before', 'shutdown', self.cleanup)
         self.xlines = {
             "G": CaseInsensitiveDictionary(),
@@ -236,6 +253,10 @@ class IRCD(Factory):
     def load_options(self, options):
         for var in self.config_vars:
             setattr(self, var, options[var] if var in options else default_options[var])
+        if self.db:
+            self.db.close()
+        if self.db_library:
+            self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password)
     
     def save_options(self):
         options = {}
@@ -280,6 +301,12 @@ class IRCD(Factory):
             return None
         self.peerConnections[ip] = conn + 1
         return Factory.buildProtocol(self, addr)
+
+    def unregisterProtocol(self, p):
+        peerHost = p.transport.getPeer().host
+        self.peerConnections[peerHost] -= 1
+        if self.peerConnections[peerHost] == 0:
+            del self.peerConnections[peerHost]
     
     def ChannelFactory(self, name):
         logfile = "{}/{}".format(self.log_dir,irc_lower(name))
