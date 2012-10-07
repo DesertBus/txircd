@@ -396,11 +396,10 @@ class IRCUser(object):
         else:
             oldnick = self.nickname
             newnick = params[0]
-            lower_newnick = irc_lower(newnick)
-            for mask, linedata in self.ircd.xlines["Q"].iteritems():
-                if fnmatch.fnmatch(lower_newnick, mask):
-                    self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nickname, newnick, ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.ircd.hostname)
-                    return
+            reserved_nick = self.matches_xline("Q")
+            if reserved_nick:
+                self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nickname, newnick, ":Invalid nickname: {}".format(reserved_nick), prefix=self.ircd.hostname)
+                return
             # Out with the old, in with the new
             del self.ircd.users[oldnick]
             self.ircd.users[newnick] = self
