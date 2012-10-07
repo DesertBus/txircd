@@ -40,16 +40,18 @@ class IRCUser(object):
         if ip in parent.factory.vhosts:
             hostname = parent.factory.vhosts[ip]
         else:
-            hostname = socket.gethostbyaddr(ip)[0]
-            index = hostname.find(ip)
-            index = hostname.find(".") if index < 0 else index + len(ip)
-            if index < 0:
-                # Give up
-                log.msg("Gave up on {}, reverting to {}".format(hostname,ip))
-                hostname = ip
-            else:
-                mask = "tx{}".format(hashlib.md5(hostname[:index]).hexdigest()[12:20])
-                hostname = "{}{}".format(mask, hostname[index:])
+            try:
+                hostname = socket.gethostbyaddr(ip)[0]
+                index = hostname.find(ip)
+                index = hostname.find(".") if index < 0 else index + len(ip)
+                if index < 0:
+                    # Give up
+                    hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
+                else:
+                    mask = "tx{}".format(hashlib.md5(hostname[:index]).hexdigest()[12:20])
+                    hostname = "{}{}".format(mask, hostname[index:])
+            except IOError:
+                hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
         
         # Set attributes
         self.ircd = parent.factory
