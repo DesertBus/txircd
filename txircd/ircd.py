@@ -212,7 +212,7 @@ class IRCD(Factory):
             "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
             "maxConnectionExempt","ping_interval","timeout_delay","ban_msg",
             "db_library","db_marker","db_username","db_password","db_database",
-            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix"]
+            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix","exempt_chanops"]
         self.version = "0.1"
         self.created = now()
         self.token = uuid.uuid1()
