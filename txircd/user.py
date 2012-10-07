@@ -282,6 +282,10 @@ class IRCUser(object):
                 break # If there are more expired x:lines, they'll get removed later if necessary
         for mask in expired:
             del self.ircd.xlines[linetype][mask]
+            # let expired lines properly clean up
+            removemethod = getattr(self, "removeline_{}".format(linetype), None)
+            if removemethod is not None:
+                removemethod()
         return matched
     
     def send_motd(self):
