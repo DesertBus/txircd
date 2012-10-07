@@ -117,7 +117,7 @@ class DBUser(IRCUser):
     def irc_PRIVMSG(self, prefix, params):
         # You can only PRIVMSG NickServ while identifying
         if params and self.auth_timer is not None and irc_lower(params[0]) != "nickserv":
-            self.socket.sendMessage("NOTICE", self.nickname, ":You can not PRIVMSG anybody but NickServ while identifying a registered nick.".format(command), prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":You can not PRIVMSG anybody but NickServ while identifying a registered nick.", prefix=self.ircd.hostname)
             return
         if len(params) > 1 and irc_lower(params[0]) in self.services:
             service = irc_lower(params[0])
