@@ -1,3 +1,4 @@
+ban_msg: You're banned!
 client_timeout: 180
 hostname: test.txircd.com
 irc_port: 6667
