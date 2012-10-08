@@ -43,3 +43,4 @@ verbose: true
 vhosts:
   127.0.0.1: localhost
   129.161.209.225: I.Created.You
+whowas_limit: 10

@@ -14,7 +14,6 @@ from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.desertbus import DBUser
 import uuid, socket, collections, yaml, os, fnmatch
-import uuid, socket, collections, yaml, os
 
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
@@ -58,6 +57,7 @@ default_options = {
     "bidserv_admins": ["fugiman","ashton"],
     "bidserv_madness_levels": {1000: "Myth Busted"},
     "exempt_chanops": "", # list of modes from which channel operators are exempt
+    "whowas_limit": 10,
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -223,19 +223,12 @@ class IRCD(Factory):
 
     def __init__(self, config, options = None):
         self.config = config
-        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout",
-            "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
-            "maxConnectionExempt","ping_interval","timeout_delay","ban_msg","exempt_chanops",
-            "db_library","db_marker","db_username","db_password","db_database",
-            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix",
-            "bidserv_bid_limit","bidserv_auction_item","bidserv_auction_name","bidserv_auction_state",
-            "bidserv_min_increase","bidserv_bids","bidserv_admins","bidserv_madness_levels"
-        ]
         self.version = "0.1"
         self.created = now()
         self.token = uuid.uuid1()
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
+        self.whowas = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
         self.peerConnections = {}
         self.db = None
@@ -269,7 +262,7 @@ class IRCD(Factory):
         return True
     
     def load_options(self, options):
-        for var in self.config_vars:
+        for var in default_options.iterkeys():
             setattr(self, var, options[var] if var in options else default_options[var])
         if self.db:
             self.db.close()
@@ -283,7 +276,7 @@ class IRCD(Factory):
                 options = yaml.safe_load(f)
         except:
             return False
-        for var in self.config_vars:
+        for var in default_options.iterkeys():
             options[var] = getattr(self, var, None)
         try:
             with open(self.config,"w") as f:
