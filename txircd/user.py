@@ -241,7 +241,7 @@ class IRCUser(object):
                 user.irc_QUIT(None, ["Q:Lined: {}".format(reason)])
     
     def removeline_E(self):
-        matching_users = { "G": [], "K": [], "SHUN": [] }
+        matching_users = { "G": [], "K": [] }
         for user in self.ircd.users.itervalues():
             if user.matches_xline("E"):
                 continue # user still matches different e:lines
@@ -252,8 +252,6 @@ class IRCUser(object):
             self.applyline_G(matching_users["G"], "Exception removed")
         if matching_users["K"]:
             self.applyline_K(matching_users["K"], "Exception removed")
-        if matching_users["SHUN"]:
-            self.applyline_SHUN(matching_users["SHUN"], "Exception removed")
     
     def matches_xline(self, linetype):
         usermask = self.ircd.xline_match[linetype].format(nick=irc_lower(self.nickname), ident=irc_lower(self.username), host=irc_lower(self.hostname), ip=irc_lower(self.ip))
