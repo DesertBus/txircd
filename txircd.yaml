@@ -1,4 +1,15 @@
 ban_msg: You're banned!
+bidserv_admins:
+- fugiman
+- ashton
+bidserv_auction_item: null
+bidserv_auction_name: null
+bidserv_auction_state: 0
+bidserv_bid_limit: 1000000
+bidserv_bids: []
+bidserv_madness_levels:
+  1000: Myth Busted
+bidserv_min_increase: 5
 client_timeout: 180
 db_database: txircd
 db_library: pymysql
@@ -23,7 +34,6 @@ oper_hosts:
 - localhost
 - I.Created.You
 opers:
-  Fugiman: test
   admin: password
 ping_interval: 35
 ssl_port: 6697

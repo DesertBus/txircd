@@ -6,13 +6,20 @@ from twisted.words.protocols import irc
 from txircd.user import IRCUser
 from txircd.utils import irc_lower, chunk_message, now
 from pbkdf2 import crypt
-import inspect, random
+import inspect, random, yaml, os
 
 NICKSERV_HELP_MESSAGE = """
 \x02NickServ\x0F matches your IRC nickname to your Donor account, allowing for a painless 
 auction process, as well as the peace of mind that nobody can use your nickname but you. 
 To use a command, type \x02/msg NickServ \x1Fcommand\x0F. For more information on a command, type 
 \x02/msg NickServ HELP \x1Fcommand\x0F.
+""".replace("\n","")
+
+BIDSERV_HELP_MESSAGE = """
+\x02BidServ\x0F handles all of our fancy schmancy auction business. It's like the older, beefier brother of BidBot! 
+To use a command, type \x02/msg BidServ \x1Fcommand\x0F. For more information on a command, type 
+\x02/msg BidServ HELP \x1Fcommand\x0F. But let's be honest, you probably only care about 
+\x02/bid \x1FAmount\x1F \x1F[Smack Talk]\x0F.
 """.replace("\n","")
 
 def _register_donor_account(txn, nickname, email, password, username, qmark):
@@ -48,6 +55,9 @@ class DBUser(IRCUser):
         else:
             self.checkNick()
     
+    def service_prefix(self, service):
+        return "{0}!{0}@{1}".format(service, self.ircd.hostname)
+    
     # Called when they occur
     def registered(self):
         for channel in self.channels.iterkeys():
@@ -56,7 +66,7 @@ class DBUser(IRCUser):
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
-                    u.socket.sendMessage("MODE", c.name, m, prefix=self.ircd.hostname)
+                    u.socket.sendMessage("MODE", c.name, m, prefix=self.service_prefix("BidServ"))
     
     def unregistered(self):
         for channel in self.channels.iterkeys():
@@ -65,7 +75,7 @@ class DBUser(IRCUser):
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
-                    u.socket.sendMessage("MODE", c.name, m, prefix=self.ircd.hostname)
+                    u.socket.sendMessage("MODE", c.name, m, prefix=self.service_prefix("BidServ"))
     
     # Restrict what people in the "need to identify" phase can do
     def handleCommand(self, command, prefix, params):
@@ -76,7 +86,7 @@ class DBUser(IRCUser):
         elif command in ["PING","PONG","NICK","PRIVMSG","QUIT","NS","NICKSERV"]:
             IRCUser.handleCommand(self, command, prefix, params)
         else:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You can not use command \x02{}\x0F while identifying a registered nick.".format(command), prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":You can not use command \x02{}\x0F while identifying a registered nick.".format(command), prefix=self.service_prefix("NickServ"))
     
     # Aliases to make life easier on people
     def irc_NS(self, prefix, params):
@@ -86,6 +96,14 @@ class DBUser(IRCUser):
     def irc_NICKSERV(self, prefix, params):
         message = " ".join(params)
         self.irc_PRIVMSG(prefix, ["NickServ", message])
+    
+    def irc_BS(self, prefix, params):
+        message = " ".join(params)
+        self.irc_PRIVMSG(prefix, ["BidServ", message])
+    
+    def irc_BIDSERV(self, prefix, params):
+        message = " ".join(params)
+        self.irc_PRIVMSG(prefix, ["BidServ", message])
     
     def irc_BID(self, prefix, params):
         message = " ".join(["BID"] + params)
@@ -100,12 +118,12 @@ class DBUser(IRCUser):
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
-                    u.socket.sendMessage("MODE", c.name, m, prefix=self.ircd.hostname)
+                    u.socket.sendMessage("MODE", c.name, m, prefix=self.service_prefix("BidServ"))
     
     # Track nick changes
     def irc_NICK(self, prefix, params):
         if params and irc_lower(params[0]) in self.services: # Can't use a service nick
-            self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, params[0], ":Nickname is already in use", prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, params[0], ":Nickname is already in use", prefix=self.service_prefix("NickServ"))
             return
         oldnick = irc_lower(self.nickname)
         IRCUser.irc_NICK(self, prefix, params)
@@ -117,7 +135,7 @@ class DBUser(IRCUser):
     def irc_PRIVMSG(self, prefix, params):
         # You can only PRIVMSG NickServ while identifying
         if params and self.auth_timer is not None and irc_lower(params[0]) != "nickserv":
-            self.socket.sendMessage("NOTICE", self.nickname, ":You can not PRIVMSG anybody but NickServ while identifying a registered nick.", prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":You can not PRIVMSG anybody but NickServ while identifying a registered nick.", prefix=self.service_prefix("NickServ"))
             return
         if len(params) > 1 and irc_lower(params[0]) in self.services:
             service = irc_lower(params[0])
@@ -142,7 +160,7 @@ class DBUser(IRCUser):
         return self.ircd.db.runQuery(query, args)
     
     def failedAuth(self, result, reason):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Failed Authorization [{}]".format(reason), prefix=self.ircd.hostname)
+        self.socket.sendMessage("NOTICE", self.nickname, ":Failed Authorization [{}]".format(reason), prefix=self.service_prefix("NickServ"))
     
     def ohshit(self, result):
         log.msg("Shit!!!!")
@@ -192,7 +210,7 @@ class DBUser(IRCUser):
             if self.auth_timer:
                 self.auth_timer.cancel()
                 self.auth_timer = None
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are now identified. Welcome, {}.".format(self.account), prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":You are now identified. Welcome, {}.".format(self.account), prefix=self.service_prefix("NickServ"))
             self.checkNick()
             self.registered()
         else:
@@ -219,7 +237,7 @@ class DBUser(IRCUser):
                     self.auth_timer.cancel()
                     self.auth_timer = None
                 return # Already identified
-            self.socket.sendMessage("NOTICE", self.nickname, ":This is a registered nick. Please use \x02/msg nickserv login EMAIL PASSWORD\x0F to verify your identity", prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":This is a registered nick. Please use \x02/msg nickserv login EMAIL PASSWORD\x0F to verify your identity", prefix=self.service_prefix("NickServ"))
             if self.auth_timer:
                 self.auth_timer.cancel() # In case we had another going
             self.auth_timer = reactor.callLater(self.ircd.nickserv_timeout, self.changeNick, id, nickname)
@@ -240,7 +258,7 @@ class DBUser(IRCUser):
         if self.auth_timer:
             self.auth_timer.cancel()
             self.auth_timer = None
-        self.socket.sendMessage("NOTICE", self.nickname, ":You are now identified. Welcome, {}.".format(self.account), prefix=self.ircd.hostname)
+        self.socket.sendMessage("NOTICE", self.nickname, ":You are now identified. Welcome, {}.".format(self.account), prefix=self.service_prefix("NickServ"))
         self.checkNick()
         self.registered()
     
@@ -257,18 +275,18 @@ class DBUser(IRCUser):
             # Already registered all the nicks we can
             nicklist = ", ".join([l[0] for l in result[:-2]])+", or "+result[-1][0] if len(result) > 1 else result[0][0]
             message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.nickserv_limit, nickname, nicklist)
-            self.socket.sendMessage("NOTICE", self.nickname, message, prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, message, prefix=self.service_prefix("NickServ"))
         else:
             d = self.query("INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, nickname)
             d.addCallback(self.successRegisterNick, nickname)
             d.addErrback(self.failedRegisterNick, nickname)
     
     def failedRegisterNick(self, result, nickname):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Failed to register nick {} to account {}. Other users may still use it.".format(nickname, self.account), prefix=self.ircd.hostname)
+        self.socket.sendMessage("NOTICE", self.nickname, ":Failed to register nick {} to account {}. Other users may still use it.".format(nickname, self.account), prefix=self.service_prefix("NickServ"))
     
     # Phase 4
     def successRegisterNick(self, result, nickname):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Nickname {} is now registered to account {} and can not be used by any other user.".format(nickname, self.account), prefix=self.ircd.hostname)
+        self.socket.sendMessage("NOTICE", self.nickname, ":Nickname {} is now registered to account {} and can not be used by any other user.".format(nickname, self.account), prefix=self.service_prefix("NickServ"))
     
     # =========================
     # === NICKSERV COMMANDS ===
@@ -276,17 +294,16 @@ class DBUser(IRCUser):
     
     def nickserv_USAGE(self, prefix, params, command = None):
         if command:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(command), prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(command), prefix=self.service_prefix("NickServ"))
         else:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Usage: /msg NickServ COMMAND [OPTIONS] -- Use /msg NickServ HELP for help", prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":Usage: /msg NickServ COMMAND [OPTIONS] -- Use /msg NickServ HELP for help", prefix=self.service_prefix("NickServ"))
     
     def nickserv_HELP(self, prefix, params):
-        log.msg(repr(params))
         if not params:
             # Get all available commands
             methods = filter(lambda x: x[0].startswith("nickserv_"), inspect.getmembers(self, inspect.ismethod))
             # Prepare the format string to make everything nice
-            fmtstr = "    {{:<{!s}}} {{}}"
+            fmtstr = "    {{:<{!s}}}  {{}}"
             name_length = max([len(m[0]) for m in methods]) - 9
             fmtstr = fmtstr.format(name_length)
             # Include the header
@@ -300,17 +317,17 @@ class DBUser(IRCUser):
                 lines.append(fmtstr.format(m[0][9:], doc.splitlines()[0]))
             # Now dump all that text to the user
             for l in lines:
-                self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.ircd.hostname)
+                self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("NickServ"))
         else:
             # Try to load the command
             func = getattr(self, "nickserv_{}".format(params[0].upper()), None)
             if not func: # Doesn't exist :(
-                self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(params[0]), prefix=self.ircd.hostname)
+                self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("NickServ"))
             else:
                 doc = inspect.getdoc(func)
                 lines = doc.splitlines()[1:] # Cut out the short help message
                 for l in lines: # Print the long message
-                    self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.ircd.hostname)
+                    self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("NickServ"))
         
     def nickserv_REGISTER(self, prefix, params):
         """Create a donor account via IRC
@@ -321,7 +338,7 @@ class DBUser(IRCUser):
         account and protected from impersonation. You'll also be voiced
         and allowed to bid in all auctions."""
         if len(params) < 2:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail \x1F[name]\x0F", prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail \x1F[name]\x0F", prefix=self.service_prefix("NickServ"))
             return
         email = params[1]
         password = crypt(params[0])
@@ -329,6 +346,13 @@ class DBUser(IRCUser):
         d = self.ircd.db.runInteraction(_register_donor_account, self.nickname, email, password, name, self.ircd.db_marker)
         d.addCallback(self.ns_registered, email, name)
         d.addErrback(self.ns_notregistered, email, name)
+    
+    def nickserv_ID(self, prefix, params):
+        """Alias of IDENTIFY
+        Syntax: \x02ID \x1Femail\x1F:\x1Fpassword\x0F
+        
+        See IDENTIFY for more info"""
+        self.nickserv_IDENTIFY(prefix, params)
     
     def nickserv_IDENTIFY(self, prefix, params):
         """Backwards compatible version of LOGIN
@@ -339,7 +363,7 @@ class DBUser(IRCUser):
         account and protected from impersonation. You'll also be voiced
         and allowed to bid in all auctions."""
         if not params or params[0].find(":") < 0:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02IDENTIFY \x1Femail\x1F:\x1Fpassword\x0F", prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02IDENTIFY \x1Femail\x1F:\x1Fpassword\x0F", prefix=self.service_prefix("NickServ"))
             return
         email, chaff, password = params[0].partition(":")
         self.auth(email, password)
@@ -353,7 +377,7 @@ class DBUser(IRCUser):
         account and protected from impersonation. You'll also be voiced
         and allowed to bid in all auctions."""
         if len(params) < 2:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02LOGIN \x1Femail\x1F \x1Fpassword\x0F", prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02LOGIN \x1Femail\x1F \x1Fpassword\x0F", prefix=self.service_prefix("NickServ"))
             return
         self.auth(params[0], params[1])
     
@@ -364,26 +388,311 @@ class DBUser(IRCUser):
         Logs out of whatever account you are in right now. Useful to
         prevent your roommate from bidding on auctions in your name."""
         if not self.account:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You have to be logged in to log out!", prefix=self.ircd.hostname)
+            self.socket.sendMessage("NOTICE", self.nickname, ":You have to be logged in to log out!", prefix=self.service_prefix("NickServ"))
             return
-        self.socket.sendMessage("NOTICE", self.nickname, ":You are now logged out of \x02{}\x0F.".format(self.account), prefix=self.ircd.hostname)
+        self.socket.sendMessage("NOTICE", self.nickname, ":You are now logged out of \x02{}\x0F.".format(self.account), prefix=self.service_prefix("NickServ"))
         self.nickserv_id = None
         self.account = None
         self.checkNick()
         self.unregistered()
     
     def ns_registered(self, result, email, name):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F created with an email of \x02{}\x0F.".format(name,email), prefix=self.ircd.hostname)
+        self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F created with an email of \x02{}\x0F.".format(name,email), prefix=self.service_prefix("NickServ"))
         self.account = name
         self.nickserv_id = result
         self.registered()
     
     def ns_notregistered(self, result, email, name):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.ircd.hostname)
+        self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.service_prefix("NickServ"))
 
     # ========================
     # === BIDSERV COMMANDS ===
     # ========================
+      
+    def bidserv_USAGE(self, prefix, params, command = None):
+        if command:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(command), prefix=self.service_prefix("BidServ"))
+        else:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Usage: /msg BidServ COMMAND [OPTIONS] -- Use /msg BidServ HELP for help", prefix=self.service_prefix("BidServ"))
     
-    def bidserv_USAGE(self, prefix, params):
-        self.socket.sendMessage("NOTICE", self.nickname, ":/msg BidServ COMMAND [OPTIONS] -- Use /msg BidServ HELP for more", prefix=self.ircd.hostname)
+    def bidserv_HELP(self, prefix, params):
+        if not params:
+            # Get all available commands
+            methods = filter(lambda x: x[0].startswith("bidserv_"), inspect.getmembers(self, inspect.ismethod))
+            # Prepare the format string to make everything nice
+            fmtstr = "    {{:<{!s}}}  {{}}"
+            name_length = max([len(m[0]) for m in methods]) - 8
+            fmtstr = fmtstr.format(name_length)
+            # Include the header
+            lines = chunk_message(BIDSERV_HELP_MESSAGE, self.ircd.motd_line_length)
+            lines.append("")
+            # Add the commands and make them pretty
+            for m in methods:
+                if m[0] == "bidserv_USAGE" or m[0] == "bidserv_HELP":
+                    continue
+                doc = inspect.getdoc(m[1])
+                lines.append(fmtstr.format(m[0][8:], doc.splitlines()[0]))
+            # Now dump all that text to the user
+            for l in lines:
+                self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("BidServ"))
+        else:
+            # Try to load the command
+            func = getattr(self, "bidserv_{}".format(params[0].upper()), None)
+            if not func: # Doesn't exist :(
+                self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("BidServ"))
+            else:
+                doc = inspect.getdoc(func)
+                lines = doc.splitlines()[1:] # Cut out the short help message
+                for l in lines: # Print the long message
+                    self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("BidServ"))
+    
+    def bidserv_BID(self, prefix, params):
+        """Bid in the active auction
+        Syntax: \x02BID \x1Famount\x1F \x1F[Smack Talk]\x0F
+        
+        During an auction, this command allows the user to place
+        a bid. If the bid is higher than the current max bid,
+        BidServ will echo it to the channel along with any provided
+        smack talk."""
+        if not params:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02BID \x1Famount\x1F \x1F[Smack Talk]\x0F".format(params[0]), prefix=self.service_prefix("BidServ"))
+            return
+        if not self.nickserv_id:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You must be logged in to bid. \"/msg NickServ HELP\" for help.", prefix=self.service_prefix("BidServ"))
+            return
+        if not self.ircd.bidserv_auction_item:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is no auction going on right now.", prefix=self.service_prefix("BidServ"))
+            return
+        high_bid = self.ircd.bidserv_bids[-1]
+        try:
+            bid = float(params[0]) # Could this go terribly wrong?
+            bid = round(bid, 2)
+        except:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
+            return
+        if bid >= self.ircd.bidserv_bid_limit:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Let's be honest, you don't really have ${:,.2f} do you?".format(bid), prefix=self.service_prefix("BidServ"))
+            return
+        if bid <= high_bid["bid"]:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Sorry, the high bid is already ${:,.2f} by {}".format(high_bid["bid"],high_bid["nick"]), prefix=self.service_prefix("BidServ"))
+            return
+        if bid <= high_bid["bid"] + self.ircd.bidserv_min_increase:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Sorry, the minimum bid increase is ${:,.2f}".format(self.ircd.bidserv_min_increase), prefix=self.service_prefix("BidServ"))
+            return
+        madness = ""
+        levels = sorted(self.ircd.bidserv_madness_levels.items(), key=lambda t: t[0])
+        for amount, name in levels:
+            if amount <= high_bid["bid"] or bid < amount:
+                continue
+            madness += name+"! "
+        if high_bid["id"] == self.nickserv_id:
+            madness += "Space Bid! "
+        smack = " ".join(params[1:]).strip()
+        self.ircd.bidserv_bids.append({
+            "bid": bid,
+            "id": int(self.nickserv_id),
+            "nick": self.nickname
+        })
+        self.ircd.bidserv_auction_state = 0
+        self.ircd.save_options() # Save auction state. Just in case.
+        self.bs_broadcast(":\x02{}{} has the high bid of ${:,.2f}! {}\x0F".format(madness, self.nickname, bid, smack))
+    
+    def bidserv_HIGHBIDDER(self, prefix, params):
+        """Get the high bidder in the current auction
+        Syntax: \x02HIGHBIDDER\x0F
+        
+        Returns the high bidder in the current auction,
+        along with the amount they bid."""
+        if not self.ircd.bidserv_auction_item:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is no auction going on right now.", prefix=self.service_prefix("BidServ"))
+        else:
+            bid = self.ircd.bidserv_bids[-1]
+            self.socket.sendMessage("NOTICE", self.nickname, ":{} has the high bid of ${:,.2f}".format(bid["nick"], bid["bid"]), prefix=self.service_prefix("BidServ"))
+    
+    def bidserv_START(self, prefix, params):
+        """Start an auction [Admin Only]
+        Syntax: \x02START \x1FItem ID\x0F [Admin Only]
+        
+        Starts an auction with the given item ID.
+        Restricted to admins."""
+        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_item is not None:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is already an auction occuring for item #{}.".format(self.ircd.bidserv_auction_item), prefix=self.service_prefix("BidServ"))
+            return
+        if not params:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02START \x1FItem ID\x0F", prefix=self.service_prefix("BidServ"))
+            return
+        d = self.query("SELECT id, name, sold, starting_bid FROM prizes WHERE id = {0}", params[0])
+        d.addCallback(self.bs_start, params[0])
+        d.addErrback(self.bs_failstart, params[0])
+    
+    def bidserv_ONCE(self, prefix, params):
+        """Call "Going Once!" [Admin Only]
+        Syntax: \x02ONCE\x0F [Admin Only]
+        
+        Calls "Going Once!" and increments auction state."""
+        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_item is None:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is no an auction occuring.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_state != 0:
+            self.socket.sendMessage("NOTICE", self.nickname, ":We're not at the proper place to call \"Going Once!\".", prefix=self.service_prefix("BidServ"))
+            return
+        self.ircd.bidserv_auction_state = 1
+        self.ircd.save_options() # Save auction state. Just in case.
+        bid = self.ircd.bidserv_bids[-1]
+        self.bs_broadcast(":\x02Going Once! To {} for ${:,.2f}!\x0F - Called by {}".format(bid["nick"],bid["bid"],self.nickname))
+    
+    def bidserv_TWICE(self, prefix, params):
+        """Call "Going Twice!" [Admin Only]
+        Syntax: \x02TWICE\x0F [Admin Only]
+        
+        Calls "Going Twice!" and increments auction state."""
+        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_item is None:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is no an auction occuring.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_state != 1:
+            self.socket.sendMessage("NOTICE", self.nickname, ":We're not at the proper place to call \"Going Twice!\".", prefix=self.service_prefix("BidServ"))
+            return
+        self.ircd.bidserv_auction_state = 2
+        self.ircd.save_options() # Save auction state. Just in case.
+        bid = self.ircd.bidserv_bids[-1]
+        self.bs_broadcast(":\x02Going Twice! To {} for ${:,.2f}!\x0F - Called by {}".format(bid["nick"],bid["bid"],self.nickname))
+    
+    def bidserv_SOLD(self, prefix, params):
+        """Award the auction to the highest bidder [Admin Only]
+        Syntax: \x02SOLD\x0F [Admin Only]
+        
+        Declares the auction as finished, cleans up variables, logs the bid
+        history and adds the prize to the donors winnings in the database."""
+        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_item is None:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_state != 2:
+            self.socket.sendMessage("NOTICE", self.nickname, ":We're not at the proper place to call \"Sold!\".", prefix=self.service_prefix("BidServ"))
+            return
+        bid = self.ircd.bidserv_bids[-1]
+        d = self.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}",bid["id"],bid["bid"],self.ircd.bidserv_auction_item)
+        d.addCallback(self.bs_sold)
+        d.addErrback(self.bs_failsold)
+    
+    def bidserv_STOP(self, prefix, params):
+        """Cancel the current auction [Admin Only]
+        Syntax: \x02STOP\x0F [Admin Only]
+        
+        Stops the auction, awarding it to nobody, cleans
+        up variables, and logs the bid history."""
+        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_item is None:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
+            return
+        try:
+            with open(self.bs_log(self.ircd.bidserv_auction_item),"w") as f:
+                yaml.dump(self.ircd.bidserv_bids, f, default_flow_style=False)
+        except:
+            self.bs_wallops(":Failed to save auction logs, you'll have to read the channel logs. Sorry :(")
+        name = self.ircd.bidserv_auction_name
+        bid = self.ircd.bidserv_bids[-1]
+        self.ircd.bidserv_auction_state = 0
+        self.ircd.bidserv_auction_item = None
+        self.ircd.bidserv_auction_name = None
+        self.ircd.bidserv_bids = []
+        self.ircd.save_options() # Save auction state. Just in case.
+        self.bs_broadcast(":\x02Auction for {} cancelled. Sorry!\x0F - Called by {}".format(name,self.nickname))
+    
+    def bidserv_REVERT(self, prefix, params):
+        """Cancel the highest bid [Admin Only]
+        Syntax: \x02REVERT\x0F [Admin Only]
+        
+        Purges the highest bid from the face of the earth,
+        cleansing the bid pool to its prior pristine state."""
+        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            return
+        if self.ircd.bidserv_auction_item is None:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
+            return
+        if len(self.ircd.bidserv_bids) < 2:
+            self.socket.sendMessage("NOTICE", self.nickname, ":There aren't enough bids to revert.", prefix=self.service_prefix("BidServ"))
+            return
+        bad = self.ircd.bidserv_bids.pop()
+        bid = self.ircd.bidserv_bids[-1]
+        self.ircd.bidserv_auction_state = 0
+        self.bs_broadcast(":\x02Bid by {} for ${:,.2f} removed. New highest bid is by {} for ${:,.2f}!\x0F - Called by {}".format(bad["nick"],bad["bid"],bid["nick"],bid["bid"],self.nickname))
+    
+    def bs_failsold(self, result):
+        bid = self.ircd.bidserv_bids[-1]
+        self.bs_wallops(":Error updating database!! Stopping the auction regardless. Donor ID = {}, Nick = {}, Amount = ${:,.2f} - Good Luck!".format(bid["id"], bid["nick"], bid["bid"]))
+        self.bs_sold(None)
+    
+    def bs_sold(self, result):
+        name = self.ircd.bidserv_auction_name
+        bid = self.ircd.bidserv_bids[-1]
+        try:
+            with open(self.bs_log(self.ircd.bidserv_auction_item),"w") as f:
+                yaml.dump(self.ircd.bidserv_bids, f, default_flow_style=False)
+        except:
+            self.bs_wallops(":Failed to save auction logs, you'll have to read the channel logs. Sorry :(")
+            log.err()
+        self.ircd.bidserv_auction_state = 0
+        self.ircd.bidserv_auction_item = None
+        self.ircd.bidserv_auction_name = None
+        self.ircd.bidserv_bids = []
+        self.ircd.save_options() # Save auction state. Just in case.
+        self.bs_broadcast(":\x02Sold! {} to {} for ${:,.2f}!\x0F - Called by {}".format(name, bid["nick"],bid["bid"],self.nickname))
+    
+    def bs_failstart(self, result, id):
+        self.bs_wallops(":Error finding item ID #{}".format(id))
+    
+    def bs_start(self, result, id):
+        if not result:
+            self.bs_wallops(":Couldn't find item ID #{}".format(id))
+        elif result[0][2]:
+            self.bs_wallops(":Item #{!s}, {}, has already been sold.".format(result[0][0],result[0][1]))
+        else:
+            self.ircd.bidserv_auction_item = int(result[0][0])
+            self.ircd.bidserv_auction_name = result[0][1]
+            self.ircd.bidserv_bids = [{"bid": result[0][2], "id": None, "nick": "Nobody"}]
+            self.ircd.bidserv_auction_state = 0
+            self.ircd.save_options() # Save auction state. Just in case.
+            lines = [
+                ":\x02Starting Auction: \"{}\"\x0F - Called by {}".format(result[0][1], self.nickname),
+                ":\x02Make bids with \x1F/bid ###.##\x0F",
+                ":\x02The minimum increment between bids is ${:,.2f}\x0F".format(self.ircd.bidserv_min_increase),
+                ":\x02Only voiced (registered donor) users can bid - https://donor.desertbus.org/\x0F",
+                ":\x02Please do not make any fake bids\x0F",
+                ":\x02Beginning bidding at ${:,.2f}\x0F".format(result[0][2]),
+            ]
+            for l in lines:
+                self.bs_broadcast(l)
+    
+    def bs_log(self, id):
+        log = "{}/auction_{!s}.log".format(self.ircd.log_dir, id)
+        count = 1
+        while os.path.exists(log):
+            log = "{}/auction_{!s}-{!s}.log".format(self.ircd.log_dir, id, count)
+            count += 1
+        return log
+    
+    def bs_wallops(self, message):
+        for nick in self.ircd.bidserv_admins:
+            if nick in self.ircd.users:
+                u = self.ircd.users[nick]
+                u.socket.sendMessage("NOTICE", u.nickname, message, prefix=self.service_prefix("BidServ"))
+    
+    def bs_broadcast(self, message):
+        for c in self.ircd.channels.itervalues():
+            for u in c.users.itervalues():
+                u.socket.sendMessage("PRIVMSG", c.name, message, prefix=self.service_prefix("BidServ"))

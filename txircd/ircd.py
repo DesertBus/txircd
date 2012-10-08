@@ -35,10 +35,10 @@ default_options = {
     "opers": {"admin":"password"},
     "vhosts": {"127.0.0.1":"localhost"},
     "log_dir": "logs",
-    "max_data": 5, # Bytes per 5 seconds
+    "max_data": 5000, # Bytes per 5 seconds
     "maxConnectionsPerPeer": 3,
     "maxConnectionExempt": {"127.0.0.1":0},
-    "ping_interval": 30,
+    "ping_interval": 35,
     "timeout_delay": 90,
     "ban_msg": "You're banned!",
     "db_library": None,
@@ -48,7 +48,15 @@ default_options = {
     "db_database": None,
     "nickserv_timeout": 40,
     "nickserv_limit": 5,
-    "nickserv_guest_prefix": "Guest"
+    "nickserv_guest_prefix": "Guest",
+    "bidserv_bid_limit": 1000000,
+    "bidserv_auction_item": None,
+    "bidserv_auction_name": None,
+    "bidserv_auction_state": 0,
+    "bidserv_min_increase": 5,
+    "bidserv_bids": [],
+    "bidserv_admins": ["fugiman","ashton"],
+    "bidserv_madness_levels": {1000: "Myth Busted"},
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -212,7 +220,10 @@ class IRCD(Factory):
             "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
             "maxConnectionExempt","ping_interval","timeout_delay","ban_msg",
             "db_library","db_marker","db_username","db_password","db_database",
-            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix"]
+            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix",
+            "bidserv_bid_limit","bidserv_auction_item","bidserv_auction_name","bidserv_auction_state",
+            "bidserv_min_increase","bidserv_bids","bidserv_admins","bidserv_madness_levels"
+        ]
         self.version = "0.1"
         self.created = now()
         self.token = uuid.uuid1()
