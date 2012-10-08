@@ -430,9 +430,11 @@ class IRCUser(object):
                     return
             # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
             dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
+            lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname and (not min_status or u.hasAccess(c.name, min_status)):
-                    u.socket.sendMessage(cmd, dest, ":{}".format(message), prefix=self.prefix())
+                    for l in lines:
+                        u.socket.sendMessage(cmd, dest, ":{}".format(l), prefix=self.prefix())
             c.log.write("[{:02d}:{:02d}:{:02d}] {border_s}{nick}{border_e}: {message}\n".format(now().hour, now().minute, now().second, nick=self.nickname, message=message, border_s=("-" if cmd == "NOTICE" else "<"), border_e=("-" if cmd == "NOTICE" else ">")))
         else:
             return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
