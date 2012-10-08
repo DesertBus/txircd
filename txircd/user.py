@@ -389,7 +389,7 @@ class IRCUser(object):
     
     def msg_cmd(self, cmd, params):
         if not params:
-            return self.socket.sendMessage(irc.ERR_NORECIPIENT, self.nickname, ":No recipient given (PRIVMSG)", prefix=self.ircd.hostname)
+            return self.socket.sendMessage(irc.ERR_NORECIPIENT, self.nickname, ":No recipient given ({})".format(cmd), prefix=self.ircd.hostname)
         if len(params) < 2:
             return self.socket.sendMessage(irc.ERR_NOTEXTTOSEND, self.nickname, ":No text to send", prefix=self.ircd.hostname)
         target = params[0]
