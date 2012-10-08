@@ -48,7 +48,8 @@ default_options = {
     "db_database": None,
     "nickserv_timeout": 40,
     "nickserv_limit": 5,
-    "nickserv_guest_prefix": "Guest"
+    "nickserv_guest_prefix": "Guest",
+    "exempt_chanops": ""
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
