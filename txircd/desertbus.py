@@ -478,7 +478,7 @@ class DBUser(IRCUser):
         if bid <= high_bid["bid"]:
             self.socket.sendMessage("NOTICE", self.nickname, ":Sorry, the high bid is already ${:,.2f} by {}".format(high_bid["bid"],high_bid["nick"]), prefix=self.service_prefix("BidServ"))
             return
-        if bid <= high_bid["bid"] + self.ircd.bidserv_min_increase:
+        if bid < high_bid["bid"] + self.ircd.bidserv_min_increase:
             self.socket.sendMessage("NOTICE", self.nickname, ":Sorry, the minimum bid increase is ${:,.2f}".format(self.ircd.bidserv_min_increase), prefix=self.service_prefix("BidServ"))
             return
         madness = ""
@@ -666,7 +666,7 @@ class DBUser(IRCUser):
         else:
             self.ircd.bidserv_auction_item = int(result[0][0])
             self.ircd.bidserv_auction_name = result[0][1]
-            self.ircd.bidserv_bids = [{"bid": result[0][2], "id": None, "nick": "Nobody"}]
+            self.ircd.bidserv_bids = [{"bid": float(result[0][3]), "id": None, "nick": "Nobody"}]
             self.ircd.bidserv_auction_state = 0
             self.ircd.save_options() # Save auction state. Just in case.
             lines = [
@@ -675,7 +675,7 @@ class DBUser(IRCUser):
                 ":\x02The minimum increment between bids is ${:,.2f}\x0F".format(self.ircd.bidserv_min_increase),
                 ":\x02Only voiced (registered donor) users can bid - https://donor.desertbus.org/\x0F",
                 ":\x02Please do not make any fake bids\x0F",
-                ":\x02Beginning bidding at ${:,.2f}\x0F".format(result[0][2]),
+                ":\x02Beginning bidding at ${:,.2f}\x0F".format(float(result[0][3])),
             ]
             for l in lines:
                 self.bs_broadcast(l)
