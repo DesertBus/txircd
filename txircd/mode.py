@@ -182,7 +182,7 @@ class UserModes(Modes):
 
 class ChannelModes(Modes):
     bool_modes = "imnpstS" # http://tools.ietf.org/html/rfc2811#section-4 
-    string_modes = "kl"
+    string_modes = "fkl"
     list_modes = "aqohv"+"beI"
     
     def perm_checker(self, adding, mode, user, param = None):
@@ -209,6 +209,15 @@ class ChannelModes(Modes):
             try:
                 int(param)
             except:
+                return False
+        if mode == "f":
+            if ":" not in param:
+                return False
+            try:
+                lines, seconds = param.split(":")
+                int(lines)
+                int(seconds)
+            except ValueError: # too many values to unpack or not a number
                 return False
         return True
     
