@@ -1,3 +1,5 @@
+auto_ops:
+  fugiman: q
 ban_msg: You're banned!
 bidserv_admins:
 - fugiman

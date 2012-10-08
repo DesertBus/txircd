@@ -363,14 +363,13 @@ class IRCUser(object):
     def leave(self, channel):
         cdata = self.ircd.channels[channel]
         cdata.log.write("[{:02d}:{:02d}:{:02d}] {} left the channel\n".format(now().hour, now().minute, now().second, self.nickname))
+        mode = self.status(cdata.name) # Clear modes
+        cdata.mode.combine("-{}".format(mode),[self.nickname for _ in mode],cdata.name)
         del self.channels[cdata.name]
         del cdata.users[self.nickname] # remove channel user entry
         if not cdata.users:
             del self.ircd.channels[cdata.name] # destroy the empty channel
             cdata.log.close()
-        else:
-            mode = self.status(cdata.name) # Clear modes
-            cdata.mode.combine("-{}".format(mode),[self.nickname for _ in mode],cdata.name)
     
     def part(self, channel, reason):
         for u in self.ircd.channels[channel].users.itervalues():

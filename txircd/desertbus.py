@@ -47,10 +47,8 @@ class DBUser(IRCUser):
         if password:
             if ":" in password:
                 username, chaff, password = password.partition(":")
-                print("AUTH", username, password)
                 self.auth(username, password)
             else:
-                print("TOKEN", password)
                 self.token(password)
         else:
             self.checkNick()
@@ -62,7 +60,8 @@ class DBUser(IRCUser):
     def registered(self):
         for channel in self.channels.iterkeys():
             c = self.ircd.channels[channel]
-            m, b, f = c.mode.combine("+v",[self.nickname],c.name)
+            mode = self.ircd.auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.auto_ops else "v"
+            m, b, f = c.mode.combine("+{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
@@ -71,7 +70,8 @@ class DBUser(IRCUser):
     def unregistered(self):
         for channel in self.channels.iterkeys():
             c = self.ircd.channels[channel]
-            m, b, f = c.mode.combine("-v",[self.nickname],c.name)
+            mode = self.ircd.auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.auto_ops else "v"
+            m, b, f = c.mode.combine("-{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
@@ -114,7 +114,8 @@ class DBUser(IRCUser):
         IRCUser.join(self, channel, key)
         if channel in self.channels and self.nickserv_id:
             c = self.ircd.channels[channel]
-            m, b, f = c.mode.combine("+v",[self.nickname],c.name)
+            mode = self.ircd.auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.auto_ops else "v"
+            m, b, f = c.mode.combine("+{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
