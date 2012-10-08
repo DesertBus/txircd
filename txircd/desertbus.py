@@ -191,6 +191,8 @@ class DBUser(IRCUser):
             self.auth_timer.cancel()
             self.auth_timer = None
         nickname = irc_lower(self.nickname)
+        if nickname.startswith(irc_lower(self.ircd.nickserv_guest_prefix)):
+            return # Don't check guest nicks
         d = self.query("SELECT donor_id FROM irc_nicks WHERE nick = {0}", nickname)
         d.addCallback(self.beginVerify, nickname)
         d.addErrback(self.ohshit)

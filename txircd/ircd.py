@@ -57,7 +57,7 @@ default_options = {
     "bidserv_bids": [],
     "bidserv_admins": ["fugiman","ashton"],
     "bidserv_madness_levels": {1000: "Myth Busted"},
-    "exempt_chanops": "",
+    "exempt_chanops": "", # list of modes from which channel operators are exempt
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
