@@ -30,6 +30,33 @@ def chunk_message(msg, chunk_size):
         msg = msg[index+1:] if msg[index] in " \n" else msg[index:]
     return chunks
 
+def strip_colors(msg):
+    while chr(3) in msg:
+        color_pos = msg.index(chr(3))
+        strip_length = 1
+        color_f = 0
+        color_b = 0
+        comma = False
+        for i in range(color_pos + 1, len(msg) if len(msg) < color_pos + 6 else color_pos + 6):
+            if msg[i] == ",":
+                if comma or color_f == 0:
+                    break
+                else:
+                    comma = True
+            elif msg[i].isdigit():
+                if color_b == 2 or (not comma and color_f == 2):
+                    break
+                elif comma:
+                    color_b += 1
+                else:
+                    color_f += 1
+            else:
+                break
+            strip_length += 1
+        msg = msg[:color_pos] + msg[color_pos + strip_length:]
+    msg = msg.replace(chr(2), "").replace(chr(29), "").replace(chr(31), "").replace(chr(15), "").replace(chr(22), "") # bold, italic, underline, plain, reverse
+    return msg
+
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
         self._data = {}

@@ -57,6 +57,7 @@ default_options = {
     "bidserv_bids": [],
     "bidserv_admins": ["fugiman","ashton"],
     "bidserv_madness_levels": {1000: "Myth Busted"},
+    "exempt_chanops": "",
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -139,10 +140,16 @@ class IRCProtocol(irc.IRC):
             self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.factory.hostname)
         else:
             lower_nick = irc_lower(params[0])
+            expired = []
             for mask, linedata in self.factory.xlines["Q"].iteritems():
+                if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
+                    expired.append(mask)
+                    continue
                 if fnmatch.fnmatch(lower_nick, mask):
                     self.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nick if self.nick else "*", params[0], ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.factory.hostname)
                     return
+            for mask in expired:
+                del self.ircd.xlines["Q"][mask]
             self.nick = params[0]
             if self.user:
                 try:
@@ -218,7 +225,7 @@ class IRCD(Factory):
         self.config = config
         self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout",
             "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
-            "maxConnectionExempt","ping_interval","timeout_delay","ban_msg",
+            "maxConnectionExempt","ping_interval","timeout_delay","ban_msg","exempt_chanops",
             "db_library","db_marker","db_username","db_password","db_database",
             "nickserv_timeout","nickserv_limit","nickserv_guest_prefix",
             "bidserv_bid_limit","bidserv_auction_item","bidserv_auction_name","bidserv_auction_state",

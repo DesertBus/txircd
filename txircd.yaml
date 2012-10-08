@@ -16,6 +16,7 @@ db_library: pymysql
 db_marker: '%s'
 db_password: txircd
 db_username: txircd
+exempt_chanops: S # list of modes from which channel operators are exempt
 hostname: test.txircd.com
 irc_port: 6667
 log_dir: logs
