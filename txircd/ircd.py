@@ -140,7 +140,7 @@ class IRCProtocol(irc.IRC):
                 if fnmatch.fnmatch(lower_nick, mask):
                     self.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nick if self.nick else "*", params[0], ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.factory.hostname)
                     return
-            for mask in expired():
+            for mask in expired:
                 del self.ircd.xlines["Q"][mask]
             self.nick = params[0]
             if self.user:
