@@ -6,6 +6,7 @@ from twisted.internet.task import Cooperator
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
+from pbkdf2 import crypt
 import fnmatch, socket, hashlib
 
 class IRCUser(object):
@@ -423,12 +424,27 @@ class IRCUser(object):
                     return
             # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
             dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
+            lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname and (not min_status or u.hasAccess(c.name, min_status)):
-                    u.socket.sendMessage(cmd, dest, ":{}".format(message), prefix=self.prefix())
+                    for l in lines:
+                        u.socket.sendMessage(cmd, dest, ":{}".format(l), prefix=self.prefix())
             c.log.write("[{:02d}:{:02d}:{:02d}] {border_s}{nick}{border_e}: {message}\n".format(now().hour, now().minute, now().second, nick=self.nickname, message=message, border_s=("-" if cmd == "NOTICE" else "<"), border_e=("-" if cmd == "NOTICE" else ">")))
         else:
             return self.socket.sendMessage(irc.ERR_NOSUCHNICK, self.nickname, target, ":No such nick/channel", prefix=self.ircd.hostname)
+    
+    def add_to_whowas(self):
+        if self.nickname not in self.ircd.whowas:
+            self.ircd.whowas[self.nickname] = []
+        self.ircd.whowas[self.nickname].append({
+            "nickname": self.nickname,
+            "username": self.username,
+            "realname": self.realname,
+            "hostname": self.hostname,
+            "ip": self.ip,
+            "time": now()
+        })
+        self.ircd.whowas[self.nickname] = self.ircd.whowas[self.nickname][-self.ircd.whowas_limit:] # Remove old entries
     
     #======================
     #== Protocol Methods ==
@@ -459,6 +475,8 @@ class IRCUser(object):
             if reserved_nick:
                 self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nickname, newnick, ":Invalid nickname: {}".format(reserved_nick), prefix=self.ircd.hostname)
                 return
+            # Add to WHOWAS before changing everything
+            self.add_to_whowas()
             # Out with the old, in with the new
             del self.ircd.users[oldnick]
             self.ircd.users[newnick] = self
@@ -504,7 +522,7 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters", prefix=self.ircd.hostname)
         elif self.hostname not in self.ircd.oper_hosts:
             self.socket.sendMessage(irc.ERR_NOOPERHOST, self.nickname, ":No O-lines for your host", prefix=self.ircd.hostname)
-        elif params[0] not in self.ircd.opers or self.ircd.opers[params[0]] != params[1]:
+        elif params[0] not in self.ircd.opers or self.ircd.opers[params[0]] != crypt(params[1],self.ircd.opers[params[0]]):
             self.socket.sendMessage(irc.ERR_PASSWDMISMATCH, self.nickname, ":Password incorrect", prefix=self.ircd.hostname)
         else:
             self.mode.modes["o"] = True
@@ -513,6 +531,7 @@ class IRCUser(object):
     def irc_QUIT(self, prefix, params):
         if not self.nickname in self.ircd.users:
             return # Can't quit twice
+        self.add_to_whowas()
         reason = params[0] if params else "Client exited"
         for c in self.channels.keys():
             self.quit(c,reason)
@@ -718,7 +737,7 @@ class IRCUser(object):
                 self.socket.sendMessage(irc.RPL_ENDOFWHOIS, self.nickname, "*", ":End of /WHOIS list.", prefix=self.ircd.hostname)
                 continue
             udata = self.ircd.users[uname]
-            self.socket.sendMessage(irc.RPL_WHOISUSER, self.nickname, udata.nickname, udata.username, udata.hostname, "*", ":{}".format(udata.realname), prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_WHOISUSER, self.nickname, udata.nickname, udata.username, udata.ip if self.mode.has("o") else udata.hostname, "*", ":{}".format(udata.realname), prefix=self.ircd.hostname)
             if udata.channels:
                 chanlist = []
                 for channel in udata.channels.iterkeys():
@@ -744,6 +763,22 @@ class IRCUser(object):
             self.socket.sendMessage(irc.RPL_WHOISIDLE, self.nickname, udata.nickname, str(epoch(now()) - epoch(udata.lastactivity)), str(epoch(udata.signon)), ":seconds idle, signon time", prefix=self.ircd.hostname)
             self.socket.sendMessage(irc.RPL_ENDOFWHOIS, self.nickname, udata.nickname, ":End of /WHOIS list.", prefix=self.ircd.hostname)
     
+    def irc_WHOWAS(self, prefix, params):
+        if not params:
+            self.socket.sendMessage(irc.ERR_NONICKNAMEGIVEN, self.nickname, ":No nickname given", prefix=self.ircd.hostname)
+            return
+        users = params[0].split(",")
+        for uname in users:
+            if uname not in self.ircd.whowas:
+                self.socket.sendMessage(irc.ERR_WASNOSUCHNICK, self.nickname, uname, ":No such nick", prefix=self.ircd.hostname)
+                self.socket.sendMessage(irc.RPL_ENDOFWHOWAS, self.nickname, "*", ":End of /WHOWAS list.", prefix=self.ircd.hostname)
+                continue
+            history = self.ircd.whowas[uname]
+            for u in history:
+                self.socket.sendMessage(irc.RPL_WHOISUSER, self.nickname, u["nickname"], u["username"], u["ip"] if self.mode.has("o") else u["hostname"], "*", ":{}".format(u["realname"]), prefix=self.ircd.hostname)
+                self.socket.sendMessage(irc.RPL_WHOISSERVER, self.nickname, u["nickname"], self.ircd.hostname, ":{}".format(u["time"]), prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.RPL_ENDOFWHOWAS, self.nickname, uname, ":End of /WHOWAS list.", prefix=self.ircd.hostname)
+            
     def irc_PRIVMSG(self, prefix, params):
         self.msg_cmd("PRIVMSG", params)
     

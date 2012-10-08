@@ -14,7 +14,6 @@ from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.desertbus import DBUser
 import uuid, socket, collections, yaml, os, fnmatch
-import uuid, socket, collections, yaml, os
 
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
@@ -32,13 +31,13 @@ default_options = {
     "motd_line_length": 80,
     "client_timeout": 180,
     "oper_hosts": ["127.0.0.1","localhost"],
-    "opers": {"admin":"password"},
+    "opers": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
     "vhosts": {"127.0.0.1":"localhost"},
     "log_dir": "logs",
-    "max_data": 5, # Bytes per 5 seconds
+    "max_data": 5000, # Bytes per 5 seconds
     "maxConnectionsPerPeer": 3,
     "maxConnectionExempt": {"127.0.0.1":0},
-    "ping_interval": 30,
+    "ping_interval": 35,
     "timeout_delay": 90,
     "ban_msg": "You're banned!",
     "db_library": None,
@@ -49,7 +48,16 @@ default_options = {
     "nickserv_timeout": 40,
     "nickserv_limit": 5,
     "nickserv_guest_prefix": "Guest",
-    "exempt_chanops": ""
+    "bidserv_bid_limit": 1000000,
+    "bidserv_auction_item": None,
+    "bidserv_auction_name": None,
+    "bidserv_auction_state": 0,
+    "bidserv_min_increase": 5,
+    "bidserv_bids": [],
+    "bidserv_admins": ["fugiman","ashton"],
+    "bidserv_madness_levels": {1000: "Myth Busted"},
+    "exempt_chanops": "", # list of modes from which channel operators are exempt
+    "whowas_limit": 10,
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -215,16 +223,12 @@ class IRCD(Factory):
 
     def __init__(self, config, options = None):
         self.config = config
-        self.config_vars = ["name","hostname","motd","motd_line_length","client_timeout",
-            "oper_hosts","opers","vhosts","log_dir","max_data","maxConnectionsPerPeer",
-            "maxConnectionExempt","ping_interval","timeout_delay","ban_msg",
-            "db_library","db_marker","db_username","db_password","db_database",
-            "nickserv_timeout","nickserv_limit","nickserv_guest_prefix","exempt_chanops"]
         self.version = "0.1"
         self.created = now()
         self.token = uuid.uuid1()
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
+        self.whowas = CaseInsensitiveDictionary()
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
         self.peerConnections = {}
         self.db = None
@@ -258,7 +262,7 @@ class IRCD(Factory):
         return True
     
     def load_options(self, options):
-        for var in self.config_vars:
+        for var in default_options.iterkeys():
             setattr(self, var, options[var] if var in options else default_options[var])
         if self.db:
             self.db.close()
@@ -272,7 +276,7 @@ class IRCD(Factory):
                 options = yaml.safe_load(f)
         except:
             return False
-        for var in self.config_vars:
+        for var in default_options.iterkeys():
             options[var] = getattr(self, var, None)
         try:
             with open(self.config,"w") as f:
