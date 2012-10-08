@@ -35,7 +35,7 @@ oper_hosts:
 - localhost
 - I.Created.You
 opers:
-  admin: password
+  admin: $p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB
 ping_interval: 35
 ssl_port: 6697
 timeout_delay: 90

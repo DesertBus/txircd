@@ -6,6 +6,7 @@ from twisted.internet.task import Cooperator
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
+from pbkdf2 import crypt
 import fnmatch, socket, hashlib
 
 class IRCUser(object):
@@ -510,7 +511,7 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters", prefix=self.ircd.hostname)
         elif self.hostname not in self.ircd.oper_hosts:
             self.socket.sendMessage(irc.ERR_NOOPERHOST, self.nickname, ":No O-lines for your host", prefix=self.ircd.hostname)
-        elif params[0] not in self.ircd.opers or self.ircd.opers[params[0]] != params[1]:
+        elif params[0] not in self.ircd.opers or self.ircd.opers[params[0]] != crypt(params[1],self.ircd.opers[params[0]]):
             self.socket.sendMessage(irc.ERR_PASSWDMISMATCH, self.nickname, ":Password incorrect", prefix=self.ircd.hostname)
         else:
             self.mode.modes["o"] = True
