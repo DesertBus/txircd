@@ -828,6 +828,9 @@ class IRCUser(object):
             udata.irc_QUIT(None, ["Killed by {} ({})".format(self.nickname, params[1])])
     
     def irc_GLINE(self, prefix, params):
+        if not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission denied - You do not have the required operator privileges", prefix=self.ircd.hostname)
+            return
         if not params or (params[0][0] != "-" and len(params) < 3):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "GLINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
@@ -843,6 +846,9 @@ class IRCUser(object):
             self.add_xline("G", banmask, self.parse_duration(params[1]), params[2])
     
     def irc_KLINE(self, prefix, params):
+        if not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission denied - You do not have the required operator privileges", prefix=self.ircd.hostname)
+            return
         if not params or (params[0][0] != "-" and len(params) < 3):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "KLINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
@@ -858,6 +864,9 @@ class IRCUser(object):
             self.add_xline("K", banmask, self.parse_duration(params[1]), params[2])
     
     def irc_ZLINE(self, prefix, params):
+        if not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission denied - You do not have the required operator privileges", prefix=self.ircd.hostname)
+            return
         if not params or (params[0][0] != "-" and len(params) < 3):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "ZLINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
@@ -867,6 +876,9 @@ class IRCUser(object):
             self.add_xline("Z", params[0], self.parse_duration(params[1]), params[2])
     
     def irc_ELINE(self, prefix, params):
+        if not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission denied - You do not have the required operator privileges", prefix=self.ircd.hostname)
+            return
         if not params or (params[0][0] != "-" and len(params) < 3):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "ELINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
@@ -882,6 +894,9 @@ class IRCUser(object):
             self.add_xline("E", banmask, self.parse_duration(params[1]), params[2])
     
     def irc_QLINE(self, prefix, params):
+        if not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission denied - You do not have the required operator privileges", prefix=self.ircd.hostname)
+            return
         if not params or (params[0][0] != "-" and len(params) < 3):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "QLINE", ":Not enough parameters", prefix=self.ircd.hostname)
             return
@@ -895,6 +910,9 @@ class IRCUser(object):
                 self.socket.sendMessage("NOTICE", self.nickname, ":*** Could not set Q:Line: invalid nickmask", prefix=self.ircd.hostname)
     
     def irc_SHUN(self, prefix, params):
+        if not self.mode.has("o"):
+            self.socket.sendMessage(irc.ERR_NOPRIVILEGES, self.nickname, ":Permission denied - You do not have the required operator privileges", prefix=self.ircd.hostname)
+            return
         if not params or (params[0][0] != "-" and len(params) < 3):
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, "SHUN", ":Not enough parameters", prefix=self.ircd.hostname)
             return
