@@ -349,7 +349,7 @@ class IRCUser(object):
         if banned and not exempt and not self.mode.has("o"):
             self.socket.sendMessage(irc.ERR_BANNEDFROMCHAN, self.nickname, cdata.name, ":Cannot join channel (Banned)", prefix=self.ircd.hostname)
             return
-        self.channels[cdata.name] = {"banned":banned,"exempt":exempt,"msgrate":[]}
+        self.channels[cdata.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
         if cdata.name in self.invites:
             self.invites.remove(cdata.name)
         if not cdata.users:
@@ -416,13 +416,13 @@ class IRCUser(object):
                 message = strip_colors(message)
             if c.mode.has("f") and (not self.hasAccess(c.name, "h") or "f" not in self.ircd.exempt_chanops):
                 nowtime = epoch(now())
-                self.channels[c.name]["msgrate"].append(nowtime)
+                self.channels[c.name]["msg_rate"].append(nowtime)
                 lines, seconds = c.mode.get("f").split(":")
                 lines = int(lines)
                 seconds = int(seconds)
-                while self.channels[c.name]["msgrate"] and self.channels[c.name]["msgrate"][0] < nowtime - seconds:
-                    self.channels[c.name]["msgrate"].pop(0)
-                if len(self.channels[c.name]["msgrate"]) > lines:
+                while self.channels[c.name]["msg_rate"] and self.channels[c.name]["msg_rate"][0] < nowtime - seconds:
+                    self.channels[c.name]["msg_rate"].pop(0)
+                if len(self.channels[c.name]["msg_rate"]) > lines:
                     for u in c.users.itervalues():
                         u.socket.sendMessage("KICK", c.name, self.nickname, ":Channel flood triggered ({} lines in {} seconds)".format(lines, seconds), prefix=self.ircd.hostname)
                     self.leave(c.name)
