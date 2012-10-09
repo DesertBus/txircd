@@ -97,7 +97,7 @@ class IRCUser(object):
         self.socket.sendMessage(irc.RPL_YOURHOST, self.nickname, ":Your host is {}, running version {}".format(self.ircd.name, self.ircd.version), prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_CREATED, self.nickname, ":This server was created {}".format(self.ircd.created), prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_MYINFO, self.nickname, self.ircd.name, self.ircd.version, self.mode.allowed(), chanmodes, prefix=self.ircd.hostname) # usermodes & channel modes
-        self.socket.sendMessage(irc.RPL_ISUPPORT, self.nickname, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), ":are supported by this server", prefix=self.ircd.hostname)
+        self.socket.sendMessage(irc.RPL_ISUPPORT, self.nickname, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), ":are supported by this server", prefix=self.ircd.hostname)
         self.send_motd()
     
     def checkData(self, data):
