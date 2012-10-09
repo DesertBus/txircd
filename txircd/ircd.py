@@ -15,11 +15,14 @@ from txircd.service import IRCService
 from txircd.desertbus import DBUser
 import uuid, socket, collections, yaml, os, fnmatch
 
+# Add additional numerics to complement the ones in the RFC
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
 irc.RPL_WHOISSECURE  = "671"
-
+# Fix twisted being silly
+irc.RPL_ADMINLOC1 = "257"
+irc.RPL_ADMINLOC2 = "258"
 
 default_options = {
     "verbose": False,
@@ -59,6 +62,10 @@ default_options = {
     "exempt_chanops": "", # list of modes from which channel operators are exempt
     "whowas_limit": 10,
     "auto_ops": {"fugiman":"q"},
+    "admin_info_server": "Host Corp: 123 example street, Seattle, WA, USA",
+    "admin_info_organization": "Umbrella Corp: 123 example street, Seattle, WA, USA",
+    "admin_info_person": "Lazy admin <admin@example.com>",
+    "allow_die": True,
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])

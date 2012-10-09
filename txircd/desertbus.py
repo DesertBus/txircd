@@ -70,8 +70,7 @@ class DBUser(IRCUser):
     def unregistered(self):
         for channel in self.channels.iterkeys():
             c = self.ircd.channels[channel]
-            mode = self.ircd.auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.auto_ops else "v"
-            m, b, f = c.mode.combine("-{}".format(mode),[self.nickname],c.name)
+            m, b, f = c.mode.combine("-{}".format(self.ircd.prefix_order),[self.nickname for _ in self.ircd.prefix_order],c.name)
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():

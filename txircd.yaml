@@ -1,3 +1,7 @@
+admin_info_organization: 'Umbrella Corp: 123 example street, Seattle, WA, USA'
+admin_info_person: Lazy admin <admin@example.com>
+admin_info_server: 'Host Corp: 123 example street, Seattle, WA, USA'
+allow_die: true
 auto_ops:
   fugiman: q
 ban_msg: You're banned!
