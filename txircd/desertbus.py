@@ -29,6 +29,11 @@ def _register_donor_account(txn, nickname, email, password, username, qmark):
     query = "INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})".format(qmark)
     txn.execute(query, (id, nickname))
     return id
+
+def _unregister_nickname(txn, donor_id, nickname, qmark):
+    query = "DELETE FROM irc_nicks WHERE donor_id = {0} AND nick = {0}".format(qmark)
+    txn.execute(query, (donor_id, nickname))
+    return txn.rowcount
     
 class DBUser(IRCUser):
     services = ["nickserv","bidserv"]
@@ -275,7 +280,7 @@ class DBUser(IRCUser):
     def registerNick(self, result, nickname):
         if len(result) >= self.ircd.nickserv_limit:
             # Already registered all the nicks we can
-            nicklist = ", ".join([l[0] for l in result[:-2]])+", or "+result[-1][0] if len(result) > 1 else result[0][0]
+            nicklist = ", ".join([l[0] for l in result[:-1]])+", or "+result[-1][0] if len(result) > 1 else result[0][0]
             message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.nickserv_limit, nickname, nicklist)
             self.socket.sendMessage("NOTICE", self.nickname, message, prefix=self.service_prefix("NickServ"))
         else:
@@ -398,6 +403,36 @@ class DBUser(IRCUser):
         self.checkNick()
         self.unregistered()
     
+    def nickserv_LIST(self, prefix, params):
+        """Lists all the nicknames registered to your account
+        Syntax: \x02LIST\x0F
+        
+        Lists all the nicknames registered to your account"""
+        if not self.nickserv_id:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You have to be logged in to see your registered nicknames.", prefix=self.service_prefix("NickServ"))
+            return
+        d = self.query("SELECT nick FROM irc_nicks WHERE donor_id = {0}", self.nickserv_id)
+        d.addCallback(self.ns_listnicks)
+        d.addErrback(self.ns_listnickserr)
+    
+    def nickserv_DROP(self, prefix, params):
+        """Unregisters a given nickname from your account
+        Syntax: \x02DROP \x1Fnickname\x0F
+        
+        Unregisters the given nickname from your account,
+        allowing other people to use it and giving you
+        more space to register other nicknames."""
+        if not self.nickserv_id:
+            self.socket.sendMessage("NOTICE", self.nickname, ":You have to be logged in to release a nickname.", prefix=self.service_prefix("NickServ"))
+            return
+        if not params:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02DROP \x1Fnickname\x0F", prefix=self.service_prefix("NickServ"))
+            return
+        nick = params[0]
+        d = self.ircd.db.runInteraction(_unregister_nickname, self.nickserv_id, nick, self.ircd.db_marker)
+        d.addCallback(self.ns_dropped, nick)
+        d.addErrback(self.ns_notdropped, nick)
+    
     def ns_registered(self, result, email, name):
         self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F created with an email of \x02{}\x0F.".format(name,email), prefix=self.service_prefix("NickServ"))
         self.account = name
@@ -407,6 +442,22 @@ class DBUser(IRCUser):
     def ns_notregistered(self, result, email, name):
         self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.service_prefix("NickServ"))
 
+    def ns_listnicks(self, result):
+        message = ":Registered Nicknames: {}".format(", ".join([n[0] for n in result]))
+        self.socket.sendMessage("NOTICE", self.nickname, message, prefix=self.service_prefix("NickServ"))
+    
+    def ns_listnickserr(self, result):
+        self.socket.sendMessage("NOTICE", self.nickname, ":An error occured while retrieving your registered nicknames. Please try again later.", prefix=self.service_prefix("NickServ"))
+    
+    def ns_dropped(self, result, nick):
+        if result:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Nickname '{}' dropped.".format(nick), prefix=self.service_prefix("NickServ"))
+        else:
+            self.socket.sendMessage("NOTICE", self.nickname, ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
+    
+    def ns_notdropped(self, result, nick):
+        self.socket.sendMessage("NOTICE", self.nickname, ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
+    
     # ========================
     # === BIDSERV COMMANDS ===
     # ========================
