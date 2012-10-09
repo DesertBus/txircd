@@ -240,7 +240,7 @@ class IRCD(Factory):
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
         self.peerConnections = {}
         self.db = None
-        reactor.addSystemEventTrigger('before', 'shutdown', self.cleanup)
+        reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
         self.xlines = {
             "G": CaseInsensitiveDictionary(),
             "K": CaseInsensitiveDictionary(),

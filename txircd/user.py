@@ -576,7 +576,7 @@ class IRCUser(object):
     def irc_MODE_user(self, params):
         user = self.ircd.users[params[0]]
         if user.nickname != self.nickname and not self.mode.has("o"): # Not self and not an OPER
-            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, user.nickname, ":Can't {} for other users".format("view modes" if len(params) == 1 else "change mode"), prefix=self.ircd.hostname)
+            self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, self.nickname, ":Can't {} for other users".format("view modes" if len(params) == 1 else "change mode"), prefix=self.ircd.hostname)
         else:
             if len(params) == 1:
                 self.socket.sendMessage(irc.RPL_UMODEIS, user.nickname, user.mode, prefix=self.ircd.hostname)
@@ -997,7 +997,7 @@ class IRCUser(object):
             return
         def restart():
             os.execl(sys.executable, sys.executable, *sys.argv)
-        reactor.addSystemEventTrigger('after', 'shutdown', restart)
+        reactor.addSystemEventTrigger("after", "shutdown", restart)
         reactor.stop()
     
     def irc_USERHOST(self, prefix, params):
