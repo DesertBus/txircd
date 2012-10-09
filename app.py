@@ -48,7 +48,7 @@ if __name__ == "__main__":
         import sys
         log.startLogging(sys.stdout)
     ircd = IRCD(args.config, options)
-    ssl_cert = ssl.DefaultOpenSSLContextFactory('test.key','test.pem')
+    ssl_cert = ssl.DefaultOpenSSLContextFactory("test.key","test.pem")
     if options["irc_port"]:
         if isinstance(options["irc_port"], collections.Sequence):
             for port in options["irc_port"]:
