@@ -67,6 +67,7 @@ default_options = {
     "admin_info_organization": "Umbrella Corp: 123 example street, Seattle, WA, USA",
     "admin_info_person": "Lazy admin <admin@example.com>",
     "allow_die": True,
+    "founder_mode": "q",
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])

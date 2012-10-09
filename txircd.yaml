@@ -41,6 +41,7 @@ db_marker: '%s'
 db_password: txircd
 db_username: txircd
 exempt_chanops: S
+founder_mode: null
 hostname: test.txircd.com
 irc_port: 6667
 log_dir: logs
