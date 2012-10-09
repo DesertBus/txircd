@@ -33,7 +33,7 @@ default_options = {
     "motd": "Welcome to txIRCD",
     "motd_line_length": 80,
     "client_timeout": 180,
-    "oper_hosts": ["127.0.0.1","localhost"],
+    "oper_hosts": ["127.0.0.1"],
     "opers": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
     "vhosts": {"127.0.0.1":"localhost"},
     "log_dir": "logs",
