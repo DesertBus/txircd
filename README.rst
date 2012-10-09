@@ -13,7 +13,7 @@ If you wanna hack around with it do the following:
 * Connect to the IRC Daemon
 
 ###############
-OPER privledges
+OPER privileges
 ###############
 
 Current
