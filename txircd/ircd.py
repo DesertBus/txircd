@@ -59,6 +59,7 @@ default_options = {
     "bidserv_bids": [],
     "bidserv_admins": ["fugiman","ashton"],
     "bidserv_madness_levels": {1000: "Myth Busted"},
+    "bidserv_space_bid": "SPACE BID",
     "exempt_chanops": "", # list of modes from which channel operators are exempt
     "whowas_limit": 10,
     "auto_ops": {"fugiman":"q"},

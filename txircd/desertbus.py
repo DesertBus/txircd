@@ -537,9 +537,9 @@ class DBUser(IRCUser):
         for amount, name in levels:
             if amount <= high_bid["bid"] or bid < amount:
                 continue
-            madness += name+"! "
-        if high_bid["id"] == self.nickserv_id:
-            madness += "Space Bid! "
+            madness += "{}! ".format(name)
+        if high_bid["id"] == self.nickserv_id and self.ircd.bidserv_space_bid:
+            madness += "{}! ".format(self.ircd.bidserv_space_bid)
         smack = " ".join(params[1:]).strip()
         self.ircd.bidserv_bids.append({
             "bid": bid,
