@@ -36,7 +36,7 @@ default_options = {
     "motd": "Welcome to txIRCD",
     "motd_line_length": 80,
     "client_timeout": 180,
-    "oper_hosts": ["127.0.0.1","localhost"],
+    "oper_hosts": ["127.0.0.1"],
     "opers": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
     "vhosts": {"127.0.0.1":"localhost"},
     "log_dir": "logs",
@@ -272,12 +272,12 @@ class IRCD(Factory):
             "SHUN": CaseInsensitiveDictionary()
         }
         self.xline_match = {
-            "G": "{ident}@{host}",
-            "K": "{ident}@{host}",
-            "Z": "{ip}",
-            "E": "{ident}@{host}",
-            "Q": "{nick}",
-            "SHUN": "{ident}@{host}"
+            "G": ["{ident}@{host}", "{ident}@{ip}"],
+            "K": ["{ident}@{host}", "{ident}@{ip}"],
+            "Z": ["{ip}"],
+            "E": ["{ident}@{host}", "{ident}@{ip}"],
+            "Q": ["{nick}"],
+            "SHUN": ["{ident}@{host}", "{ident}@{ip}"]
         }
         
         if not options:
@@ -304,7 +304,7 @@ class IRCD(Factory):
         if self.db:
             self.db.close()
         if self.db_library:
-            self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password)
+            self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
         if self.stats_enabled and not self.stats:
             self.stats = StatFactory()
             if self.stats_port_tcp:

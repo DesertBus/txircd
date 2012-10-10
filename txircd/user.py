@@ -97,7 +97,7 @@ class IRCUser(object):
         self.socket.sendMessage(irc.RPL_YOURHOST, self.nickname, ":Your host is {}, running version {}".format(self.ircd.name, self.ircd.version), prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_CREATED, self.nickname, ":This server was created {}".format(self.ircd.created), prefix=self.ircd.hostname)
         self.socket.sendMessage(irc.RPL_MYINFO, self.nickname, self.ircd.name, self.ircd.version, self.mode.allowed(), chanmodes, prefix=self.ircd.hostname) # usermodes & channel modes
-        self.socket.sendMessage(irc.RPL_ISUPPORT, self.nickname, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), ":are supported by this server", prefix=self.ircd.hostname)
+        self.socket.sendMessage(irc.RPL_ISUPPORT, self.nickname, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), ":are supported by this server", prefix=self.ircd.hostname)
         self.send_motd()
     
     def checkData(self, data):
@@ -201,9 +201,12 @@ class IRCUser(object):
             match_mask = irc_lower(mask)
             match_list = []
             for user in self.ircd.users.itervalues():
-                usermask = self.ircd.xline_match[linetype].format(nick=irc_lower(user.nickname), ident=irc_lower(user.username), host=irc_lower(user.hostname), ip=irc_lower(user.ip))
-                if fnmatch.fnmatch(usermask, match_mask):
-                    match_list.append(user)
+                usermasks = self.ircd.xline_match[linetype]
+                for umask in usermasks:
+                    usermask = umask.format(nick=irc_lower(user.nickname), ident=irc_lower(user.username), host=irc_lower(user.hostname), ip=irc_lower(user.ip))
+                    if fnmatch.fnmatch(usermask, match_mask):
+                        match_list.append(user)
+                        break # break the inner loop to only match each user once
             applymethod = getattr(self, "applyline_{}".format(linetype), None)
             if applymethod is not None:
                 applymethod(match_list, reason)
@@ -249,22 +252,26 @@ class IRCUser(object):
                 continue # user still matches different e:lines
             for linetype in matching_users.iterkeys():
                 if user.matches_xline(linetype):
-                    matches_xline[linetype].append(user)
+                    matching_users[linetype].append(user)
         if matching_users["G"]:
             self.applyline_G(matching_users["G"], "Exception removed")
         if matching_users["K"]:
             self.applyline_K(matching_users["K"], "Exception removed")
     
     def matches_xline(self, linetype):
-        usermask = self.ircd.xline_match[linetype].format(nick=irc_lower(self.nickname), ident=irc_lower(self.username), host=irc_lower(self.hostname), ip=irc_lower(self.ip))
+        usermasks = self.ircd.xline_match[linetype]
         expired = []
         matched = None
         for mask, linedata in self.ircd.xlines[linetype].iteritems():
             if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
                 expired.append(mask)
                 continue
-            if fnmatch.fnmatch(usermask, mask):
-                matched = linedata["reason"]
+            for umask in usermasks:
+                usermask = umask.format(nick=irc_lower(self.nickname), ident=irc_lower(self.username), host=irc_lower(self.hostname), ip=irc_lower(self.ip))
+                if fnmatch.fnmatch(usermask, mask):
+                    matched = linedata["reason"]
+                    break # User only needs matched once.
+            if matched:
                 break # If there are more expired x:lines, they'll get removed later if necessary
         for mask in expired:
             del self.ircd.xlines[linetype][mask]
@@ -520,7 +527,7 @@ class IRCUser(object):
     def irc_OPER(self, prefix, params):
         if len(params) < 2:
             self.socket.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters", prefix=self.ircd.hostname)
-        elif self.hostname not in self.ircd.oper_hosts:
+        elif self.ip not in self.ircd.oper_hosts:
             self.socket.sendMessage(irc.ERR_NOOPERHOST, self.nickname, ":No O-lines for your host", prefix=self.ircd.hostname)
         elif params[0] not in self.ircd.opers or self.ircd.opers[params[0]] != crypt(params[1],self.ircd.opers[params[0]]):
             self.socket.sendMessage(irc.ERR_PASSWDMISMATCH, self.nickname, ":Password incorrect", prefix=self.ircd.hostname)
@@ -870,7 +877,10 @@ class IRCUser(object):
             self.remove_xline("G", banmask)
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users: # banmask is a nick of an active user; user@host isn't a valid nick so no worries there
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("G", banmask, self.parse_duration(params[1]), params[2])
     
@@ -888,7 +898,10 @@ class IRCUser(object):
             self.remove_xline("K", banmask)
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users: # banmask is a nick of an active user; user@host isn't a valid nick so no worries there
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("K", banmask, self.parse_duration(params[1]), params[2])
     
@@ -902,7 +915,10 @@ class IRCUser(object):
         if params[0][0] == "-":
             self.remove_xline("Z", params[0][1:])
         else:
-            self.add_xline("Z", params[0], self.parse_duration(params[1]), params[2])
+            banip = params[0]
+            if banip in self.ircd.users:
+                banip = self.ircd.users[banip].ip
+            self.add_xline("Z", banip, self.parse_duration(params[1]), params[2])
     
     def irc_ELINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -918,7 +934,10 @@ class IRCUser(object):
             self.remove_xline("E", params[0][1:])
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users:
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("E", banmask, self.parse_duration(params[1]), params[2])
     
@@ -952,7 +971,10 @@ class IRCUser(object):
             self.remove_xline("SHUN", banmask)
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users:
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("SHUN", banmask, self.parse_duration(params[1]), params[2])
     
