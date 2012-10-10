@@ -2,6 +2,7 @@
 from twisted.internet import reactor, ssl
 from twisted.python import log
 from txircd.ircd import IRCD, default_options
+from txsockjs.factory import SockJSFactory
 import yaml, collections
 
 if __name__ == "__main__":
@@ -71,6 +72,18 @@ if __name__ == "__main__":
         else:
             try:
                 reactor.listenSSL(int(options["ssl_port"]), ircd, ssl_cert)
+            except:
+                pass # Wasn't a number
+    if options["server_port_web"]:
+        if isinstance(options["server_port_web"], collections.Sequence):
+            for port in options["server_port_web"]:
+                try:
+                    reactor.listenSSL(int(port), SockJSFactory(ircd), ssl_cert)
+                except:
+                    pass # Wasn't a number
+        else:
+            try:
+                reactor.listenSSL(int(options["server_port_web"]), SockJSFactory(ircd), ssl_cert)
             except:
                 pass # Wasn't a number
     # And start up the reactor

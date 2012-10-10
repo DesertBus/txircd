@@ -13,6 +13,8 @@ from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.desertbus import DBUser
+from txircd.stats import StatFactory
+from txsockjs.factory import SockJSFactory
 import uuid, socket, collections, yaml, os, fnmatch
 
 # Add additional numerics to complement the ones in the RFC
@@ -28,6 +30,7 @@ default_options = {
     "verbose": False,
     "irc_port": 6667,
     "ssl_port": 6697,
+    "server_port_web": 8080,
     "name": "txircd",
     "hostname": socket.getfqdn(),
     "motd": "Welcome to txIRCD",
@@ -68,6 +71,9 @@ default_options = {
     "admin_info_person": "Lazy admin <admin@example.com>",
     "allow_die": True,
     "founder_mode": "q",
+    "stats_enabled": True,
+    "stats_port_tcp": 43789,
+    "stats_port_web": 43790,
 }
 
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
@@ -105,6 +111,7 @@ class IRCProtocol(irc.IRC):
             del self.factory.xlines["Z"][mask]
 
     def dataReceived(self, data):
+        self.factory.stats_data["bytes_in"] += len(data)
         self.data += len(data)
         self.last_message = now()
         if self.pinger.running:
@@ -123,6 +130,7 @@ class IRCProtocol(irc.IRC):
             self.sendMessage("PING",":{}".format(self.factory.hostname))
     
     def handleCommand(self, command, prefix, params):
+        self.factory.stats_data["lines_in"] += 1
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
             return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.factory.hostname)
@@ -133,6 +141,8 @@ class IRCProtocol(irc.IRC):
         
 
     def sendLine(self, line):
+        self.factory.stats_data["lines_out"] += 1
+        self.factory.stats_data["bytes_out"] += len(line)+2
         log.msg("sendLine: {!r}".format(line))
         return irc.IRC.sendLine(self, line)
 
@@ -232,6 +242,8 @@ class IRCD(Factory):
     }
 
     def __init__(self, config, options = None):
+        reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
+        
         self.config = config
         self.version = "0.1"
         self.created = now()
@@ -242,7 +254,15 @@ class IRCD(Factory):
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
         self.peerConnections = {}
         self.db = None
-        reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
+        self.stats = None
+        self.stats_timer = LoopingCall(self.flush_stats)
+        self.stats_data = {
+            "bytes_in": 0,
+            "bytes_out": 0,
+            "lines_in": 0,
+            "lines_out": 0,
+            "connections": 0,
+        }
         self.xlines = {
             "G": CaseInsensitiveDictionary(),
             "K": CaseInsensitiveDictionary(),
@@ -259,9 +279,16 @@ class IRCD(Factory):
             "Q": "{nick}",
             "SHUN": "{ident}@{host}"
         }
+        
         if not options:
             options = {}
         self.load_options(options)
+        
+        logfile = "{}/{}".format(self.log_dir,"stats")
+        if not os.path.exists(logfile):
+            os.makedirs(logfile)
+        self.stats_log = DailyLogFile("log",logfile)
+        self.stats_timer.start(1)
     
     def rehash(self):
         try:
@@ -278,6 +305,21 @@ class IRCD(Factory):
             self.db.close()
         if self.db_library:
             self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password)
+        if self.stats_enabled and not self.stats:
+            self.stats = StatFactory()
+            if self.stats_port_tcp:
+                try:
+                    reactor.listenTCP(int(self.stats_port_tcp), self.stats)
+                except:
+                    pass # Wasn't a number
+            if self.stats_port_web:
+                try:
+                    reactor.listenTCP(int(self.stats_port_web), SockJSFactory(self.stats))
+                except:
+                    pass # Wasn't a number
+        elif not self.stats_enabled and self.stats:
+            self.stats.shutdown()
+            self.stats = None
     
     def save_options(self):
         options = {}
@@ -308,6 +350,7 @@ class IRCD(Factory):
         log.msg("Closing logs...")
         for c in self.channels.itervalues():
             c.log.close()
+        self.stats_log.close()
         # Finally, save the config. Just in case.
         log.msg("Saving options...")
         self.save_options()
@@ -315,6 +358,7 @@ class IRCD(Factory):
         return DeferredList(deferreds)
     
     def buildProtocol(self, addr):
+        self.stats_data["connections"] += 1
         ip = addr.host
         conn = self.peerConnections.get(ip,0)
         max = self.maxConnectionExempt[ip] if ip in self.maxConnectionExempt else self.maxConnectionsPerPeer
@@ -324,6 +368,7 @@ class IRCD(Factory):
         return Factory.buildProtocol(self, addr)
 
     def unregisterProtocol(self, p):
+        self.stats_data["connections"] -= 1
         peerHost = p.transport.getPeer().host
         self.peerConnections[peerHost] -= 1
         if self.peerConnections[peerHost] == 0:
@@ -337,3 +382,13 @@ class IRCD(Factory):
         c.mode.parent = c
         c.mode.combine("nt",[],name)
         return c
+    
+    def flush_stats(self):
+        line = "{:d} {:d} {:d} {:d} {:d}".format(self.stats_data["bytes_in"],self.stats_data["bytes_out"],self.stats_data["lines_in"],self.stats_data["lines_out"],self.stats_data["connections"])
+        self.stats_data["bytes_in"] = 0
+        self.stats_data["bytes_out"] = 0
+        self.stats_data["lines_in"] = 0
+        self.stats_data["lines_out"] = 0
+        self.stats_log.write(line+"\n")
+        if self.stats:
+            self.stats.broadcast(line+"\r\n")
