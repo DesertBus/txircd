@@ -252,12 +252,12 @@ class IRCD(Factory):
             "SHUN": CaseInsensitiveDictionary()
         }
         self.xline_match = {
-            "G": "{ident}@{host}",
-            "K": "{ident}@{host}",
-            "Z": "{ip}",
-            "E": "{ident}@{host}",
-            "Q": "{nick}",
-            "SHUN": "{ident}@{host}"
+            "G": ["{ident}@{host}", "{ident}@{ip}"],
+            "K": ["{ident}@{host}", "{ident}@{ip}"],
+            "Z": ["{ip}"],
+            "E": ["{ident}@{host}", "{ident}@{ip}"],
+            "Q": ["{nick}"],
+            "SHUN": ["{ident}@{host}", "{ident}@{ip}"]
         }
         if not options:
             options = {}
