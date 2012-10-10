@@ -201,9 +201,12 @@ class IRCUser(object):
             match_mask = irc_lower(mask)
             match_list = []
             for user in self.ircd.users.itervalues():
-                usermask = self.ircd.xline_match[linetype].format(nick=irc_lower(user.nickname), ident=irc_lower(user.username), host=irc_lower(user.hostname), ip=irc_lower(user.ip))
-                if fnmatch.fnmatch(usermask, match_mask):
-                    match_list.append(user)
+                usermasks = self.ircd.xline_match[linetype]
+                for umask in usermasks:
+                    usermask = umask.format(nick=irc_lower(user.nickname), ident=irc_lower(user.username), host=irc_lower(user.hostname), ip=irc_lower(user.ip))
+                    if fnmatch.fnmatch(usermask, match_mask):
+                        match_list.append(user)
+                        break # break the inner loop to only match each user once
             applymethod = getattr(self, "applyline_{}".format(linetype), None)
             if applymethod is not None:
                 applymethod(match_list, reason)
@@ -256,15 +259,19 @@ class IRCUser(object):
             self.applyline_K(matching_users["K"], "Exception removed")
     
     def matches_xline(self, linetype):
-        usermask = self.ircd.xline_match[linetype].format(nick=irc_lower(self.nickname), ident=irc_lower(self.username), host=irc_lower(self.hostname), ip=irc_lower(self.ip))
+        usermasks = self.ircd.xline_match[linetype]
         expired = []
         matched = None
         for mask, linedata in self.ircd.xlines[linetype].iteritems():
             if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
                 expired.append(mask)
                 continue
-            if fnmatch.fnmatch(usermask, mask):
-                matched = linedata["reason"]
+            for umask in usermasks:
+                usermask = umask.format(nick=irc_lower(self.nickname), ident=irc_lower(self.username), host=irc_lower(self.hostname), ip=irc_lower(self.ip))
+                if fnmatch.fnmatch(usermask, mask):
+                    matched = linedata["reason"]
+                    break # User only needs matched once.
+            if matched:
                 break # If there are more expired x:lines, they'll get removed later if necessary
         for mask in expired:
             del self.ircd.xlines[linetype][mask]
