@@ -277,7 +277,7 @@ class IRCD(Factory):
         if self.db:
             self.db.close()
         if self.db_library:
-            self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password)
+            self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
     
     def save_options(self):
         options = {}
