@@ -252,7 +252,7 @@ class IRCUser(object):
                 continue # user still matches different e:lines
             for linetype in matching_users.iterkeys():
                 if user.matches_xline(linetype):
-                    matches_xline[linetype].append(user)
+                    matching_users[linetype].append(user)
         if matching_users["G"]:
             self.applyline_G(matching_users["G"], "Exception removed")
         if matching_users["K"]:
