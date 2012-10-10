@@ -877,7 +877,10 @@ class IRCUser(object):
             self.remove_xline("G", banmask)
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users: # banmask is a nick of an active user; user@host isn't a valid nick so no worries there
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("G", banmask, self.parse_duration(params[1]), params[2])
     
@@ -895,7 +898,10 @@ class IRCUser(object):
             self.remove_xline("K", banmask)
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users: # banmask is a nick of an active user; user@host isn't a valid nick so no worries there
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("K", banmask, self.parse_duration(params[1]), params[2])
     
@@ -909,7 +915,10 @@ class IRCUser(object):
         if params[0][0] == "-":
             self.remove_xline("Z", params[0][1:])
         else:
-            self.add_xline("Z", params[0], self.parse_duration(params[1]), params[2])
+            banip = params[0]
+            if banip in self.ircd.users:
+                banip = self.ircd.users[banip].ip
+            self.add_xline("Z", banip, self.parse_duration(params[1]), params[2])
     
     def irc_ELINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -925,7 +934,10 @@ class IRCUser(object):
             self.remove_xline("E", params[0][1:])
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users:
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("E", banmask, self.parse_duration(params[1]), params[2])
     
@@ -959,7 +971,10 @@ class IRCUser(object):
             self.remove_xline("SHUN", banmask)
         else:
             banmask = irc_lower(params[0])
-            if "@" not in banmask:
+            if banmask in self.ircd.users:
+                user = self.ircd.users[banmask]
+                banmask = irc_lower("{}@{}".format(user.username, user.hostname))
+            elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
             self.add_xline("SHUN", banmask, self.parse_duration(params[1]), params[2])
     
