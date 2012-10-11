@@ -62,7 +62,11 @@ oper_hosts:
 opers:
   admin: $p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB
 ping_interval: 35
+server_port_web: 8080
 ssl_port: 6697
+stats_enabled: true
+stats_port_tcp: 43789
+stats_port_web: 43790
 timeout_delay: 90
 verbose: true
 vhosts:
