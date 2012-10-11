@@ -518,7 +518,7 @@ class DBUser(IRCUser):
             return
         high_bid = self.ircd.bidserv_bids[-1]
         try:
-            bid = float(params[0]) # Could this go terribly wrong?
+            bid = float(params[0].lstrip("$"))
             bid = round(bid, 2)
         except:
             self.socket.sendMessage("NOTICE", self.nickname, ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
