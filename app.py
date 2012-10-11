@@ -3,7 +3,7 @@ from twisted.internet import reactor, ssl
 from twisted.python import log
 from txircd.ircd import IRCD, default_options
 from txsockjs.factory import SockJSFactory
-import yaml, collections
+import yaml, collections, sys
 
 if __name__ == "__main__":
     # Copy the defaults
@@ -17,6 +17,7 @@ if __name__ == "__main__":
     parser.add_argument("--name")
     parser.add_argument("--motd")
     parser.add_argument("-v", "--verbose", dest="verbose", action="store_true")
+    parser.add_argument("-l", "--log-file", dest="log_file", type=argparse.FileType('a'), default=sys.stdout)
     parser.add_argument("--client-timeout", dest="client_timeout", type=int)
     args = parser.parse_args()
     # Load config file
@@ -46,8 +47,7 @@ if __name__ == "__main__":
         pass # Oh well
     # Finally launch the app with the options
     if options["verbose"]:
-        import sys
-        log.startLogging(sys.stdout)
+        log.startLogging(args.log_file)
     ircd = IRCD(args.config, options)
     ssl_cert = ssl.DefaultOpenSSLContextFactory("test.key","test.pem")
     if options["irc_port"]:
