@@ -31,6 +31,8 @@ default_options = {
     # App details
     "app_verbose": False,
     "app_log_dir": "logs",
+    "app_ssl_key": "test.key",
+    "app_ssl_pem": "test.pem",
     # Network details
     "network_name": "txircd",
     # Server details

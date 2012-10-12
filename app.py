@@ -47,7 +47,7 @@ if __name__ == "__main__":
     if options["app_verbose"] or args.verbose:
         log.startLogging(args.log_file)
     ircd = IRCD(args.config, options)
-    ssl_cert = ssl.DefaultOpenSSLContextFactory("test.key","test.pem")
+    ssl_cert = ssl.DefaultOpenSSLContextFactory(options["app_ssl_key"],options["app_ssl_pem"])
     if options["server_port_tcp"]:
         if isinstance(options["server_port_tcp"], collections.Sequence):
             for port in options["server_port_tcp"]:
