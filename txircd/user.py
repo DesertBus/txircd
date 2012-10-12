@@ -3,7 +3,6 @@
 from twisted.internet import reactor
 from twisted.python import log
 from twisted.words.protocols import irc
-from twisted.internet.task import Cooperator
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
@@ -368,9 +367,9 @@ class IRCUser(object):
             self.invites.remove(cdata.name)
         if not cdata.users and self.ircd.channel_founder_mode:
             cdata.mode.combine("+{}".format(self.ircd.channel_founder_mode),[self.nickname],cdata.name) # Set first user as founder
-        self.sendMessage("JOIN", to=cdata.name, prefix=self.prefix()) # Send ourselves the message first, or things break
-        Cooperator().cooperate((u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix()) for u in cdata.users.itervalues() if u.nickname != self.nickname))
         cdata.users[self.nickname] = self
+        for u in cdata.users.itervalues():
+            u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix())
         if cdata.topic["message"] is None:
             self.sendMessage(irc.RPL_NOTOPIC, cdata.name, "No topic is set")
         else:
@@ -391,11 +390,13 @@ class IRCUser(object):
             cdata.log.close()
     
     def part(self, channel, reason):
-        Cooperator().cooperate((u.sendMessage("PART", ":{}".format(reason), to=self.ircd.channels[channel].name, prefix=self.prefix()) for u in self.ircd.channels[channel].users.itervalues()))
+        for u in self.ircd.channels[channel].users.itervalues():
+            u.sendMessage("PART", ":{}".format(reason), to=self.ircd.channels[channel].name, prefix=self.prefix())
         self.leave(channel)
     
     def quit(self, channel, reason):
-        Cooperator().cooperate((u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix()) for u in self.ircd.channels[channel].users.itervalues()))
+        for u in self.ircd.channels[channel].users.itervalues():
+            u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         self.leave(channel)
     
     def msg_cmd(self, cmd, params):
@@ -445,7 +446,9 @@ class IRCUser(object):
             for u in c.users.itervalues():
                 if u.nickname is not self.nickname and (not min_status or u.hasAccess(c.name, min_status)):
                     msgto.add(u)
-            Cooperator().cooperate((u.sendMessage(cmd, ":{}".format(l), to=dest, prefix=self.prefix()) for l in lines for u in msgto))
+            for u in msgto:
+                for l in lines:
+                    u.sendMessage(cmd, ":{}".format(l), to=dest, prefix=self.prefix())
             c.log.write("[{:02d}:{:02d}:{:02d}] {border_s}{nick}{border_e}: {message}\n".format(now().hour, now().minute, now().second, nick=self.nickname, message=message, border_s=("-" if cmd == "NOTICE" else "<"), border_e=("-" if cmd == "NOTICE" else ">")))
         else:
             return self.sendMessage(irc.ERR_NOSUCHNICK, target, ":No such nick/channel")
@@ -809,7 +812,8 @@ class IRCUser(object):
         if params:
             channels = params[0].split(",")
         channels = filter(lambda x: x in self.channels and x in self.ircd.channels, channels)
-        Cooperator().cooperate((self.report_names(c) for c in channels))
+        for c in channels:
+            self.report_names(c)
     
     def irc_LIST(self, prefix, params):
         #params[0] = channel list, params[1] = target server. We ignore the target
