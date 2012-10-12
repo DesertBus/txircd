@@ -769,7 +769,7 @@ class IRCUser(object):
                             chanlist.append("{}{}".format(symbol, cdata.name))
                 if chanlist:
                     self.sendMessage(irc.RPL_WHOISCHANNELS, udata.nickname, ":{}".format(" ".join(chanlist)))
-            self.sendMessage(irc.RPL_WHOISSERVER, udata.nickname, self.ircd.server_name, ":{}".format(self.ircd.name))
+            self.sendMessage(irc.RPL_WHOISSERVER, udata.nickname, self.ircd.server_name, ":{}".format(self.ircd.network_name))
             if udata.mode.has("a"):
                 self.sendMessage(irc.RPL_AWAY, udata.nickname, ":{}".format(udata.mode.get("a")))
             if udata.mode.has("o"):

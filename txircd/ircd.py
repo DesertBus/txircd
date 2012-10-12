@@ -14,6 +14,7 @@ from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.desertbus import DBUser
 from txircd.stats import StatFactory
+from txircd import __version__
 from txsockjs.factory import SockJSFactory
 import uuid, socket, collections, yaml, os, fnmatch
 
@@ -257,7 +258,7 @@ class IRCD(Factory):
         reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
         
         self.config = config
-        self.version = "0.1"
+        self.version = "txircd.{}".format(__version__)
         self.created = now()
         self.token = uuid.uuid1()
         self.servers = CaseInsensitiveDictionary()
