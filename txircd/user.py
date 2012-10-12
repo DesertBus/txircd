@@ -485,6 +485,8 @@ class IRCUser(object):
             self.sendMessage(irc.ERR_NICKNAMEINUSE, self.ircd.users[params[0]].nickname, ":Nickname is already in use")
         elif not VALID_USERNAME.match(params[0]):
             self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname")
+        elif params[0] == self.nickname:
+            pass # Don't send ERR_NICKNAMEINUSE if they're changing to exactly the nick they're already using
         else:
             oldnick = self.nickname
             newnick = params[0]
@@ -568,8 +570,7 @@ class IRCUser(object):
             for c in channels:
                 if c in self.channels:
                     continue # don't join it twice
-                cdata = self.ircd.channels[c]
-                k = keys.pop(0) if keys and cdata.mode.has("k") else None
+                k = keys.pop(0) if keys else None
                 self.join(c,k)
 
     def irc_PART(self, prefix, params):
