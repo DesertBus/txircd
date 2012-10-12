@@ -14,6 +14,7 @@ from txircd.server import IRCServer
 from txircd.service import IRCService
 from txircd.desertbus import DBUser
 from txircd.stats import StatFactory
+from txircd import __version__
 from txsockjs.factory import SockJSFactory
 import uuid, socket, collections, yaml, os, fnmatch
 
@@ -27,33 +28,44 @@ irc.RPL_ADMINLOC1 = "257"
 irc.RPL_ADMINLOC2 = "258"
 
 default_options = {
-    "verbose": False,
-    "irc_port": 6667,
-    "ssl_port": 6697,
+    # App details
+    "app_verbose": False,
+    "app_log_dir": "logs",
+    # Network details
+    "network_name": "txircd",
+    # Server details
+    "server_name": socket.getfqdn(),
+    "server_motd": "Welcome to txIRCD",
+    "server_motd_line_length": 80,
+    "server_port_tcp": 6667,
+    "server_port_ssl": 6697,
     "server_port_web": 8080,
-    "name": "txircd",
-    "hostname": socket.getfqdn(),
-    "motd": "Welcome to txIRCD",
-    "motd_line_length": 80,
+    # Client details
     "client_timeout": 180,
-    "oper_hosts": ["127.0.0.1"],
-    "opers": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
-    "vhosts": {"127.0.0.1":"localhost"},
-    "log_dir": "logs",
-    "max_data": 5000, # Bytes per 5 seconds
-    "maxConnectionsPerPeer": 3,
-    "maxConnectionExempt": {"127.0.0.1":0},
-    "ping_interval": 35,
-    "timeout_delay": 90,
-    "ban_msg": "You're banned!",
+    "client_vhosts": {"127.0.0.1":"localhost"},
+    "client_max_data": 5000, # Bytes per 5 seconds
+    "client_peer_connections": 3,
+    "client_peer_exempt": {"127.0.0.1":0},
+    "client_ping_interval": 35,
+    "client_timeout_delay": 90,
+    "client_ban_msg": "You're banned!",
+    "client_whowas_limit": 10,
+    # Oper details
+    "oper_ips": ["127.0.0.1"],
+    "oper_logins": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
+    "oper_allow_die": True,
+    # Database details
     "db_library": None,
     "db_marker": "?",
     "db_username": None,
     "db_password": None,
     "db_database": None,
+    # Nickserv details
     "nickserv_timeout": 40,
     "nickserv_limit": 5,
     "nickserv_guest_prefix": "Guest",
+    # Bidserv details
+    "bidserv_display_all_madness": False,
     "bidserv_bid_limit": 1000000,
     "bidserv_auction_item": None,
     "bidserv_auction_name": None,
@@ -63,14 +75,15 @@ default_options = {
     "bidserv_admins": ["fugiman","ashton"],
     "bidserv_madness_levels": {1000: "Myth Busted"},
     "bidserv_space_bid": "SPACE BID",
-    "exempt_chanops": "", # list of modes from which channel operators are exempt
-    "whowas_limit": 10,
-    "auto_ops": {"fugiman":"q"},
+    # Chanserv?? details
+    "channel_exempt_chanops": "", # list of modes from which channel operators are exempt
+    "channel_auto_ops": {"fugiman":"q"},
+    "channel_founder_mode": "q",
+    # Admin details
     "admin_info_server": "Host Corp: 123 example street, Seattle, WA, USA",
     "admin_info_organization": "Umbrella Corp: 123 example street, Seattle, WA, USA",
     "admin_info_person": "Lazy admin <admin@example.com>",
-    "allow_die": True,
-    "founder_mode": "q",
+    # Stats details
     "stats_enabled": True,
     "stats_port_tcp": 43789,
     "stats_port_web": 43790,
@@ -96,7 +109,7 @@ class IRCProtocol(irc.IRC):
         self.secure = ISSLTransport(self.transport, None) is not None
         self.data_checker.start(5)
         self.last_message = now()
-        self.pinger.start(self.factory.ping_interval)
+        self.pinger.start(self.factory.client_ping_interval)
         ip = self.transport.getPeer().host
         expired = []
         for mask, linedata in self.factory.xlines["Z"].iteritems():
@@ -104,8 +117,8 @@ class IRCProtocol(irc.IRC):
                 expired.append(mask)
                 continue
             if fnmatch.fnmatch(ip, mask):
-                self.sendMessage("NOTICE", "*", ":{}".format(self.factory.ban_msg), prefix=self.factory.hostname)
-                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]), prefix=self.factory.hostname)
+                self.sendMessage("NOTICE", "*", ":{}".format(self.factory.client_ban_msg), prefix=self.factory.server_name)
+                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]), prefix=self.factory.server_name)
                 self.transport.loseConnection()
         for mask in expired:
             del self.factory.xlines["Z"][mask]
@@ -124,16 +137,16 @@ class IRCProtocol(irc.IRC):
         self.data = 0
     
     def ping(self):
-        if (now() - self.last_message).total_seconds() > self.factory.timeout_delay:
+        if (now() - self.last_message).total_seconds() > self.factory.client_timeout_delay:
             self.transport.loseConnection()
         else:
-            self.sendMessage("PING",":{}".format(self.factory.hostname))
+            self.sendMessage("PING",":{}".format(self.factory.server_name))
     
     def handleCommand(self, command, prefix, params):
         self.factory.stats_data["lines_in"] += 1
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
-            return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.factory.hostname)
+            return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.factory.server_name)
         elif not self.type:
             return irc.IRC.handleCommand(self, command, prefix, params)
         else:
@@ -148,16 +161,16 @@ class IRCProtocol(irc.IRC):
 
     def irc_PASS(self, prefix, params):
         if not params:
-            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.factory.hostname)
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.factory.server_name)
         self.password = params[0]
 
     def irc_NICK(self, prefix, params):
         if not params:
-            self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.factory.hostname)
+            self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.factory.server_name)
         elif not VALID_USERNAME.match(params[0]):
-            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.factory.hostname)
+            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.factory.server_name)
         elif params[0] in self.factory.users:
-            self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.factory.hostname)
+            self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.factory.server_name)
         else:
             lower_nick = irc_lower(params[0])
             expired = []
@@ -166,7 +179,7 @@ class IRCProtocol(irc.IRC):
                     expired.append(mask)
                     continue
                 if fnmatch.fnmatch(lower_nick, mask):
-                    self.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nick if self.nick else "*", params[0], ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.factory.hostname)
+                    self.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nick if self.nick else "*", params[0], ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.factory.server_name)
                     return
             for mask in expired:
                 del self.ircd.xlines["Q"][mask]
@@ -180,7 +193,7 @@ class IRCProtocol(irc.IRC):
 
     def irc_USER(self, prefix, params):
         if len(params) < 4:
-            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Not enough parameters", prefix=self.factory.hostname)
+            return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Not enough parameters", prefix=self.factory.server_name)
         self.user = params
         if self.nick:
             try:
@@ -205,9 +218,9 @@ class IRCProtocol(irc.IRC):
 
     def irc_PING(self, prefix, params):
         if params:
-            self.sendMessage("PONG", self.factory.hostname, ":{}".format(params[0]), prefix=self.factory.hostname)
+            self.sendMessage("PONG", self.factory.server_name, ":{}".format(params[0]), prefix=self.factory.server_name)
         else: # TODO: There's no nickname here, what do?
-            self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.hostname)
+            self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.server_name)
 
     def irc_PONG(self, prefix, params):
         pass
@@ -245,7 +258,7 @@ class IRCD(Factory):
         reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
         
         self.config = config
-        self.version = "0.1"
+        self.version = "txircd.{}".format(__version__)
         self.created = now()
         self.token = uuid.uuid1()
         self.servers = CaseInsensitiveDictionary()
@@ -284,7 +297,7 @@ class IRCD(Factory):
             options = {}
         self.load_options(options)
         
-        logfile = "{}/{}".format(self.log_dir,"stats")
+        logfile = "{}/{}".format(self.app_log_dir,"stats")
         if not os.path.exists(logfile):
             os.makedirs(logfile)
         self.stats_log = DailyLogFile("log",logfile)
@@ -361,7 +374,7 @@ class IRCD(Factory):
         self.stats_data["connections"] += 1
         ip = addr.host
         conn = self.peerConnections.get(ip,0)
-        max = self.maxConnectionExempt[ip] if ip in self.maxConnectionExempt else self.maxConnectionsPerPeer
+        max = self.client_peer_exempt[ip] if ip in self.client_peer_exempt else self.client_peer_connections
         if max and conn >= max:
             return None
         self.peerConnections[ip] = conn + 1
@@ -375,7 +388,7 @@ class IRCD(Factory):
             del self.peerConnections[peerHost]
     
     def ChannelFactory(self, name):
-        logfile = "{}/{}".format(self.log_dir,irc_lower(name))
+        logfile = "{}/{}".format(self.app_log_dir,irc_lower(name))
         if not os.path.exists(logfile):
             os.makedirs(logfile)
         c = Channel(name,now(),{"message":None,"author":"","created":now()},CaseInsensitiveDictionary(),ChannelModes(self,None),DailyLogFile("log",logfile))

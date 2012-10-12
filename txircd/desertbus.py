@@ -42,7 +42,7 @@ class DBUser(IRCUser):
     def __init__(self, parent, user, password, nick):
         # Service nicks are technically valid and not in use, but you can't have them.
         if irc_lower(nick) in self.services:
-            parent.sendMessage(irc.ERR_NICKNAMEINUSE, nick, ":Nickname is already in use", prefix=parent.factory.hostname)
+            parent.sendMessage(irc.ERR_NICKNAMEINUSE, nick, ":Nickname is already in use", prefix=parent.factory.server_name)
             parent.sendMessage("ERROR",":Closing Link: {}".format(nick))
             parent.transport.loseConnection()
             raise ValueError("Invalid nickname")
@@ -59,18 +59,18 @@ class DBUser(IRCUser):
             self.checkNick()
     
     def service_prefix(self, service):
-        return "{0}!{0}@{1}".format(service, self.ircd.hostname)
+        return "{0}!{0}@{1}".format(service, self.ircd.server_name)
     
     # Called when they occur
     def registered(self):
         for channel in self.channels.iterkeys():
             c = self.ircd.channels[channel]
-            mode = self.ircd.auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.auto_ops else "v"
+            mode = self.ircd.channel_auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.channel_auto_ops else "v"
             m, b, f = c.mode.combine("+{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
-                    u.socket.sendMessage("MODE", c.name, m, prefix=self.service_prefix("BidServ"))
+                    u.sendMessage("MODE", m, to=c.name, prefix=self.service_prefix("BidServ"))
     
     def unregistered(self):
         for channel in self.channels.iterkeys():
@@ -79,7 +79,7 @@ class DBUser(IRCUser):
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
-                    u.socket.sendMessage("MODE", c.name, m, prefix=self.service_prefix("BidServ"))
+                    u.sendMessage("MODE", m, to=c.name, prefix=self.service_prefix("BidServ"))
     
     # Restrict what people in the "need to identify" phase can do
     def handleCommand(self, command, prefix, params):
@@ -90,7 +90,7 @@ class DBUser(IRCUser):
         elif command in ["PING","PONG","NICK","PRIVMSG","QUIT","NS","NICKSERV"]:
             IRCUser.handleCommand(self, command, prefix, params)
         else:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You can not use command \x02{}\x0F while identifying a registered nick.".format(command), prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":You can not use command \x02{}\x0F while identifying a registered nick.".format(command), prefix=self.service_prefix("NickServ"))
     
     # Aliases to make life easier on people
     def irc_NS(self, prefix, params):
@@ -118,17 +118,17 @@ class DBUser(IRCUser):
         IRCUser.join(self, channel, key)
         if channel in self.channels and self.nickserv_id:
             c = self.ircd.channels[channel]
-            mode = self.ircd.auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.auto_ops else "v"
+            mode = self.ircd.channel_auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.channel_auto_ops else "v"
             m, b, f = c.mode.combine("+{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
-                    u.socket.sendMessage("MODE", c.name, m, prefix=self.service_prefix("BidServ"))
+                    u.sendMessage("MODE", m, to=c.name, prefix=self.service_prefix("BidServ"))
     
     # Track nick changes
     def irc_NICK(self, prefix, params):
         if params and irc_lower(params[0]) in self.services: # Can't use a service nick
-            self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, params[0], ":Nickname is already in use", prefix=self.service_prefix("NickServ"))
+            self.sendMessage(irc.ERR_NICKNAMEINUSE, params[0], ":Nickname is already in use", prefix=self.service_prefix("NickServ"))
             return
         oldnick = irc_lower(self.nickname)
         IRCUser.irc_NICK(self, prefix, params)
@@ -140,7 +140,7 @@ class DBUser(IRCUser):
     def irc_PRIVMSG(self, prefix, params):
         # You can only PRIVMSG NickServ while identifying
         if params and self.auth_timer is not None and irc_lower(params[0]) != "nickserv":
-            self.socket.sendMessage("NOTICE", self.nickname, ":You can not PRIVMSG anybody but NickServ while identifying a registered nick.", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":You can not PRIVMSG anybody but NickServ while identifying a registered nick.", prefix=self.service_prefix("NickServ"))
             return
         if len(params) > 1 and irc_lower(params[0]) in self.services:
             service = irc_lower(params[0])
@@ -165,7 +165,7 @@ class DBUser(IRCUser):
         return self.ircd.db.runQuery(query, args)
     
     def failedAuth(self, result, reason):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Failed Authorization [{}]".format(reason), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":Failed Authorization [{}]".format(reason), prefix=self.service_prefix("NickServ"))
     
     def ohshit(self, result):
         log.msg("Shit!!!!")
@@ -217,7 +217,7 @@ class DBUser(IRCUser):
             if self.auth_timer:
                 self.auth_timer.cancel()
                 self.auth_timer = None
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are now identified. Welcome, {}.".format(self.account), prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(self.account), prefix=self.service_prefix("NickServ"))
             self.checkNick()
             self.registered()
         else:
@@ -244,7 +244,7 @@ class DBUser(IRCUser):
                     self.auth_timer.cancel()
                     self.auth_timer = None
                 return # Already identified
-            self.socket.sendMessage("NOTICE", self.nickname, ":This is a registered nick. Please use \x02/msg nickserv login EMAIL PASSWORD\x0F to verify your identity", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg nickserv login EMAIL PASSWORD\x0F to verify your identity", prefix=self.service_prefix("NickServ"))
             if self.auth_timer:
                 self.auth_timer.cancel() # In case we had another going
             self.auth_timer = reactor.callLater(self.ircd.nickserv_timeout, self.changeNick, id, nickname)
@@ -265,7 +265,7 @@ class DBUser(IRCUser):
         if self.auth_timer:
             self.auth_timer.cancel()
             self.auth_timer = None
-        self.socket.sendMessage("NOTICE", self.nickname, ":You are now identified. Welcome, {}.".format(self.account), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(self.account), prefix=self.service_prefix("NickServ"))
         self.checkNick()
         self.registered()
     
@@ -282,18 +282,18 @@ class DBUser(IRCUser):
             # Already registered all the nicks we can
             nicklist = ", ".join([l[0] for l in result[:-1]])+", or "+result[-1][0] if len(result) > 1 else result[0][0]
             message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.nickserv_limit, nickname, nicklist)
-            self.socket.sendMessage("NOTICE", self.nickname, message, prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", message, prefix=self.service_prefix("NickServ"))
         else:
             d = self.query("INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, nickname)
             d.addCallback(self.successRegisterNick, nickname)
             d.addErrback(self.failedRegisterNick, nickname)
     
     def failedRegisterNick(self, result, nickname):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Failed to register nick {} to account {}. Other users may still use it.".format(nickname, self.account), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":Failed to register nick {} to account {}. Other users may still use it.".format(nickname, self.account), prefix=self.service_prefix("NickServ"))
     
     # Phase 4
     def successRegisterNick(self, result, nickname):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Nickname {} is now registered to account {} and can not be used by any other user.".format(nickname, self.account), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":Nickname {} is now registered to account {} and can not be used by any other user.".format(nickname, self.account), prefix=self.service_prefix("NickServ"))
     
     # =========================
     # === NICKSERV COMMANDS ===
@@ -301,9 +301,9 @@ class DBUser(IRCUser):
     
     def nickserv_USAGE(self, prefix, params, command = None):
         if command:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(command), prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(command), prefix=self.service_prefix("NickServ"))
         else:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Usage: /msg NickServ COMMAND [OPTIONS] -- Use /msg NickServ HELP for help", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Usage: /msg NickServ COMMAND [OPTIONS] -- Use /msg NickServ HELP for help", prefix=self.service_prefix("NickServ"))
     
     def nickserv_HELP(self, prefix, params):
         if not params:
@@ -314,7 +314,7 @@ class DBUser(IRCUser):
             name_length = max([len(m[0]) for m in methods]) - 9
             fmtstr = fmtstr.format(name_length)
             # Include the header
-            lines = chunk_message(NICKSERV_HELP_MESSAGE, self.ircd.motd_line_length)
+            lines = chunk_message(NICKSERV_HELP_MESSAGE, self.ircd.server_motd_line_length)
             lines.append("")
             # Add the commands and make them pretty
             for m in methods:
@@ -324,17 +324,17 @@ class DBUser(IRCUser):
                 lines.append(fmtstr.format(m[0][9:], doc.splitlines()[0]))
             # Now dump all that text to the user
             for l in lines:
-                self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("NickServ"))
+                self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("NickServ"))
         else:
             # Try to load the command
             func = getattr(self, "nickserv_{}".format(params[0].upper()), None)
             if not func: # Doesn't exist :(
-                self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("NickServ"))
+                self.sendMessage("NOTICE", ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("NickServ"))
             else:
                 doc = inspect.getdoc(func)
                 lines = doc.splitlines()[1:] # Cut out the short help message
                 for l in lines: # Print the long message
-                    self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("NickServ"))
+                    self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("NickServ"))
         
     def nickserv_REGISTER(self, prefix, params):
         """Create a donor account via IRC
@@ -345,7 +345,7 @@ class DBUser(IRCUser):
         account and protected from impersonation. You'll also be voiced
         and allowed to bid in all auctions."""
         if len(params) < 2:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail \x1F[name]\x0F", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail \x1F[name]\x0F", prefix=self.service_prefix("NickServ"))
             return
         email = params[1]
         password = crypt(params[0])
@@ -370,7 +370,7 @@ class DBUser(IRCUser):
         account and protected from impersonation. You'll also be voiced
         and allowed to bid in all auctions."""
         if not params or params[0].find(":") < 0:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02IDENTIFY \x1Femail\x1F:\x1Fpassword\x0F", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Syntax: \x02IDENTIFY \x1Femail\x1F:\x1Fpassword\x0F", prefix=self.service_prefix("NickServ"))
             return
         email, chaff, password = params[0].partition(":")
         self.auth(email, password)
@@ -384,7 +384,7 @@ class DBUser(IRCUser):
         account and protected from impersonation. You'll also be voiced
         and allowed to bid in all auctions."""
         if len(params) < 2:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02LOGIN \x1Femail\x1F \x1Fpassword\x0F", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Syntax: \x02LOGIN \x1Femail\x1F \x1Fpassword\x0F", prefix=self.service_prefix("NickServ"))
             return
         self.auth(params[0], params[1])
     
@@ -395,9 +395,9 @@ class DBUser(IRCUser):
         Logs out of whatever account you are in right now. Useful to
         prevent your roommate from bidding on auctions in your name."""
         if not self.account:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You have to be logged in to log out!", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":You have to be logged in to log out!", prefix=self.service_prefix("NickServ"))
             return
-        self.socket.sendMessage("NOTICE", self.nickname, ":You are now logged out of \x02{}\x0F.".format(self.account), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":You are now logged out of \x02{}\x0F.".format(self.account), prefix=self.service_prefix("NickServ"))
         self.nickserv_id = None
         self.account = None
         self.checkNick()
@@ -409,7 +409,7 @@ class DBUser(IRCUser):
         
         Lists all the nicknames registered to your account"""
         if not self.nickserv_id:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You have to be logged in to see your registered nicknames.", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":You have to be logged in to see your registered nicknames.", prefix=self.service_prefix("NickServ"))
             return
         d = self.query("SELECT nick FROM irc_nicks WHERE donor_id = {0}", self.nickserv_id)
         d.addCallback(self.ns_listnicks)
@@ -423,10 +423,10 @@ class DBUser(IRCUser):
         allowing other people to use it and giving you
         more space to register other nicknames."""
         if not self.nickserv_id:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You have to be logged in to release a nickname.", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":You have to be logged in to release a nickname.", prefix=self.service_prefix("NickServ"))
             return
         if not params:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02DROP \x1Fnickname\x0F", prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Syntax: \x02DROP \x1Fnickname\x0F", prefix=self.service_prefix("NickServ"))
             return
         nick = params[0]
         d = self.ircd.db.runInteraction(_unregister_nickname, self.nickserv_id, nick, self.ircd.db_marker)
@@ -434,29 +434,29 @@ class DBUser(IRCUser):
         d.addErrback(self.ns_notdropped, nick)
     
     def ns_registered(self, result, email, name):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F created with an email of \x02{}\x0F.".format(name,email), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":Account \x02{}\x0F created with an email of \x02{}\x0F.".format(name,email), prefix=self.service_prefix("NickServ"))
         self.account = name
         self.nickserv_id = result
         self.registered()
     
     def ns_notregistered(self, result, email, name):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.service_prefix("NickServ"))
 
     def ns_listnicks(self, result):
         message = ":Registered Nicknames: {}".format(", ".join([n[0] for n in result]))
-        self.socket.sendMessage("NOTICE", self.nickname, message, prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", message, prefix=self.service_prefix("NickServ"))
     
     def ns_listnickserr(self, result):
-        self.socket.sendMessage("NOTICE", self.nickname, ":An error occured while retrieving your registered nicknames. Please try again later.", prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":An error occured while retrieving your registered nicknames. Please try again later.", prefix=self.service_prefix("NickServ"))
     
     def ns_dropped(self, result, nick):
         if result:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Nickname '{}' dropped.".format(nick), prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Nickname '{}' dropped.".format(nick), prefix=self.service_prefix("NickServ"))
         else:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
+            self.sendMessage("NOTICE", ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
     
     def ns_notdropped(self, result, nick):
-        self.socket.sendMessage("NOTICE", self.nickname, ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
+        self.sendMessage("NOTICE", ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
     
     # ========================
     # === BIDSERV COMMANDS ===
@@ -464,9 +464,9 @@ class DBUser(IRCUser):
       
     def bidserv_USAGE(self, prefix, params, command = None):
         if command:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(command), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(command), prefix=self.service_prefix("BidServ"))
         else:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Usage: /msg BidServ COMMAND [OPTIONS] -- Use /msg BidServ HELP for help", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Usage: /msg BidServ COMMAND [OPTIONS] -- Use /msg BidServ HELP for help", prefix=self.service_prefix("BidServ"))
     
     def bidserv_HELP(self, prefix, params):
         if not params:
@@ -477,7 +477,7 @@ class DBUser(IRCUser):
             name_length = max([len(m[0]) for m in methods]) - 8
             fmtstr = fmtstr.format(name_length)
             # Include the header
-            lines = chunk_message(BIDSERV_HELP_MESSAGE, self.ircd.motd_line_length)
+            lines = chunk_message(BIDSERV_HELP_MESSAGE, self.ircd.server_motd_line_length)
             lines.append("")
             # Add the commands and make them pretty
             for m in methods:
@@ -487,17 +487,17 @@ class DBUser(IRCUser):
                 lines.append(fmtstr.format(m[0][8:], doc.splitlines()[0]))
             # Now dump all that text to the user
             for l in lines:
-                self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("BidServ"))
+                self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("BidServ"))
         else:
             # Try to load the command
             func = getattr(self, "bidserv_{}".format(params[0].upper()), None)
             if not func: # Doesn't exist :(
-                self.socket.sendMessage("NOTICE", self.nickname, ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("BidServ"))
+                self.sendMessage("NOTICE", ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("BidServ"))
             else:
                 doc = inspect.getdoc(func)
                 lines = doc.splitlines()[1:] # Cut out the short help message
                 for l in lines: # Print the long message
-                    self.socket.sendMessage("NOTICE", self.nickname, ":{}".format(l), prefix=self.service_prefix("BidServ"))
+                    self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("BidServ"))
     
     def bidserv_BID(self, prefix, params):
         """Bid in the active auction
@@ -508,36 +508,39 @@ class DBUser(IRCUser):
         BidServ will echo it to the channel along with any provided
         smack talk."""
         if not params:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02BID \x1Famount\x1F \x1F[Smack Talk]\x0F".format(params[0]), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Syntax: \x02BID \x1Famount\x1F \x1F[Smack Talk]\x0F".format(params[0]), prefix=self.service_prefix("BidServ"))
             return
         if not self.nickserv_id:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You must be logged in to bid. \"/msg NickServ HELP\" for help.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":You must be logged in to bid. \"/msg NickServ HELP\" for help.", prefix=self.service_prefix("BidServ"))
             return
         if not self.ircd.bidserv_auction_item:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is no auction going on right now.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is no auction going on right now.", prefix=self.service_prefix("BidServ"))
             return
         high_bid = self.ircd.bidserv_bids[-1]
         try:
             bid = float(params[0].lstrip("$"))
             bid = round(bid, 2)
         except:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
             return
         if bid >= self.ircd.bidserv_bid_limit:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Let's be honest, you don't really have ${:,.2f} do you?".format(bid), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Let's be honest, you don't really have ${:,.2f} do you?".format(bid), prefix=self.service_prefix("BidServ"))
             return
         if bid <= high_bid["bid"]:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Sorry, the high bid is already ${:,.2f} by {}".format(high_bid["bid"],high_bid["nick"]), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Sorry, the high bid is already ${:,.2f} by {}".format(high_bid["bid"],high_bid["nick"]), prefix=self.service_prefix("BidServ"))
             return
         if bid < high_bid["bid"] + self.ircd.bidserv_min_increase:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Sorry, the minimum bid increase is ${:,.2f}".format(self.ircd.bidserv_min_increase), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Sorry, the minimum bid increase is ${:,.2f}".format(self.ircd.bidserv_min_increase), prefix=self.service_prefix("BidServ"))
             return
         madness = ""
         levels = sorted(self.ircd.bidserv_madness_levels.items(), key=lambda t: t[0])
         for amount, name in levels:
             if amount <= high_bid["bid"] or bid < amount:
                 continue
-            madness += "{}! ".format(name)
+            if self.ircd.bidserv_display_all_madness:
+                madness += "{}! ".format(name)
+            else:
+                madness = "{}! ".format(name)
         if high_bid["id"] == self.nickserv_id and self.ircd.bidserv_space_bid:
             madness += "{}! ".format(self.ircd.bidserv_space_bid)
         smack = " ".join(params[1:]).strip()
@@ -557,10 +560,10 @@ class DBUser(IRCUser):
         Returns the high bidder in the current auction,
         along with the amount they bid."""
         if not self.ircd.bidserv_auction_item:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is no auction going on right now.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is no auction going on right now.", prefix=self.service_prefix("BidServ"))
         else:
             bid = self.ircd.bidserv_bids[-1]
-            self.socket.sendMessage("NOTICE", self.nickname, ":{} has the high bid of ${:,.2f}".format(bid["nick"], bid["bid"]), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":{} has the high bid of ${:,.2f}".format(bid["nick"], bid["bid"]), prefix=self.service_prefix("BidServ"))
     
     def bidserv_START(self, prefix, params):
         """Start an auction [Admin Only]
@@ -569,13 +572,13 @@ class DBUser(IRCUser):
         Starts an auction with the given item ID.
         Restricted to admins."""
         if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is not None:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is already an auction occuring for item #{}.".format(self.ircd.bidserv_auction_item), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is already an auction occuring for item #{}.".format(self.ircd.bidserv_auction_item), prefix=self.service_prefix("BidServ"))
             return
         if not params:
-            self.socket.sendMessage("NOTICE", self.nickname, ":Syntax: \x02START \x1FItem ID\x0F", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Syntax: \x02START \x1FItem ID\x0F", prefix=self.service_prefix("BidServ"))
             return
         d = self.query("SELECT id, name, sold, starting_bid FROM prizes WHERE id = {0}", params[0])
         d.addCallback(self.bs_start, params[0])
@@ -587,13 +590,13 @@ class DBUser(IRCUser):
         
         Calls "Going Once!" and increments auction state."""
         if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is no an auction occuring.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is no an auction occuring.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_state != 0:
-            self.socket.sendMessage("NOTICE", self.nickname, ":We're not at the proper place to call \"Going Once!\".", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":We're not at the proper place to call \"Going Once!\".", prefix=self.service_prefix("BidServ"))
             return
         self.ircd.bidserv_auction_state = 1
         self.ircd.save_options() # Save auction state. Just in case.
@@ -606,13 +609,13 @@ class DBUser(IRCUser):
         
         Calls "Going Twice!" and increments auction state."""
         if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is no an auction occuring.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is no an auction occuring.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_state != 1:
-            self.socket.sendMessage("NOTICE", self.nickname, ":We're not at the proper place to call \"Going Twice!\".", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":We're not at the proper place to call \"Going Twice!\".", prefix=self.service_prefix("BidServ"))
             return
         self.ircd.bidserv_auction_state = 2
         self.ircd.save_options() # Save auction state. Just in case.
@@ -626,13 +629,13 @@ class DBUser(IRCUser):
         Declares the auction as finished, cleans up variables, logs the bid
         history and adds the prize to the donors winnings in the database."""
         if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_state != 2:
-            self.socket.sendMessage("NOTICE", self.nickname, ":We're not at the proper place to call \"Sold!\".", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":We're not at the proper place to call \"Sold!\".", prefix=self.service_prefix("BidServ"))
             return
         bid = self.ircd.bidserv_bids[-1]
         d = self.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}",bid["id"],bid["bid"],self.ircd.bidserv_auction_item)
@@ -646,10 +649,10 @@ class DBUser(IRCUser):
         Stops the auction, awarding it to nobody, cleans
         up variables, and logs the bid history."""
         if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
             return
         try:
             with open(self.bs_log(self.ircd.bidserv_auction_item),"w") as f:
@@ -672,13 +675,13 @@ class DBUser(IRCUser):
         Purges the highest bid from the face of the earth,
         cleansing the bid pool to its prior pristine state."""
         if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
-            self.socket.sendMessage("NOTICE", self.nickname, ":You are not an admin.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There is not an auction occuring.", prefix=self.service_prefix("BidServ"))
             return
         if len(self.ircd.bidserv_bids) < 2:
-            self.socket.sendMessage("NOTICE", self.nickname, ":There aren't enough bids to revert.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":There aren't enough bids to revert.", prefix=self.service_prefix("BidServ"))
             return
         bad = self.ircd.bidserv_bids.pop()
         bid = self.ircd.bidserv_bids[-1]
@@ -732,10 +735,10 @@ class DBUser(IRCUser):
                 self.bs_broadcast(l)
     
     def bs_log(self, id):
-        log = "{}/auction_{!s}.log".format(self.ircd.log_dir, id)
+        log = "{}/auction_{!s}.log".format(self.ircd.app_log_dir, id)
         count = 1
         while os.path.exists(log):
-            log = "{}/auction_{!s}-{!s}.log".format(self.ircd.log_dir, id, count)
+            log = "{}/auction_{!s}-{!s}.log".format(self.ircd.app_log_dir, id, count)
             count += 1
         return log
     
@@ -743,9 +746,9 @@ class DBUser(IRCUser):
         for nick in self.ircd.bidserv_admins:
             if nick in self.ircd.users:
                 u = self.ircd.users[nick]
-                u.socket.sendMessage("NOTICE", u.nickname, message, prefix=self.service_prefix("BidServ"))
+                u.sendMessage("NOTICE", message, prefix=self.service_prefix("BidServ"))
     
     def bs_broadcast(self, message):
         for c in self.ircd.channels.itervalues():
             for u in c.users.itervalues():
-                u.socket.sendMessage("PRIVMSG", c.name, message, prefix=self.service_prefix("BidServ"))
+                u.sendMessage("PRIVMSG", message, to=c.name, prefix=self.service_prefix("BidServ"))
