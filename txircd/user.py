@@ -558,8 +558,7 @@ class IRCUser(object):
             for c in channels:
                 if c in self.channels:
                     continue # don't join it twice
-                cdata = self.ircd.channels[c]
-                k = keys.pop(0) if keys and cdata.mode.has("k") else None
+                k = keys.pop(0) if keys else None
                 self.join(c,k)
 
     def irc_PART(self, prefix, params):
