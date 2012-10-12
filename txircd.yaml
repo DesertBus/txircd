@@ -1,10 +1,8 @@
 admin_info_organization: 'Umbrella Corp: 123 example street, Seattle, WA, USA'
 admin_info_person: Lazy admin <admin@example.com>
 admin_info_server: 'Host Corp: 123 example street, Seattle, WA, USA'
-allow_die: true
-auto_ops:
-  fugiman: q
-ban_msg: You're banned!
+app_log_dir: logs
+app_verbose: true
 bidserv_admins:
 - fugiman
 - ashton
@@ -13,6 +11,7 @@ bidserv_auction_name: null
 bidserv_auction_state: 0
 bidserv_bid_limit: 1000000
 bidserv_bids: []
+bidserv_display_all_madness: false
 bidserv_madness_levels:
   300: THIS IS MADNESS
   600: DOUBLE MADNESS ALL THE WAY ACROSS THE BUS! WHAT DOES IT MEAN?
@@ -34,42 +33,47 @@ bidserv_madness_levels:
   30000: CENTUPLE MADNESS?!?
 bidserv_min_increase: 5
 bidserv_space_bid: SPACE BID
+channel_auto_ops:
+  fugiman: q
+channel_exempt_chanops: S
+channel_founder_mode: null
+client_ban_msg: You're banned!
+client_max_data: 5000
+client_peer_connections: 3
+client_peer_exempt:
+  127.0.0.1: 0
+client_ping_interval: 35
 client_timeout: 180
+client_timeout_delay: 90
+client_vhosts:
+  127.0.0.1: localhost
+  129.161.209.225: I.Created.You
+client_whowas_limit: 10
 db_database: txircd
 db_library: pymysql
 db_marker: '%s'
 db_password: txircd
 db_username: txircd
-exempt_chanops: S
-founder_mode: null
 hostname: test.txircd.com
 irc_port: 6667
-log_dir: logs
-maxConnectionExempt:
-  127.0.0.1: 0
-maxConnectionsPerPeer: 3
-max_data: 5000
-motd: Welcome to txIRCD
-motd_line_length: 80
-name: DBTestServ
+network_name: DBTestServ
 nickserv_guest_prefix: Guest
 nickserv_limit: 5
 nickserv_timeout: 40
-oper_hosts:
+oper_allow_die: true
+oper_ips:
 - 127.0.0.1
 - localhost
 - I.Created.You
-opers:
+oper_logins:
   admin: $p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB
-ping_interval: 35
-server_port_web: 8080
+server_motd: Welcome to txIRCD
+server_motd_line_length: 80
+server_name: test.txircd.com
+server_port_ssl: 6697
+server_port_tcp: 6667
+server_port_web: 8000
 ssl_port: 6697
 stats_enabled: true
 stats_port_tcp: 43789
 stats_port_web: 43790
-timeout_delay: 90
-verbose: true
-vhosts:
-  127.0.0.1: localhost
-  129.161.209.225: I.Created.You
-whowas_limit: 10

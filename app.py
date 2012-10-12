@@ -27,16 +27,14 @@ if __name__ == "__main__":
     except:
         pass # Oh well
     # Update options with command line values
-    if args.verbose:
-        options["verbose"] = True
     if args.ircport:
-        options["irc_port"] = args.ircport
+        options["server_port_tcp"] = args.ircport
     if args.sslport:
-        options["ssl_port"] = args.sslport
+        options["server_port_ssl"] = args.sslport
     if args.name:
-        options["name"] = args.name
+        options["network_name"] = args.name
     if args.motd:
-        options["motd"] = args.motd
+        options["server_motd"] = args.motd
     if args.client_timeout:
         options["client_timeout"] = args.client_timeout
     # Save the set values to the config file (if we can)
@@ -46,32 +44,32 @@ if __name__ == "__main__":
     except:
         pass # Oh well
     # Finally launch the app with the options
-    if options["verbose"]:
+    if options["app_verbose"] or args.verbose:
         log.startLogging(args.log_file)
     ircd = IRCD(args.config, options)
     ssl_cert = ssl.DefaultOpenSSLContextFactory("test.key","test.pem")
-    if options["irc_port"]:
-        if isinstance(options["irc_port"], collections.Sequence):
-            for port in options["irc_port"]:
+    if options["server_port_tcp"]:
+        if isinstance(options["server_port_tcp"], collections.Sequence):
+            for port in options["server_port_tcp"]:
                 try:
                     reactor.listenTCP(int(port), ircd)
                 except:
                     pass # Wasn't a number
         else:
             try:
-                reactor.listenTCP(int(options["irc_port"]), ircd)
+                reactor.listenTCP(int(options["server_port_tcp"]), ircd)
             except:
                 pass # Wasn't a number
-    if options["ssl_port"]:
-        if isinstance(options["ssl_port"], collections.Sequence):
-            for port in options["ssl_port"]:
+    if options["server_port_ssl"]:
+        if isinstance(options["server_port_ssl"], collections.Sequence):
+            for port in options["server_port_ssl"]:
                 try:
                     reactor.listenSSL(int(port), ircd, ssl_cert)
                 except:
                     pass # Wasn't a number
         else:
             try:
-                reactor.listenSSL(int(options["ssl_port"]), ircd, ssl_cert)
+                reactor.listenSSL(int(options["server_port_ssl"]), ircd, ssl_cert)
             except:
                 pass # Wasn't a number
     if options["server_port_web"]:
