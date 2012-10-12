@@ -2,6 +2,8 @@ admin_info_organization: 'Umbrella Corp: 123 example street, Seattle, WA, USA'
 admin_info_person: Lazy admin <admin@example.com>
 admin_info_server: 'Host Corp: 123 example street, Seattle, WA, USA'
 app_log_dir: logs
+app_ssl_key: test.key
+app_ssl_pem: test.pem
 app_verbose: true
 bidserv_admins:
 - fugiman
