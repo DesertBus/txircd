@@ -475,6 +475,8 @@ class IRCUser(object):
             self.socket.sendMessage(irc.ERR_NICKNAMEINUSE, self.ircd.users[params[0]].nickname, ":Nickname is already in use", prefix=self.ircd.hostname)
         elif not VALID_USERNAME.match(params[0]):
             self.socket.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.ircd.hostname)
+        elif params[0] == self.nickname:
+            pass # Don't send ERR_NICKNAMEINUSE if they're changing to exactly the nick they're already using
         else:
             oldnick = self.nickname
             newnick = params[0]
