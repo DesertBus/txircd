@@ -7,7 +7,7 @@ from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
 from pbkdf2 import crypt
-import fnmatch, socket, hashlib, os, sys
+import fnmatch, socket, hashlib, collections, os, sys
 
 class IRCUser(object):
     cap = {
@@ -478,9 +478,21 @@ class IRCUser(object):
     def stats_p(self):
         # Rewrite this function if we ever get a more featureful way to specify ports.
         # Also add to it when we do s2s
-        self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.server_port_tcp))
-        self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.server_port_ssl))
-        self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.server_port_web))
+        if isinstance(self.ircd.server_port_tcp, collections.Sequence):
+            for port in self.ircd.server_port_tcp:
+                self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(port))
+        else:
+            self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.server_port_tcp))
+        if isinstance(self.ircd.server_port_ssl, collections.Sequence):
+            for port in self.ircd.server_port_ssl:
+                self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(port))
+        else:
+            self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.server_port_ssl))
+        if isinstance(self.ircd.server_port_web, collections.Sequence):
+            for port in self.ircd.server_port_web:
+                self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
+        else:
+            self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.server_port_web))
     
     def stats_u(self):
         uptime = now() - self.ircd.created
