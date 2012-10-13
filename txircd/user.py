@@ -476,8 +476,6 @@ class IRCUser(object):
                 self.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
     
     def stats_p(self):
-        # Rewrite this function if we ever get a more featureful way to specify ports.
-        # Also add to it when we do s2s
         if isinstance(self.ircd.server_port_tcp, collections.Sequence):
             for port in self.ircd.server_port_tcp:
                 self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(port))
@@ -493,6 +491,7 @@ class IRCUser(object):
                 self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
         else:
             self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.server_port_web))
+        # Add server ports here when we get s2s
     
     def stats_u(self):
         uptime = now() - self.ircd.created
