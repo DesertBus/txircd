@@ -75,6 +75,7 @@ server_name: test.txircd.com
 server_port_ssl: 6697
 server_port_tcp: 6667
 server_port_web: 8000
+server_stats_public: u
 ssl_port: 6697
 stats_enabled: true
 stats_port_tcp: 43789

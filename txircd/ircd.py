@@ -42,6 +42,7 @@ default_options = {
     "server_port_tcp": 6667,
     "server_port_ssl": 6697,
     "server_port_web": 8080,
+    "server_stats_public": "u",
     # Client details
     "client_timeout": 180,
     "client_vhosts": {"127.0.0.1":"localhost"},

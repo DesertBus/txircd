@@ -1063,6 +1063,18 @@ class IRCUser(object):
                 reply.append(self.ircd.users[user].nickname)
         self.sendMessage(irc.RPL_ISON, ":{}".format(" ".join(reply)))
     
+    def irc_STATS(self, prefix, params):
+        if not params:
+            self.sendMessage(irc.ERR_NEEDMOREPARAMS, "STATS", ":Not enough parameters")
+            return
+        if params[0][0] not in self.ircd.server_stats_public and not self.mode.has("o"):
+            self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - Stats {} requires oper privileges".format(params[0][0]))
+            return
+        statsmethod = getattr(self, "stats_{}".format(params[0][0]), None)
+        if statsmethod is not None:
+            statsmethod()
+        self.sendMessage(irc.RPL_ENDOFSTATS, params[0][0], ":End of /STATS report")
+    
     def irc_unknown(self, prefix, command, params):
         self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
         log.msg("--- Not Implemented Yet: {} {} {}".format(prefix, command, " ".join(params)))
