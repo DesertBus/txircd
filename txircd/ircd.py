@@ -19,6 +19,9 @@ from txsockjs.factory import SockJSFactory
 import uuid, socket, collections, yaml, os, fnmatch
 
 # Add additional numerics to complement the ones in the RFC
+irc.RPL_STATSGLINE = "223"
+irc.RPL_STATSKLINE = "223"
+irc.RPL_STATSZLINE = "223"
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"

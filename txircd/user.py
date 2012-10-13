@@ -467,7 +467,20 @@ class IRCUser(object):
         self.ircd.whowas[self.nickname] = self.ircd.whowas[self.nickname][-self.ircd.client_whowas_limit:] # Remove old entries
     
     def stats_u(self):
-        self.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(now() - self.ircd.created))
+        uptime = now() - self.ircd.created
+        self.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
+    
+    def stats_G(self):
+        for mask, linedata in self.ircd.xlines["G"].iteritems():
+            self.sendMessage(irc.RPL_STATSGLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+    
+    def stats_K(self):
+        for mask, linedata in self.ircd.xlines["K"].iteritems():
+            self.sendMessage(irc.RPL_STATSKLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+    
+    def stats_Z(self):
+        for mask, linedata in self.ircd.xlines["Z"].iteritems():
+            self.sendMessage(irc.RPL_STATSZLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
     
     #======================
     #== Protocol Methods ==
