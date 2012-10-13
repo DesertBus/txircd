@@ -466,6 +466,9 @@ class IRCUser(object):
         })
         self.ircd.whowas[self.nickname] = self.ircd.whowas[self.nickname][-self.ircd.client_whowas_limit:] # Remove old entries
     
+    def stats_u(self):
+        self.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(now() - self.ircd.created))
+    
     #======================
     #== Protocol Methods ==
     #======================
