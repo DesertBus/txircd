@@ -470,6 +470,18 @@ class IRCUser(object):
         for mask, linedata in self.ircd.xlines[xline_type].iteritems():
             self.sendMessage(xline_numeric, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
     
+    def stats_o(self):
+        for user in self.ircd.users.itervalues():
+            if user.mode.has("o"):
+                self.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
+    
+    def stats_p(self):
+        # Rewrite this function if we ever get a more featureful way to specify ports.
+        # Also add to it when we do s2s
+        self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.server_port_tcp))
+        self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.server_port_ssl))
+        self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.server_port_web))
+    
     def stats_u(self):
         uptime = now() - self.ircd.created
         self.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
