@@ -489,6 +489,9 @@ class IRCUser(object):
     def stats_Q(self):
         self.stats_xline_list("Q", irc.RPL_STATSQLINE)
     
+    def stats_S(self):
+        self.stats_xline_list("SHUN", irc.RPL_STATSSHUN)
+    
     #======================
     #== Protocol Methods ==
     #======================

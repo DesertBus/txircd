@@ -24,6 +24,7 @@ irc.RPL_STATSGLINE = "223"
 irc.RPL_STATSKLINE = "223"
 irc.RPL_STATSZLINE = "223"
 irc.RPL_STATSELINE = "223"
+irc.RPL_STATSSHUN = "223" # I don't think this use of the numeric has a name, so I made one. //EA
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
