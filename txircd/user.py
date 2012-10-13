@@ -482,6 +482,14 @@ class IRCUser(object):
         for mask, linedata in self.ircd.xlines["Z"].iteritems():
             self.sendMessage(irc.RPL_STATSZLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
     
+    def stats_E(self):
+        for mask, linedata in self.ircd.xlines["E"].iteritems():
+            self.sendMessage(irc.RPL_STATSELINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+    
+    def stats_Q(self):
+        for mask, linedata in self.ircd.xlines["Q"].iteritems():
+            self.sendMessage(irc.RPL_STATSQLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+    
     #======================
     #== Protocol Methods ==
     #======================
