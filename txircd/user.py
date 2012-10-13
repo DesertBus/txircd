@@ -466,29 +466,28 @@ class IRCUser(object):
         })
         self.ircd.whowas[self.nickname] = self.ircd.whowas[self.nickname][-self.ircd.client_whowas_limit:] # Remove old entries
     
+    def stats_xline_list(self, xline_type, xline_numeric):
+        for mask, linedata in self.ircd.xlines[xline_type].iteritems():
+            self.sendMessage(xline_numeric, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+    
     def stats_u(self):
         uptime = now() - self.ircd.created
         self.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
     
     def stats_G(self):
-        for mask, linedata in self.ircd.xlines["G"].iteritems():
-            self.sendMessage(irc.RPL_STATSGLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+        self.stats_xline_list("G", irc.RPL_STATSGLINE)
     
     def stats_K(self):
-        for mask, linedata in self.ircd.xlines["K"].iteritems():
-            self.sendMessage(irc.RPL_STATSKLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+        self.stats_xline_list("K", irc.RPL_STATSKLINE)
     
     def stats_Z(self):
-        for mask, linedata in self.ircd.xlines["Z"].iteritems():
-            self.sendMessage(irc.RPL_STATSZLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+        self.stats_xline_list("Z", irc.RPL_STATSZLINE)
     
     def stats_E(self):
-        for mask, linedata in self.ircd.xlines["E"].iteritems():
-            self.sendMessage(irc.RPL_STATSELINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+        self.stats_xline_list("E", irc.RPL_STATSELINE)
     
     def stats_Q(self):
-        for mask, linedata in self.ircd.xlines["Q"].iteritems():
-            self.sendMessage(irc.RPL_STATSQLINE, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+        self.stats_xline_list("Q", irc.RPL_STATSQLINE)
     
     #======================
     #== Protocol Methods ==
