@@ -19,6 +19,14 @@ from txsockjs.factory import SockJSFactory
 import uuid, socket, collections, yaml, os, fnmatch
 
 # Add additional numerics to complement the ones in the RFC
+irc.RPL_STATSQLINE = "217"
+irc.RPL_STATSGLINE = "223"
+irc.RPL_STATSKLINE = "223"
+irc.RPL_STATSZLINE = "223"
+irc.RPL_STATSELINE = "223"
+irc.RPL_STATSSHUN = "223" # I don't think this use of the numeric has a name, so I made one. //EA
+irc.RPL_STATSOPERS = "249" # Same here.
+irc.RPL_STATSPORTS = "249" # And here.
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
@@ -42,6 +50,7 @@ default_options = {
     "server_port_tcp": 6667,
     "server_port_ssl": 6697,
     "server_port_web": 8080,
+    "server_stats_public": "ou",
     # Client details
     "client_timeout": 180,
     "client_vhosts": {"127.0.0.1":"localhost"},

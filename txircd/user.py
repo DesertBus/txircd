@@ -7,7 +7,7 @@ from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
 from pbkdf2 import crypt
-import fnmatch, socket, hashlib, os, sys
+import fnmatch, socket, hashlib, collections, os, sys
 
 class IRCUser(object):
     cap = {
@@ -465,6 +465,55 @@ class IRCUser(object):
             "time": now()
         })
         self.ircd.whowas[self.nickname] = self.ircd.whowas[self.nickname][-self.ircd.client_whowas_limit:] # Remove old entries
+    
+    def stats_xline_list(self, xline_type, xline_numeric):
+        for mask, linedata in self.ircd.xlines[xline_type].iteritems():
+            self.sendMessage(xline_numeric, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
+    
+    def stats_o(self):
+        for user in self.ircd.users.itervalues():
+            if user.mode.has("o"):
+                self.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
+    
+    def stats_p(self):
+        if isinstance(self.ircd.server_port_tcp, collections.Sequence):
+            for port in self.ircd.server_port_tcp:
+                self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(port))
+        else:
+            self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.server_port_tcp))
+        if isinstance(self.ircd.server_port_ssl, collections.Sequence):
+            for port in self.ircd.server_port_ssl:
+                self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(port))
+        else:
+            self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.server_port_ssl))
+        if isinstance(self.ircd.server_port_web, collections.Sequence):
+            for port in self.ircd.server_port_web:
+                self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
+        else:
+            self.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.server_port_web))
+        # Add server ports here when we get s2s
+    
+    def stats_u(self):
+        uptime = now() - self.ircd.created
+        self.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
+    
+    def stats_G(self):
+        self.stats_xline_list("G", irc.RPL_STATSGLINE)
+    
+    def stats_K(self):
+        self.stats_xline_list("K", irc.RPL_STATSKLINE)
+    
+    def stats_Z(self):
+        self.stats_xline_list("Z", irc.RPL_STATSZLINE)
+    
+    def stats_E(self):
+        self.stats_xline_list("E", irc.RPL_STATSELINE)
+    
+    def stats_Q(self):
+        self.stats_xline_list("Q", irc.RPL_STATSQLINE)
+    
+    def stats_S(self):
+        self.stats_xline_list("SHUN", irc.RPL_STATSSHUN)
     
     #======================
     #== Protocol Methods ==
@@ -1062,6 +1111,18 @@ class IRCUser(object):
             if user in self.ircd.users:
                 reply.append(self.ircd.users[user].nickname)
         self.sendMessage(irc.RPL_ISON, ":{}".format(" ".join(reply)))
+    
+    def irc_STATS(self, prefix, params):
+        if not params:
+            self.sendMessage(irc.ERR_NEEDMOREPARAMS, "STATS", ":Not enough parameters")
+            return
+        if params[0][0] not in self.ircd.server_stats_public and not self.mode.has("o"):
+            self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - Stats {} requires oper privileges".format(params[0][0]))
+            return
+        statsmethod = getattr(self, "stats_{}".format(params[0][0]), None)
+        if statsmethod is not None:
+            statsmethod()
+        self.sendMessage(irc.RPL_ENDOFSTATS, params[0][0], ":End of /STATS report")
     
     def irc_unknown(self, prefix, command, params):
         self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
