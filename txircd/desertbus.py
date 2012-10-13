@@ -57,6 +57,8 @@ class DBUser(IRCUser):
                 self.token(password)
         else:
             self.checkNick()
+        #Auto-join #desertbus
+        self.join("#desertbus",None)
     
     def service_prefix(self, service):
         return "{0}!{0}@{1}".format(service, self.ircd.server_name)
@@ -100,6 +102,10 @@ class DBUser(IRCUser):
     def irc_NICKSERV(self, prefix, params):
         message = " ".join(params)
         self.irc_PRIVMSG(prefix, ["NickServ", message])
+    
+#    def irc_LOGIN(self, prefix, params):
+#        message = " ".join(["LOGIN"] + params)
+#        self.irc_PRIVMSG(prefix, ["NickServ", message])
     
     def irc_BS(self, prefix, params):
         message = " ".join(params)

@@ -56,8 +56,6 @@ db_library: pymysql
 db_marker: '%s'
 db_password: txircd
 db_username: txircd
-hostname: test.txircd.com
-irc_port: 6667
 network_name: DBTestServ
 nickserv_guest_prefix: Guest
 nickserv_limit: 5
@@ -76,7 +74,6 @@ server_port_ssl: 6697
 server_port_tcp: 6667
 server_port_web: 8000
 server_stats_public: u
-ssl_port: 6697
 stats_enabled: true
 stats_port_tcp: 43789
 stats_port_web: 43790
