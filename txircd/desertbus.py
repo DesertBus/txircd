@@ -57,6 +57,8 @@ class DBUser(IRCUser):
                 self.token(password)
         else:
             self.checkNick()
+        #Auto-join #desertbus
+        self.join("#desertbus",None)
     
     def service_prefix(self, service):
         return "{0}!{0}@{1}".format(service, self.ircd.server_name)
@@ -87,7 +89,7 @@ class DBUser(IRCUser):
         if self.auth_timer is None:
             IRCUser.handleCommand(self, command, prefix, params)
         # Allow some basic command, plus PRIVMSG so they can identify
-        elif command in ["PING","PONG","NICK","PRIVMSG","QUIT","NS","NICKSERV"]:
+        elif command in ["PING","PONG","NICK","PRIVMSG","QUIT","NS","NICKSERV","LOGIN"]:
             IRCUser.handleCommand(self, command, prefix, params)
         else:
             self.sendMessage("NOTICE", ":You can not use command \x02{}\x0F while identifying a registered nick.".format(command), prefix=self.service_prefix("NickServ"))
@@ -99,6 +101,10 @@ class DBUser(IRCUser):
     
     def irc_NICKSERV(self, prefix, params):
         message = " ".join(params)
+        self.irc_PRIVMSG(prefix, ["NickServ", message])
+    
+    def irc_LOGIN(self, prefix, params):
+        message = " ".join(["LOGIN"] + params)
         self.irc_PRIVMSG(prefix, ["NickServ", message])
     
     def irc_BS(self, prefix, params):
