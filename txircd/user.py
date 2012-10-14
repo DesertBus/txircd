@@ -393,8 +393,12 @@ class IRCUser(object):
         if channel not in self.ircd.channels:
             self.sendMessage(irc.ERR_NOSUCHCHANNEL, channel, ":No such channel")
             return
-        for u in self.ircd.channels[channel].users.itervalues():
-            u.sendMessage("PART", ":{}".format(reason), to=self.ircd.channels[channel].name, prefix=self.prefix())
+        cdata = self.ircd.channels[channel]
+        if self.nickname not in cdata.users:
+            self.sendMessage(irc.ERR_NOTONCHANNEL, channel, ":You're not on that channel")
+            return
+        for u in cdata.users.itervalues():
+            u.sendMessage("PART", ":{}".format(reason), to=cdata.name, prefix=self.prefix())
         self.leave(channel)
     
     def quit(self, channel, reason):
