@@ -4,7 +4,7 @@ from twisted.internet import reactor
 import re, datetime
 
 VALID_USERNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{0,31}$") # up to 32 char nicks
-DURATION_REGEX = re.compile(r"((?P<years>\d+?)y)?((P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?")
+DURATION_REGEX = re.compile(r"((?P<years>\d+?)y)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?")
 
 def irc_lower(str):
     return str.lower().replace("[","{").replace("]","}").replace("/","|").replace("~","^")
