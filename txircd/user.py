@@ -390,6 +390,9 @@ class IRCUser(object):
             cdata.log.close()
     
     def part(self, channel, reason):
+        if channel not in self.ircd.channels:
+            self.sendMessage(irc.ERR_NOSUCHCHANNEL, channel, ":No such channel")
+            return
         for u in self.ircd.channels[channel].users.itervalues():
             u.sendMessage("PART", ":{}".format(reason), to=self.ircd.channels[channel].name, prefix=self.prefix())
         self.leave(channel)
