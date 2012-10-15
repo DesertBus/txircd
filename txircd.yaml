@@ -52,9 +52,11 @@ client_vhosts:
   129.161.209.225: I.Created.You
 client_whowas_limit: 10
 db_database: txircd
+db_host: localhost
 db_library: pymysql
 db_marker: '%s'
 db_password: txircd
+db_port: 3306
 db_username: txircd
 network_name: DBTestServ
 nickserv_guest_prefix: Guest

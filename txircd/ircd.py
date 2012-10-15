@@ -72,6 +72,8 @@ default_options = {
     "oper_logins": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
     "oper_allow_die": True,
     # Database details
+    "db_host": "localhost",
+    "db_port": 3306,
     "db_library": None,
     "db_marker": "?",
     "db_username": None,
@@ -349,7 +351,7 @@ class IRCD(Factory):
         if self.db:
             self.db.close()
         if self.db_library:
-            self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
+            self.db = adbapi.ConnectionPool(self.db_library, host=self.db_host, port=self.db_port, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
         # Turn on stats factory if needed, or shut it down if needed
         if self.stats_enabled and not self.stats:
             self.stats = StatFactory()
