@@ -74,6 +74,12 @@ server_port_ssl: 6697
 server_port_tcp: 6667
 server_port_web: 8000
 server_stats_public: u
+server_xlines_e: {}
+server_xlines_g: {}
+server_xlines_k: {}
+server_xlines_q: {}
+server_xlines_shun: {}
+server_xlines_z: {}
 stats_enabled: true
 stats_port_tcp: 43789
 stats_port_web: 43790

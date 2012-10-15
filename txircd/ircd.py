@@ -8,7 +8,7 @@ from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, epoch, now, irc_lower
+from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, epoch, now, irc_lower, parse_duration, build_duration
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
@@ -16,7 +16,7 @@ from txircd.desertbus import DBUser
 from txircd.stats import StatFactory
 from txircd import __version__
 from txsockjs.factory import SockJSFactory
-import uuid, socket, collections, yaml, os, fnmatch
+import uuid, socket, collections, yaml, os, fnmatch, datetime
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_STATSQLINE = "217"
@@ -51,6 +51,12 @@ default_options = {
     "server_port_ssl": 6697,
     "server_port_web": 8080,
     "server_stats_public": "ou",
+    "server_xlines_k": {},
+    "server_xlines_g": {},
+    "server_xlines_q": {},
+    "server_xlines_z": {},
+    "server_xlines_e": {},
+    "server_xlines_shun": {},
     # Client details
     "client_timeout": 180,
     "client_vhosts": {"127.0.0.1":"localhost"},
@@ -323,12 +329,28 @@ class IRCD(Factory):
         return True
     
     def load_options(self, options):
+        # Populate attributes with options
         for var in default_options.iterkeys():
             setattr(self, var, options[var] if var in options else default_options[var])
+        # Unserialize xlines
+        for key in self.xlines.iterkeys():
+            self.xlines[key] = CaseInsensitiveDictionary()
+            xlines = getattr(self, "server_xlines_{}".format(key.lower()), None)
+            if not xlines:
+                continue
+            for user, data in xlines.iteritems():
+                self.xlines[key][user] = {
+                    "created": datetime.datetime.strptime(data["created"],"%y-%m-%d %H:%M:%S"),
+                    "duration": parse_duration(data["duration"]),
+                    "setter": data["setter"],
+                    "reason": data["reason"]
+                }
+        # Create database connection
         if self.db:
             self.db.close()
         if self.db_library:
             self.db = adbapi.ConnectionPool(self.db_library, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
+        # Turn on stats factory if needed, or shut it down if needed
         if self.stats_enabled and not self.stats:
             self.stats = StatFactory()
             if self.stats_port_tcp:
@@ -346,14 +368,28 @@ class IRCD(Factory):
             self.stats = None
     
     def save_options(self):
+        # Serialize xlines
+        for key, lines in self.xlines.iteritems():
+            xlines = {}
+            for user, data in lines.iteritems():
+                xlines[user] = {
+                    "created": str(data["created"]),
+                    "duration": build_duration(data["duration"]),
+                    "setter": data["setter"],
+                    "reason": data["reason"]
+                }
+            setattr(self, "server_xlines_{}".format(key.lower()), xlines)
+        # Load old options
         options = {}
         try:
             with open(self.config) as f:
                 options = yaml.safe_load(f)
         except:
             return False
+        # Overwrite with the new stuff
         for var in default_options.iterkeys():
             options[var] = getattr(self, var, None)
+        # Save em
         try:
             with open(self.config,"w") as f:
                 yaml.dump(options, f, default_flow_style=False)

@@ -5,7 +5,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
-from txircd.utils import irc_lower, DURATION_REGEX, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
+from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
 from pbkdf2 import crypt
 import fnmatch, socket, hashlib, collections, os, sys
 
@@ -170,33 +170,6 @@ class IRCUser(object):
                 status += mode
         return status
     
-    def parse_duration(self, duration_string):
-        """
-        Parses a string duration given in 1y2w3d4h5m6s format
-        returning the total number of seconds
-        """
-        try: # attempt to parse as a number of seconds if we get just a number before we go through the parsing process
-            return int(duration_string)
-        except:
-            pass
-        timeparts = DURATION_REGEX.match(duration_string).groupdict()
-        mult_factor = {
-            "years": 31557600, # 365.25 days to avoid leap year nonsense
-            "weeks": 604800,
-            "days": 86400,
-            "hours": 3600,
-            "minutes": 60,
-            "seconds": 1
-        }
-        duration = 0
-        for unit, amount in timeparts.iteritems():
-            if amount is not None:
-                try:
-                    duration += int(amount) * mult_factor[unit]
-                except:
-                    pass
-        return duration
-    
     def add_xline(self, linetype, mask, duration, reason):
         if mask in self.ircd.xlines[linetype]:
             self.sendMessage("NOTICE", ":*** Failed to add line for {}: already exists".format(mask))
@@ -220,6 +193,7 @@ class IRCUser(object):
             applymethod = getattr(self, "applyline_{}".format(linetype), None)
             if applymethod is not None:
                 applymethod(match_list, reason)
+            self.ircd.save_options()
     
     def remove_xline(self, linetype, mask):
         if mask not in self.ircd.xlines[linetype]:
@@ -230,6 +204,7 @@ class IRCUser(object):
             removemethod = getattr(self, "removeline_{}".format(linetype), None)
             if removemethod is not None:
                 removemethod()
+            self.ircd.save_options()
     
     def applyline_G(self, userlist, reason):
         for user in userlist:
@@ -953,7 +928,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("G", banmask, self.parse_duration(params[1]), params[2])
+            self.add_xline("G", banmask, parse_duration(params[1]), params[2])
     
     def irc_KLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -974,7 +949,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("K", banmask, self.parse_duration(params[1]), params[2])
+            self.add_xline("K", banmask, parse_duration(params[1]), params[2])
     
     def irc_ZLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -989,7 +964,7 @@ class IRCUser(object):
             banip = params[0]
             if banip in self.ircd.users:
                 banip = self.ircd.users[banip].ip
-            self.add_xline("Z", banip, self.parse_duration(params[1]), params[2])
+            self.add_xline("Z", banip, parse_duration(params[1]), params[2])
     
     def irc_ELINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -1010,7 +985,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("E", banmask, self.parse_duration(params[1]), params[2])
+            self.add_xline("E", banmask, parse_duration(params[1]), params[2])
     
     def irc_QLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -1024,7 +999,7 @@ class IRCUser(object):
         else:
             nickmask = irc_lower(params[0])
             if VALID_USERNAME.match(nickmask.replace("*","").replace("?","a")):
-                self.add_xline("Q", nickmask, self.parse_duration(params[1]), params[2])
+                self.add_xline("Q", nickmask, parse_duration(params[1]), params[2])
             else:
                 self.sendMessage("NOTICE", ":*** Could not set Q:Line: invalid nickmask")
     
@@ -1047,7 +1022,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("SHUN", banmask, self.parse_duration(params[1]), params[2])
+            self.add_xline("SHUN", banmask, parse_duration(params[1]), params[2])
     
     def irc_VERSION(self, prefix, params):
         self.sendMessage(irc.RPL_VERSION, self.ircd.version, self.ircd.server_name, ":txircd")
