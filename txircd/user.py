@@ -528,7 +528,9 @@ class IRCUser(object):
         else:
             oldnick = self.nickname
             newnick = params[0]
+            self.nickname = newnick
             reserved_nick = self.matches_xline("Q")
+            self.nickname = oldnick # restore the old nick temporarily so we can do the rest of the stuff we need to with the old nick
             if reserved_nick:
                 self.sendMessage(irc.ERR_ERRONEUSNICKNAME, newnick, ":Invalid nickname: {}".format(reserved_nick))
                 return
