@@ -161,6 +161,12 @@ class DBUser(IRCUser):
         else:
             IRCUser.irc_PRIVMSG(self, prefix, params)
     
+    def connectionLost(self, reason):
+        if self.auth_timer: # cancel the nick change timer if a user quits before changing/identifying
+            self.auth_timer.cancel()
+            self.auth_timer = None
+        IRCUser.connectionLost(self, reason)
+    
     # =========================
     # === NICKSERV HANDLERS ===
     # =========================
