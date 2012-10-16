@@ -17,6 +17,40 @@ def epoch(utc_datetime):
     delta = utc_datetime - UNIX_EPOCH
     return int(delta.total_seconds())
 
+time_lengths = {
+    "years": 31557600, # 365.25 days to avoid leap year nonsense
+    "weeks": 604800,
+    "days": 86400,
+    "hours": 3600,
+    "minutes": 60,
+    "seconds": 1
+}
+def parse_duration(duration_string):
+    """
+    Parses a string duration given in 1y2w3d4h5m6s format
+    returning the total number of seconds
+    """
+    try: # attempt to parse as a number of seconds if we get just a number before we go through the parsing process
+        return int(duration_string)
+    except:
+        pass
+    timeparts = DURATION_REGEX.match(duration_string).groupdict()
+
+    duration = 0
+    for unit, amount in timeparts.iteritems():
+        if amount is not None:
+            try:
+                duration += int(amount) * time_lengths[unit]
+            except:
+                pass
+    return duration
+def build_duration(duration_int):
+    timeparts = {}
+    for name in ["years","weeks","days","hours","minutes","seconds"]:
+        timeparts[name] = duration_int / time_lengths[name]
+        duration_int -= timeparts[name] * time_lengths[name]
+    return "{years}y{weeks}w{days}d{hours}h{minutes}m{seconds}s".format(**timeparts)
+
 def chunk_message(msg, chunk_size):
     chunks = []
     msg += "\n"
