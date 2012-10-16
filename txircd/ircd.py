@@ -451,6 +451,7 @@ class IRCD(Factory):
         self.stats_data["bytes_out"] = 0
         self.stats_data["lines_in"] = 0
         self.stats_data["lines_out"] = 0
-        self.stats_log.write(line+"\n")
+        if self.stats_log:
+            self.stats_log.write(line+"\n")
         if self.stats:
             self.stats.broadcast(line+"\r\n")

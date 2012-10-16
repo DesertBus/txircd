@@ -265,6 +265,7 @@ class IRCUser(object):
             removemethod = getattr(self, "removeline_{}".format(linetype), None)
             if removemethod is not None:
                 removemethod()
+            self.ircd.save_options()
         return matched
     
     def send_motd(self):
