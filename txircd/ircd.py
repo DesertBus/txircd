@@ -417,6 +417,7 @@ class IRCD(Factory):
         log.msg("Saving options...")
         self.save_options()
         # Return deferreds
+        log.msg("Waiting on deferreds...")
         return DeferredList(deferreds)
     
     def buildProtocol(self, addr):
@@ -451,7 +452,7 @@ class IRCD(Factory):
         self.stats_data["bytes_out"] = 0
         self.stats_data["lines_in"] = 0
         self.stats_data["lines_out"] = 0
-        if self.stats_log:
+        if not self.stats_log.closed:
             self.stats_log.write(line+"\n")
         if self.stats:
             self.stats.broadcast(line+"\r\n")

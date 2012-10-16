@@ -352,11 +352,13 @@ class IRCUser(object):
             self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic["message"]))
             self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topic["author"], str(epoch(cdata.topic["created"])))
         self.report_names(cdata.name)
-        cdata.log.write("[{:02d}:{:02d}:{:02d}] {} joined the channel\n".format(now().hour, now().minute, now().second, self.nickname))
+        if not cdata.log.closed:
+            cdata.log.write("[{:02d}:{:02d}:{:02d}] {} joined the channel\n".format(now().hour, now().minute, now().second, self.nickname))
     
     def leave(self, channel):
         cdata = self.ircd.channels[channel]
-        cdata.log.write("[{:02d}:{:02d}:{:02d}] {} left the channel\n".format(now().hour, now().minute, now().second, self.nickname))
+        if not cdata.log.closed:
+            cdata.log.write("[{:02d}:{:02d}:{:02d}] {} left the channel\n".format(now().hour, now().minute, now().second, self.nickname))
         mode = self.status(cdata.name) # Clear modes
         cdata.mode.combine("-{}".format(mode),[self.nickname for _ in mode],cdata.name)
         del self.channels[cdata.name]
@@ -432,7 +434,8 @@ class IRCUser(object):
             for u in msgto:
                 for l in lines:
                     u.sendMessage(cmd, ":{}".format(l), to=dest, prefix=self.prefix())
-            c.log.write("[{:02d}:{:02d}:{:02d}] {border_s}{nick}{border_e}: {message}\n".format(now().hour, now().minute, now().second, nick=self.nickname, message=message, border_s=("-" if cmd == "NOTICE" else "<"), border_e=("-" if cmd == "NOTICE" else ">")))
+            if not c.log.closed:
+                c.log.write("[{:02d}:{:02d}:{:02d}] {border_s}{nick}{border_e}: {message}\n".format(now().hour, now().minute, now().second, nick=self.nickname, message=message, border_s=("-" if cmd == "NOTICE" else "<"), border_e=("-" if cmd == "NOTICE" else ">")))
         else:
             return self.sendMessage(irc.ERR_NOSUCHNICK, target, ":No such nick/channel")
     
@@ -564,7 +567,8 @@ class IRCUser(object):
                 # Add channel members to message queue
                 for u in self.ircd.channels[c].users.iterkeys():
                     tomsg.add(u)
-                cdata.log.write("[{:02d}:{:02d}:{:02d}] {} is now known as {}\n".format(now().hour, now().minute, now().second, oldnick, newnick))
+                if not cdata.log.closed:
+                    cdata.log.write("[{:02d}:{:02d}:{:02d}] {} is now known as {}\n".format(now().hour, now().minute, now().second, oldnick, newnick))
             for u in tomsg:
                 self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
     
@@ -667,7 +671,8 @@ class IRCUser(object):
         for mode in forbidden:
             self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - only operators may set mode {}".format(mode))
         if modes:
-            cdata.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, self.nickname, modes))
+            if not cdata.log.closed:
+                cdata.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, self.nickname, modes))
             for u in cdata.users.itervalues():
                 u.sendMessage("MODE", modes, to=cdata.name, prefix=self.prefix())
 
@@ -713,7 +718,8 @@ class IRCUser(object):
                 cdata.topic["created"] = now()
                 for u in cdata.users.itervalues():
                     u.sendMessage("TOPIC", cdata.name, ":{}".format(cdata.topic["message"]), prefix=self.prefix())
-                cdata.log.write("[{:02d}:{:02d}:{:02d}] {} changed the topic to {}\n".format(now().hour, now().minute, now().second, self.nickname, params[1]))
+                if not cdata.log.closed:
+                    cdata.log.write("[{:02d}:{:02d}:{:02d}] {} changed the topic to {}\n".format(now().hour, now().minute, now().second, self.nickname, params[1]))
             else:
                 self.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You do not have access to change the topic on this channel")
     
