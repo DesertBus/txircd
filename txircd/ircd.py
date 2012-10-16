@@ -342,7 +342,7 @@ class IRCD(Factory):
                 continue
             for user, data in xlines.iteritems():
                 self.xlines[key][user] = {
-                    "created": datetime.datetime.strptime(data["created"],"%y-%m-%d %H:%M:%S"),
+                    "created": datetime.datetime.strptime(data["created"],"%Y-%m-%d %H:%M:%S"),
                     "duration": parse_duration(data["duration"]),
                     "setter": data["setter"],
                     "reason": data["reason"]
