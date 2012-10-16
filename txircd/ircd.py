@@ -141,6 +141,8 @@ class IRCProtocol(irc.IRC):
                 self.transport.loseConnection()
         for mask in expired:
             del self.factory.xlines["Z"][mask]
+        if expired:
+            self.factory.save_options()
 
     def dataReceived(self, data):
         self.factory.stats_data["bytes_in"] += len(data)
@@ -202,6 +204,8 @@ class IRCProtocol(irc.IRC):
                     return
             for mask in expired:
                 del self.ircd.xlines["Q"][mask]
+            if expired:
+                self.factory.save_options()
             self.nick = params[0]
             if self.user:
                 try:
