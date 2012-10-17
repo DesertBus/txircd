@@ -719,7 +719,7 @@ class IRCUser(object):
                 cdata.topic["author"] = self.nickname
                 cdata.topic["created"] = now()
                 for u in cdata.users.itervalues():
-                    u.sendMessage("TOPIC", cdata.name, ":{}".format(cdata.topic["message"]), prefix=self.prefix())
+                    u.sendMessage("TOPIC", ":{}".format(cdata.topic["message"]), to=cdata.name, prefix=self.prefix())
                 if not cdata.log.closed:
                     cdata.log.write("[{:02d}:{:02d}:{:02d}] {} changed the topic to {}\n".format(now().hour, now().minute, now().second, self.nickname, params[1]))
             else:
