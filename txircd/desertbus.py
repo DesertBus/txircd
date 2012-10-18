@@ -209,7 +209,7 @@ class DBUser(IRCUser):
             self.auth_timer = None
         if irc_lower(self.nickname).startswith(irc_lower(self.ircd.nickserv_guest_prefix)):
             return # Don't check guest nicks
-        d = self.query("SELECT donor_id FROM irc_nicks WHERE nick = {0}", self.nickname)
+        d = self.query("SELECT donor_id FROM irc_nicks WHERE nick = {0}", irc_lower(self.nickname))
         d.addCallback(self.beginVerify, self.nickname)
         d.addErrback(self.ohshit)
         return d
@@ -295,7 +295,7 @@ class DBUser(IRCUser):
             message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.nickserv_limit, nickname, nicklist)
             self.sendMessage("NOTICE", message, prefix=self.service_prefix("NickServ"))
         else:
-            d = self.query("INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, nickname)
+            d = self.query("INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, irc_lower(nickname))
             d.addCallback(self.successRegisterNick, nickname)
             d.addErrback(self.failedRegisterNick, nickname)
     
