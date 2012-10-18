@@ -745,7 +745,7 @@ class IRCUser(object):
         if udata.nickname not in cdata.users:
             self.sendMessage(irc.ERR_USERNOTINCHANNEL, udata.nickname, cdata.name, ":They are not on that channel")
             return
-        if not self.hasAccess(params[0], "h") or (not self.accessLevel(params[0]) > udata.accessLevel(params[0]) and not self.mode.has("o")):
+        if (not self.hasAccess(params[0], "h") or not self.accessLevel(params[0]) > udata.accessLevel(params[0])) and not self.mode.has("o"):
             self.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You must be a channel half-operator")
             return
         for u in cdata.users.itervalues():
