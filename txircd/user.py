@@ -937,7 +937,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("G", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("G", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_KLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -958,7 +958,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("K", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("K", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_ZLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -973,7 +973,7 @@ class IRCUser(object):
             banip = params[0]
             if banip in self.ircd.users:
                 banip = self.ircd.users[banip].ip
-            self.add_xline("Z", banip, parse_duration(params[1]), params[2])
+            self.add_xline("Z", banip, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_ELINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -994,7 +994,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("E", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("E", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_QLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -1008,7 +1008,7 @@ class IRCUser(object):
         else:
             nickmask = irc_lower(params[0])
             if VALID_USERNAME.match(nickmask.replace("*","").replace("?","a")):
-                self.add_xline("Q", nickmask, parse_duration(params[1]), params[2])
+                self.add_xline("Q", nickmask, parse_duration(params[1]), " ".join(params[2:]))
             else:
                 self.sendMessage("NOTICE", ":*** Could not set Q:Line: invalid nickmask")
     
@@ -1031,7 +1031,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("SHUN", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("SHUN", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_VERSION(self, prefix, params):
         self.sendMessage(irc.RPL_VERSION, self.ircd.version, self.ircd.server_name, ":txircd")
