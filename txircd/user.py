@@ -379,11 +379,6 @@ class IRCUser(object):
             u.sendMessage("PART", ":{}".format(reason), to=cdata.name, prefix=self.prefix())
         self.leave(channel)
     
-    def quit(self, channel, reason):
-        for u in self.ircd.channels[channel].users.itervalues():
-            u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
-        self.leave(channel)
-    
     def msg_cmd(self, cmd, params):
         if not params:
             return self.sendMessage(irc.ERR_NORECIPIENT, ":No recipient given ({})".format(cmd))
@@ -593,8 +588,13 @@ class IRCUser(object):
             return # Can't quit twice
         self.add_to_whowas()
         reason = params[0] if params else "Client exited"
+        quit_to = set()
         for c in self.channels.keys():
-            self.quit(c,reason)
+            for u in self.ircd.channels[c].users.itervalues():
+                quit_to.add(u)
+            self.leave(c)
+        for user in quit_to:
+            user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         del self.ircd.users[self.nickname]
         self.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason), to=None)
         self.socket.transport.loseConnection()
