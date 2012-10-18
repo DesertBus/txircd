@@ -739,7 +739,7 @@ class IRCUser(object):
             return
         cdata = self.ircd.channels[params[0]]
         udata = self.ircd.users[params[1]]
-        if self.nickname not in cdata.users:
+        if self.nickname not in cdata.users and not self.mode.has("o"):
             self.sendMessage(irc.ERR_NOTONCHANNEL, cdata["names"], ":You're not on that channel!")
             return
         if udata.nickname not in cdata.users:
