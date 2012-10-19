@@ -342,6 +342,8 @@ class IRCUser(object):
         self.channels[cdata.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
         if cdata.name in self.invites:
             self.invites.remove(cdata.name)
+        if cdata.name in self.knocked:
+            self.knocked.remove(cdata.name)
         if not cdata.users and self.ircd.channel_founder_mode:
             cdata.mode.combine("+{}".format(self.ircd.channel_founder_mode),[self.nickname],cdata.name) # Set first user as founder
         cdata.users[self.nickname] = self
