@@ -116,7 +116,7 @@ default_options = {
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
 
 class IRCProtocol(irc.IRC):
-    UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "PONG", "QUIT"]
+    UNREGISTERED_COMMANDS = ["PASS", "USER", "NICK", "PING", "PONG", "QUIT"]
 
     def __init__(self, *args, **kwargs):
         self.type = None
