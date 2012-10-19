@@ -923,7 +923,7 @@ class IRCUser(object):
         self.sendMessage(irc.RPL_KNOCKDLVR, cdata.name, ":Your KNOCK has been delivered.")
         for user in cdata.users.itervalues():
             if user.hasAccess(cdata.name, "h"):
-                user.sendMessage(irc.RPL_KNOCK, cdata.name, self.prefix(), ":{}".format(params[1]))
+                user.sendMessage(irc.RPL_KNOCK, cdata.name, self.prefix(), ":{}".format(" ".join(params[1:])))
     
     def irc_MOTD(self, prefix, params):
         self.send_motd()
