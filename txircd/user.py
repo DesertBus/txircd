@@ -365,7 +365,7 @@ class IRCUser(object):
         del self.channels[cdata.name]
         del cdata.users[self.nickname] # remove channel user entry
         if not cdata.users:
-            for user in self.ircd.users: # Remove remaining invites and knocks
+            for user in self.ircd.users.itervalues(): # Remove remaining invites and knocks
                 if cdata.name in user.invites:
                     user.invites.remove(cdata.name)
                 if cdata.name in user.knocked:
