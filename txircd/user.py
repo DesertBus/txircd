@@ -68,6 +68,7 @@ class IRCUser(object):
         self.mode = UserModes(self.ircd, self, mode, self.nickname)
         self.channels = CaseInsensitiveDictionary()
         self.invites = []
+        self.knocked = []
         self.service = False
         self.account = None
         self.disconnected = Deferred()
@@ -364,6 +365,11 @@ class IRCUser(object):
         del self.channels[cdata.name]
         del cdata.users[self.nickname] # remove channel user entry
         if not cdata.users:
+            for user in self.ircd.users: # Remove remaining invites and knocks
+                if cdata.name in user.invites:
+                    user.invites.remove(cdata.name)
+                if cdata.name in user.knocked:
+                    user.knocked.remove(cdata.name)
             del self.ircd.channels[cdata.name] # destroy the empty channel
             cdata.log.close()
     
@@ -892,6 +898,32 @@ class IRCUser(object):
             self.sendMessage(irc.RPL_INVITING, udata.nickname, to=cdata.name)
             udata.sendMessage("INVITE", cdata.name, to=udata.nickname, prefix=self.prefix())
             udata.invites.append(cdata.name)
+    
+    def irc_KNOCK(self, prefix, params):
+        if not params or len(params) < 2:
+            self.sendMessage(irc.ERR_NEEDMOREPARAMS, "KNOCK", ":Not enough parameters")
+            return
+        if params[0] not in self.ircd.channels:
+            self.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
+            return
+        cdata = self.ircd.channels[params[0]]
+        if self.nickname in cdata.users:
+            self.sendMessage(irc.ERR_KNOCKONCHAN, cdata.name, ":You are already on that channel.")
+            return
+        if not cdata.mode.has("i"):
+            self.sendMessage(irc.ERR_CHANOPEN, cdata.name, ":Channel is open.")
+            return
+        if cdata.name in self.knocked:
+            self.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Too many KNOCKs (user).")
+            return
+        if cdata.mode.has("K"):
+            self.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Channel is +K")
+            return
+        self.knocked.append(cdata.name)
+        self.sendMessage(irc.RPL_KNOCKDLVR, cdata.name, ":Your KNOCK has been delivered.")
+        for user in cdata.users.itervalues():
+            if user.hasAccess(cdata.name, "h"):
+                user.sendMessage(irc.RPL_KNOCK, cdata.name, self.prefix(), ":{}".format(params[1]))
     
     def irc_MOTD(self, prefix, params):
         self.send_motd()

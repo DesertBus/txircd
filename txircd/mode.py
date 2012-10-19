@@ -181,7 +181,7 @@ class UserModes(Modes):
         return True
 
 class ChannelModes(Modes):
-    bool_modes = "imnpstS" # http://tools.ietf.org/html/rfc2811#section-4 
+    bool_modes = "imnpstKS" # http://tools.ietf.org/html/rfc2811#section-4 
     string_modes = "fkl"
     list_modes = "aqohv"+"beI"
     
