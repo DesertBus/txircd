@@ -346,24 +346,6 @@ class DBUser(IRCUser):
                 lines = doc.splitlines()[1:] # Cut out the short help message
                 for l in lines: # Print the long message
                     self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("NickServ"))
-        
-    def nickserv_REGISTER(self, prefix, params):
-        """Create a donor account via IRC
-        Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail\x1F \x1F[name]\x0F
-        
-        Creates a donor account with the specified email and password.
-        Your current nick will be immediately associated with the new
-        account and protected from impersonation. You'll also be voiced
-        and allowed to bid in all auctions."""
-        if len(params) < 2:
-            self.sendMessage("NOTICE", ":Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail \x1F[name]\x0F", prefix=self.service_prefix("NickServ"))
-            return
-        email = params[1]
-        password = crypt(params[0])
-        name = " ".join(params[2:]) if len(params) > 2 else "Anonymous"
-        d = self.ircd.db.runInteraction(_register_donor_account, self.nickname, email, password, name, self.ircd.db_marker)
-        d.addCallback(self.ns_registered, email, name)
-        d.addErrback(self.ns_notregistered, email, name)
     
     def nickserv_ID(self, prefix, params):
         """Alias of IDENTIFY
@@ -443,15 +425,6 @@ class DBUser(IRCUser):
         d = self.ircd.db.runInteraction(_unregister_nickname, self.nickserv_id, nick, self.ircd.db_marker)
         d.addCallback(self.ns_dropped, nick)
         d.addErrback(self.ns_notdropped, nick)
-    
-    def ns_registered(self, result, email, name):
-        self.sendMessage("NOTICE", ":Account \x02{}\x0F created with an email of \x02{}\x0F.".format(name,email), prefix=self.service_prefix("NickServ"))
-        self.account = name
-        self.nickserv_id = result
-        self.registered()
-    
-    def ns_notregistered(self, result, email, name):
-        self.sendMessage("NOTICE", ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.service_prefix("NickServ"))
 
     def ns_listnicks(self, result):
         message = ":Registered Nicknames: {}".format(", ".join([n[0] for n in result]))
@@ -468,7 +441,37 @@ class DBUser(IRCUser):
     
     def ns_notdropped(self, result, nick):
         self.sendMessage("NOTICE", ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
+
+""" NS Register was testing code and so it has been removed.
+    I'm leaving it here, commented, for reference in case something similar needs to be made
+
+    def nickserv_REGISTER(self, prefix, params):
+        """Create a donor account via IRC
+        Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail\x1F \x1F[name]\x0F
+        
+        Creates a donor account with the specified email and password.
+        Your current nick will be immediately associated with the new
+        account and protected from impersonation. You'll also be voiced
+        and allowed to bid in all auctions."""
+        if len(params) < 2:
+            self.sendMessage("NOTICE", ":Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail \x1F[name]\x0F", prefix=self.service_prefix("NickServ"))
+            return
+        email = params[1]
+        password = crypt(params[0])
+        name = " ".join(params[2:]) if len(params) > 2 else "Anonymous"
+        d = self.ircd.db.runInteraction(_register_donor_account, self.nickname, email, password, name, self.ircd.db_marker)
+        d.addCallback(self.ns_registered, email, name)
+        d.addErrback(self.ns_notregistered, email, name)
     
+    def ns_registered(self, result, email, name):
+        self.sendMessage("NOTICE", ":Account \x02{}\x0F created with an email of \x02{}\x0F.".format(name,email), prefix=self.service_prefix("NickServ"))
+        self.account = name
+        self.nickserv_id = result
+        self.registered()
+    
+    def ns_notregistered(self, result, email, name):
+        self.sendMessage("NOTICE", ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.service_prefix("NickServ"))
+"""
     # ========================
     # === BIDSERV COMMANDS ===
     # ========================
