@@ -441,8 +441,9 @@ class DBUser(IRCUser):
     
     def ns_notdropped(self, result, nick):
         self.sendMessage("NOTICE", ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
-
-""" NS Register was testing code and so it has been removed.
+    
+    """ 
+    NS Register was testing code and so it has been removed.
     I'm leaving it here, commented, for reference in case something similar needs to be made
 
     def nickserv_REGISTER(self, prefix, params):
@@ -471,11 +472,11 @@ class DBUser(IRCUser):
     
     def ns_notregistered(self, result, email, name):
         self.sendMessage("NOTICE", ":Account \x02{}\x0F with an email of \x02{}\x0F was \x1Fnot\x0F created. Please verify the account does not exist and try again later.".format(name,email), prefix=self.service_prefix("NickServ"))
-"""
+    """
     # ========================
     # === BIDSERV COMMANDS ===
     # ========================
-      
+    
     def bidserv_USAGE(self, prefix, params, command = None):
         if command:
             self.sendMessage("NOTICE", ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(command), prefix=self.service_prefix("BidServ"))
@@ -738,7 +739,7 @@ class DBUser(IRCUser):
             self.ircd.bidserv_auction_state = 0
             self.ircd.save_options() # Save auction state. Just in case.
             lines = [
-                ":\x02\x034Starting Auction: \"{}\"\x02 - Called by {}".format(result[0][1], self.nickname),
+                ":\x02\x034Starting Auction for Lot #{}: \"{}\"\x02 - Called by {}".format(result[0][0], result[0][1], self.nickname),
                 ":\x02\x034Make bids with \x1F/bid ###.##",
                 ":\x02\x034The minimum increment between bids is ${:,.2f}".format(self.ircd.bidserv_min_increase),
                 ":\x02\x034Only voiced (registered donor) users can bid - https://donor.desertbus.org/",
