@@ -619,6 +619,22 @@ class IRCUser(object):
             channels = params[0].split(",")
             keys = params[1].split(",") if len(params) > 1 else []
             for c in channels:
+                if not self.mode.has("o"):
+                    c_lower = irc_lower(c) # Do this once now instead of a bunch later
+                    whitelist = False
+                    for entry in self.ircd.server_allowchans:
+                        if fnmatch.fnmatch(c_lower, entry):
+                            whitelist = True
+                            break
+                    if not whitelist:
+                        blacklist = False
+                        for entry in self.ircd.server_denychans:
+                            if fnmatch.fnmatch(c_lower, entry):
+                                blacklist = True
+                                break
+                        if blacklist:
+                            self.sendMessage(irc.ERR_CHANNOTALLOWED, params[0], ":Channel {} is forbidden.".format(params[0]))
+                            continue # process the rest of the channel list
                 if c in self.channels:
                     continue # don't join it twice
                 k = keys.pop(0) if keys else None

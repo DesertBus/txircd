@@ -43,6 +43,7 @@ Current
 * Can remove channel modes without being proper level
 * Can't have channel modes removed from them
 * Can kick somebody from a channel without being in channel
+* Can bypass denychans (e.g. oper-only channels without mode)
 
 Proposed Additions
 ==================
