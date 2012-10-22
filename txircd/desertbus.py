@@ -446,13 +446,13 @@ class DBUser(IRCUser):
     I'm leaving it here, commented, for reference in case something similar needs to be made
 
     def nickserv_REGISTER(self, prefix, params):
-        """Create a donor account via IRC
+        " " "Create a donor account via IRC
         Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail\x1F \x1F[name]\x0F
         
         Creates a donor account with the specified email and password.
         Your current nick will be immediately associated with the new
         account and protected from impersonation. You'll also be voiced
-        and allowed to bid in all auctions."""
+        and allowed to bid in all auctions." " "
         if len(params) < 2:
             self.sendMessage("NOTICE", ":Syntax: \x02REGISTER \x1Fpassword\x1F \x1Femail \x1F[name]\x0F", prefix=self.service_prefix("NickServ"))
             return
