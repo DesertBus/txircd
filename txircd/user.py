@@ -77,12 +77,12 @@ class IRCUser(object):
             xline_match = self.matches_xline("G")
             if xline_match != None:
                 self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-                self.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), to=None)
+                self.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
                 raise ValueError("Banned user")
             xline_match = self.matches_xline("K") # We're still here, so try the next one
             if xline_match:
                 self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-                self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None)
+                self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
                 raise ValueError("Banned user")
         
         # Add self to user list

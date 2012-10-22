@@ -142,7 +142,7 @@ class IRCProtocol(irc.IRC):
                 continue
             if fnmatch.fnmatch(ip, mask):
                 self.sendMessage("NOTICE", "*", ":{}".format(self.factory.client_ban_msg), prefix=self.factory.server_name)
-                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]), prefix=self.factory.server_name)
+                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]))
                 self.transport.loseConnection()
         for mask in expired:
             del self.factory.xlines["Z"][mask]
