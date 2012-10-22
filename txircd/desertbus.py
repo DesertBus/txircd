@@ -161,6 +161,12 @@ class DBUser(IRCUser):
         else:
             IRCUser.irc_PRIVMSG(self, prefix, params)
     
+    def connectionLost(self, reason):
+        if self.auth_timer: # cancel the nick change timer if a user quits before changing/identifying
+            self.auth_timer.cancel()
+            self.auth_timer = None
+        IRCUser.connectionLost(self, reason)
+    
     # =========================
     # === NICKSERV HANDLERS ===
     # =========================
@@ -201,11 +207,10 @@ class DBUser(IRCUser):
         if self.auth_timer:
             self.auth_timer.cancel()
             self.auth_timer = None
-        nickname = irc_lower(self.nickname)
-        if nickname.startswith(irc_lower(self.ircd.nickserv_guest_prefix)):
+        if irc_lower(self.nickname).startswith(irc_lower(self.ircd.nickserv_guest_prefix)):
             return # Don't check guest nicks
-        d = self.query("SELECT donor_id FROM irc_nicks WHERE nick = {0}", nickname)
-        d.addCallback(self.beginVerify, nickname)
+        d = self.query("SELECT donor_id FROM irc_nicks WHERE nick = {0}", irc_lower(self.nickname))
+        d.addCallback(self.beginVerify, self.nickname)
         d.addErrback(self.ohshit)
         return d
     
@@ -241,7 +246,7 @@ class DBUser(IRCUser):
         return d
     
     def beginVerify(self, result, nickname):
-        if nickname != irc_lower(self.nickname):
+        if irc_lower(nickname) != irc_lower(self.nickname):
             return # Changed nick too fast, don't even worry about it
         elif result:
             id = result[0][0]
@@ -290,7 +295,7 @@ class DBUser(IRCUser):
             message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.nickserv_limit, nickname, nicklist)
             self.sendMessage("NOTICE", message, prefix=self.service_prefix("NickServ"))
         else:
-            d = self.query("INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, nickname)
+            d = self.query("INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, irc_lower(nickname))
             d.addCallback(self.successRegisterNick, nickname)
             d.addErrback(self.failedRegisterNick, nickname)
     
@@ -557,7 +562,7 @@ class DBUser(IRCUser):
         })
         self.ircd.bidserv_auction_state = 0
         self.ircd.save_options() # Save auction state. Just in case.
-        self.bs_broadcast(":\x02{}{} has the high bid of ${:,.2f}! {}\x0F".format(madness, self.nickname, bid, smack))
+        self.bs_broadcast(":\x02\x034{}{} has the high bid of ${:,.2f}! \x0312{}".format(madness, self.nickname, bid, smack))
     
     def bidserv_HIGHBIDDER(self, prefix, params):
         """Get the high bidder in the current auction
@@ -607,7 +612,7 @@ class DBUser(IRCUser):
         self.ircd.bidserv_auction_state = 1
         self.ircd.save_options() # Save auction state. Just in case.
         bid = self.ircd.bidserv_bids[-1]
-        self.bs_broadcast(":\x02Going Once! To {} for ${:,.2f}!\x0F - Called by {}".format(bid["nick"],bid["bid"],self.nickname))
+        self.bs_broadcast(":\x02\x034Going Once! To {} for ${:,.2f}!\x02 - Called by {}".format(bid["nick"],bid["bid"],self.nickname))
     
     def bidserv_TWICE(self, prefix, params):
         """Call "Going Twice!" [Admin Only]
@@ -626,7 +631,7 @@ class DBUser(IRCUser):
         self.ircd.bidserv_auction_state = 2
         self.ircd.save_options() # Save auction state. Just in case.
         bid = self.ircd.bidserv_bids[-1]
-        self.bs_broadcast(":\x02Going Twice! To {} for ${:,.2f}!\x0F - Called by {}".format(bid["nick"],bid["bid"],self.nickname))
+        self.bs_broadcast(":\x02\x034Going Twice! To {} for ${:,.2f}!\x02 - Called by {}".format(bid["nick"],bid["bid"],self.nickname))
     
     def bidserv_SOLD(self, prefix, params):
         """Award the auction to the highest bidder [Admin Only]
@@ -672,7 +677,7 @@ class DBUser(IRCUser):
         self.ircd.bidserv_auction_name = None
         self.ircd.bidserv_bids = []
         self.ircd.save_options() # Save auction state. Just in case.
-        self.bs_broadcast(":\x02Auction for {} cancelled. Sorry!\x0F - Called by {}".format(name,self.nickname))
+        self.bs_broadcast(":\x02\x034Auction for {} cancelled. Sorry!\x02 - Called by {}".format(name,self.nickname))
     
     def bidserv_REVERT(self, prefix, params):
         """Cancel the highest bid [Admin Only]
@@ -692,7 +697,7 @@ class DBUser(IRCUser):
         bad = self.ircd.bidserv_bids.pop()
         bid = self.ircd.bidserv_bids[-1]
         self.ircd.bidserv_auction_state = 0
-        self.bs_broadcast(":\x02Bid by {} for ${:,.2f} removed. New highest bid is by {} for ${:,.2f}!\x0F - Called by {}".format(bad["nick"],bad["bid"],bid["nick"],bid["bid"],self.nickname))
+        self.bs_broadcast(":\x02\x034Bid by {} for ${:,.2f} removed. New highest bid is by {} for ${:,.2f}!\x02 - Called by {}".format(bad["nick"],bad["bid"],bid["nick"],bid["bid"],self.nickname))
     
     def bs_failsold(self, result):
         bid = self.ircd.bidserv_bids[-1]
@@ -713,7 +718,7 @@ class DBUser(IRCUser):
         self.ircd.bidserv_auction_name = None
         self.ircd.bidserv_bids = []
         self.ircd.save_options() # Save auction state. Just in case.
-        self.bs_broadcast(":\x02Sold! {} to {} for ${:,.2f}!\x0F - Called by {}".format(name, bid["nick"],bid["bid"],self.nickname))
+        self.bs_broadcast(":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(name, bid["nick"],bid["bid"],self.nickname))
     
     def bs_failstart(self, result, id):
         self.bs_wallops(":Error finding item ID #{}".format(id))
@@ -730,12 +735,12 @@ class DBUser(IRCUser):
             self.ircd.bidserv_auction_state = 0
             self.ircd.save_options() # Save auction state. Just in case.
             lines = [
-                ":\x02Starting Auction: \"{}\"\x0F - Called by {}".format(result[0][1], self.nickname),
-                ":\x02Make bids with \x1F/bid ###.##\x0F",
-                ":\x02The minimum increment between bids is ${:,.2f}\x0F".format(self.ircd.bidserv_min_increase),
-                ":\x02Only voiced (registered donor) users can bid - https://donor.desertbus.org/\x0F",
-                ":\x02Please do not make any fake bids\x0F",
-                ":\x02Beginning bidding at ${:,.2f}\x0F".format(float(result[0][3])),
+                ":\x02\x034Starting Auction: \"{}\"\x02 - Called by {}".format(result[0][1], self.nickname),
+                ":\x02\x034Make bids with \x1F/bid ###.##",
+                ":\x02\x034The minimum increment between bids is ${:,.2f}".format(self.ircd.bidserv_min_increase),
+                ":\x02\x034Only voiced (registered donor) users can bid - https://donor.desertbus.org/",
+                ":\x02\x034Please do not make any fake bids",
+                ":\x02\x034Beginning bidding at ${:,.2f}".format(float(result[0][3])),
             ]
             for l in lines:
                 self.bs_broadcast(l)

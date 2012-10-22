@@ -67,6 +67,7 @@ class IRCUser(object):
         self.mode = UserModes(self.ircd, self, mode, self.nickname)
         self.channels = CaseInsensitiveDictionary()
         self.invites = []
+        self.knocked = []
         self.service = False
         self.account = None
         self.disconnected = Deferred()
@@ -75,12 +76,12 @@ class IRCUser(object):
             xline_match = self.matches_xline("G")
             if xline_match != None:
                 self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-                self.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), to=None)
+                self.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
                 raise ValueError("Banned user")
             xline_match = self.matches_xline("K") # We're still here, so try the next one
             if xline_match:
                 self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-                self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None)
+                self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
                 raise ValueError("Banned user")
         
         # Add self to user list
@@ -121,12 +122,14 @@ class IRCUser(object):
             log.deferr()
     
     def sendMessage(self, command, *parameter_list, **kw):
-        if 'prefix' not in kw:
-            kw['prefix'] = self.ircd.server_name
-        if 'to' not in kw:
-            kw['to'] = self.nickname
-        if kw['to']:
-            arglist = [command, kw['to']] + list(parameter_list)
+        if "prefix" not in kw:
+            kw["prefix"] = self.ircd.server_name
+        if not kw["prefix"]:
+            del kw["prefix"]
+        if "to" not in kw:
+            kw["to"] = self.nickname
+        if kw["to"]:
+            arglist = [command, kw["to"]] + list(parameter_list)
         else:
             arglist = [command] + list(parameter_list)
         self.socket.sendMessage(*arglist, **kw)
@@ -340,6 +343,8 @@ class IRCUser(object):
         self.channels[cdata.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
         if cdata.name in self.invites:
             self.invites.remove(cdata.name)
+        if cdata.name in self.knocked:
+            self.knocked.remove(cdata.name)
         if not cdata.users and self.ircd.channel_founder_mode:
             cdata.mode.combine("+{}".format(self.ircd.channel_founder_mode),[self.nickname],cdata.name) # Set first user as founder
         cdata.users[self.nickname] = self
@@ -363,6 +368,11 @@ class IRCUser(object):
         del self.channels[cdata.name]
         del cdata.users[self.nickname] # remove channel user entry
         if not cdata.users:
+            for user in self.ircd.users.itervalues(): # Remove remaining invites and knocks
+                if cdata.name in user.invites:
+                    user.invites.remove(cdata.name)
+                if cdata.name in user.knocked:
+                    user.knocked.remove(cdata.name)
             del self.ircd.channels[cdata.name] # destroy the empty channel
             cdata.log.close()
     
@@ -376,11 +386,6 @@ class IRCUser(object):
             return
         for u in cdata.users.itervalues():
             u.sendMessage("PART", ":{}".format(reason), to=cdata.name, prefix=self.prefix())
-        self.leave(channel)
-    
-    def quit(self, channel, reason):
-        for u in self.ircd.channels[channel].users.itervalues():
-            u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         self.leave(channel)
     
     def msg_cmd(self, cmd, params):
@@ -527,7 +532,9 @@ class IRCUser(object):
         else:
             oldnick = self.nickname
             newnick = params[0]
+            self.nickname = newnick
             reserved_nick = self.matches_xline("Q")
+            self.nickname = oldnick # restore the old nick temporarily so we can do the rest of the stuff we need to with the old nick
             if reserved_nick:
                 self.sendMessage(irc.ERR_ERRONEUSNICKNAME, newnick, ":Invalid nickname: {}".format(reserved_nick))
                 return
@@ -590,10 +597,15 @@ class IRCUser(object):
             return # Can't quit twice
         self.add_to_whowas()
         reason = params[0] if params else "Client exited"
+        quit_to = set()
         for c in self.channels.keys():
-            self.quit(c,reason)
+            for u in self.ircd.channels[c].users.itervalues():
+                quit_to.add(u)
+            self.leave(c)
+        for user in quit_to:
+            user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         del self.ircd.users[self.nickname]
-        self.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason), to=None)
+        self.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason), to=None, prefix=None)
         self.socket.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
@@ -606,6 +618,22 @@ class IRCUser(object):
             channels = params[0].split(",")
             keys = params[1].split(",") if len(params) > 1 else []
             for c in channels:
+                if not self.mode.has("o"):
+                    c_lower = irc_lower(c) # Do this once now instead of a bunch later
+                    whitelist = False
+                    for entry in self.ircd.server_allowchans:
+                        if fnmatch.fnmatch(c_lower, entry):
+                            whitelist = True
+                            break
+                    if not whitelist:
+                        blacklist = False
+                        for entry in self.ircd.server_denychans:
+                            if fnmatch.fnmatch(c_lower, entry):
+                                blacklist = True
+                                break
+                        if blacklist:
+                            self.sendMessage(irc.ERR_CHANNOTALLOWED, params[0], ":Channel {} is forbidden.".format(params[0]))
+                            continue # process the rest of the channel list
                 if c in self.channels:
                     continue # don't join it twice
                 k = keys.pop(0) if keys else None
@@ -736,13 +764,13 @@ class IRCUser(object):
             return
         cdata = self.ircd.channels[params[0]]
         udata = self.ircd.users[params[1]]
-        if self.nickname not in cdata.users:
+        if self.nickname not in cdata.users and not self.mode.has("o"):
             self.sendMessage(irc.ERR_NOTONCHANNEL, cdata["names"], ":You're not on that channel!")
             return
         if udata.nickname not in cdata.users:
             self.sendMessage(irc.ERR_USERNOTINCHANNEL, udata.nickname, cdata.name, ":They are not on that channel")
             return
-        if not self.hasAccess(params[0], "h") or (not self.accessLevel(params[0]) > udata.accessLevel(params[0]) and not self.mode.has("o")):
+        if (not self.hasAccess(params[0], "h") or not self.accessLevel(params[0]) > udata.accessLevel(params[0])) and not self.mode.has("o"):
             self.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You must be a channel half-operator")
             return
         for u in cdata.users.itervalues():
@@ -886,9 +914,35 @@ class IRCUser(object):
         elif udata.mode.has("a"):
             self.sendMessage(irc.RPL_AWAY, udata.nickname, ":{}".format(udata.mode.get("a")))
         else:
-            self.sendMessage(irc.RPL_INVITING, udata.nickname, to=cdata.name)
+            self.sendMessage(irc.RPL_INVITING, udata.nickname, cdata.name)
             udata.sendMessage("INVITE", cdata.name, to=udata.nickname, prefix=self.prefix())
             udata.invites.append(cdata.name)
+    
+    def irc_KNOCK(self, prefix, params):
+        if not params or len(params) < 2:
+            self.sendMessage(irc.ERR_NEEDMOREPARAMS, "KNOCK", ":Not enough parameters")
+            return
+        if params[0] not in self.ircd.channels:
+            self.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
+            return
+        cdata = self.ircd.channels[params[0]]
+        if self.nickname in cdata.users:
+            self.sendMessage(irc.ERR_KNOCKONCHAN, cdata.name, ":You are already on that channel.")
+            return
+        if not cdata.mode.has("i"):
+            self.sendMessage(irc.ERR_CHANOPEN, cdata.name, ":Channel is open.")
+            return
+        if cdata.name in self.knocked:
+            self.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Too many KNOCKs (user).")
+            return
+        if cdata.mode.has("K"):
+            self.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Channel is +K")
+            return
+        self.knocked.append(cdata.name)
+        self.sendMessage(irc.RPL_KNOCKDLVR, cdata.name, ":Your KNOCK has been delivered.")
+        for user in cdata.users.itervalues():
+            if user.hasAccess(cdata.name, "h"):
+                user.sendMessage(irc.RPL_KNOCK, cdata.name, self.prefix(), ":{}".format(" ".join(params[1:])))
     
     def irc_MOTD(self, prefix, params):
         self.send_motd()
@@ -934,7 +988,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("G", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("G", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_KLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -955,7 +1009,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("K", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("K", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_ZLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -970,7 +1024,7 @@ class IRCUser(object):
             banip = params[0]
             if banip in self.ircd.users:
                 banip = self.ircd.users[banip].ip
-            self.add_xline("Z", banip, parse_duration(params[1]), params[2])
+            self.add_xline("Z", banip, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_ELINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -991,7 +1045,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("E", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("E", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_QLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -1005,7 +1059,7 @@ class IRCUser(object):
         else:
             nickmask = irc_lower(params[0])
             if VALID_USERNAME.match(nickmask.replace("*","").replace("?","a")):
-                self.add_xline("Q", nickmask, parse_duration(params[1]), params[2])
+                self.add_xline("Q", nickmask, parse_duration(params[1]), " ".join(params[2:]))
             else:
                 self.sendMessage("NOTICE", ":*** Could not set Q:Line: invalid nickmask")
     
@@ -1028,7 +1082,7 @@ class IRCUser(object):
                 banmask = irc_lower("{}@{}".format(user.username, user.hostname))
             elif "@" not in banmask:
                 banmask = "*@{}".format(banmask)
-            self.add_xline("SHUN", banmask, parse_duration(params[1]), params[2])
+            self.add_xline("SHUN", banmask, parse_duration(params[1]), " ".join(params[2:]))
     
     def irc_VERSION(self, prefix, params):
         self.sendMessage(irc.RPL_VERSION, self.ircd.version, self.ircd.server_name, ":txircd")

@@ -42,6 +42,8 @@ Current
 * Can set channel modes without being proper level
 * Can remove channel modes without being proper level
 * Can't have channel modes removed from them
+* Can kick somebody from a channel without being in channel
+* Can bypass denychans (e.g. oper-only channels without mode)
 
 Proposed Additions
 ==================
@@ -51,7 +53,6 @@ Proposed Additions
 * Can use colors in a stripped channel
 * Can bypass flood limit in a channel
 * Can set channel topic without being in channel
-* Can kick somebody from a channel without being in channel
 * See IP address of user on JOIN (instead of hostname)
 * See all channels with LIST
 * Invite someone to a channel without being on the channel, or without being a HOP

@@ -31,6 +31,12 @@ irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
 irc.RPL_WHOISSECURE  = "671"
+irc.RPL_KNOCK = "710"
+irc.RPL_KNOCKDLVR = "711"
+irc.ERR_TOOMANYKNOCK = "712"
+irc.ERR_CHANOPEN = "713"
+irc.ERR_KNOCKONCHAN = "714"
+irc.ERR_CHANNOTALLOWED = "926" # I had to make this one up, too.
 # Fix twisted being silly
 irc.RPL_ADMINLOC1 = "257"
 irc.RPL_ADMINLOC2 = "258"
@@ -51,6 +57,8 @@ default_options = {
     "server_port_ssl": 6697,
     "server_port_web": 8080,
     "server_stats_public": "ou",
+    "server_denychans": [],
+    "server_allowchans": [],
     "server_xlines_k": {},
     "server_xlines_g": {},
     "server_xlines_q": {},
@@ -111,7 +119,7 @@ default_options = {
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
 
 class IRCProtocol(irc.IRC):
-    UNREGISTERED_COMMANDS = ["PASS", "USER", "SERVICE", "SERVER", "NICK", "PING", "PONG", "QUIT"]
+    UNREGISTERED_COMMANDS = ["PASS", "USER", "NICK", "PING", "PONG", "QUIT"]
 
     def __init__(self, *args, **kwargs):
         self.type = None
@@ -137,10 +145,12 @@ class IRCProtocol(irc.IRC):
                 continue
             if fnmatch.fnmatch(ip, mask):
                 self.sendMessage("NOTICE", "*", ":{}".format(self.factory.client_ban_msg), prefix=self.factory.server_name)
-                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]), prefix=self.factory.server_name)
+                self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]))
                 self.transport.loseConnection()
         for mask in expired:
             del self.factory.xlines["Z"][mask]
+        if expired:
+            self.factory.save_options()
 
     def dataReceived(self, data):
         self.factory.stats_data["bytes_in"] += len(data)
@@ -202,6 +212,8 @@ class IRCProtocol(irc.IRC):
                     return
             for mask in expired:
                 del self.ircd.xlines["Q"][mask]
+            if expired:
+                self.factory.save_options()
             self.nick = params[0]
             if self.user:
                 try:
@@ -342,7 +354,7 @@ class IRCD(Factory):
                 continue
             for user, data in xlines.iteritems():
                 self.xlines[key][user] = {
-                    "created": datetime.datetime.strptime(data["created"],"%y-%m-%d %H:%M:%S"),
+                    "created": datetime.datetime.strptime(data["created"],"%Y-%m-%d %H:%M:%S"),
                     "duration": parse_duration(data["duration"]),
                     "setter": data["setter"],
                     "reason": data["reason"]
