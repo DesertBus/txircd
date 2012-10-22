@@ -77,12 +77,12 @@ class IRCUser(object):
             xline_match = self.matches_xline("G")
             if xline_match != None:
                 self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-                self.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), to=None)
+                self.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
                 raise ValueError("Banned user")
             xline_match = self.matches_xline("K") # We're still here, so try the next one
             if xline_match:
                 self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-                self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None)
+                self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
                 raise ValueError("Banned user")
         
         # Add self to user list
@@ -123,12 +123,14 @@ class IRCUser(object):
             log.deferr()
     
     def sendMessage(self, command, *parameter_list, **kw):
-        if 'prefix' not in kw:
-            kw['prefix'] = self.ircd.server_name
-        if 'to' not in kw:
-            kw['to'] = self.nickname
-        if kw['to']:
-            arglist = [command, kw['to']] + list(parameter_list)
+        if "prefix" not in kw:
+            kw["prefix"] = self.ircd.server_name
+        if not kw["prefix"]:
+            del kw["prefix"]
+        if "to" not in kw:
+            kw["to"] = self.nickname
+        if kw["to"]:
+            arglist = [command, kw["to"]] + list(parameter_list)
         else:
             arglist = [command] + list(parameter_list)
         self.socket.sendMessage(*arglist, **kw)
@@ -604,7 +606,7 @@ class IRCUser(object):
         for user in quit_to:
             user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         del self.ircd.users[self.nickname]
-        self.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason), to=None)
+        self.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason), to=None, prefix=None)
         self.socket.transport.loseConnection()
 
     def irc_JOIN(self, prefix, params):
