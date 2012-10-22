@@ -4,8 +4,7 @@ from twisted.internet import reactor
 from twisted.python import log
 from twisted.words.protocols import irc
 from txircd.user import IRCUser
-from txircd.utils import irc_lower, chunk_message, now
-from pbkdf2 import crypt
+from txircd.utils import irc_lower, chunk_message, now, crypt
 import inspect, random, yaml, os
 
 NICKSERV_HELP_MESSAGE = """
@@ -127,7 +126,8 @@ class DBUser(IRCUser):
             mode = self.ircd.channel_auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.channel_auto_ops else "v"
             m, b, f = c.mode.combine("+{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
-                c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
+                if not c.log.closed:
+                    c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
                 for u in c.users.itervalues():
                     u.sendMessage("MODE", m, to=c.name, prefix=self.service_prefix("BidServ"))
     

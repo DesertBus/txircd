@@ -5,8 +5,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
-from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors
-from pbkdf2 import crypt
+from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors, crypt
 import fnmatch, socket, hashlib, collections, os, sys
 
 class IRCUser(object):

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 from collections import MutableMapping
 from twisted.internet import reactor
-import re, datetime
+from pbkdf2 import PBKDF2
+import re, datetime, hashlib, sys
+from base64 import b64encode, b64decode
 
 VALID_USERNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{0,31}$") # up to 32 char nicks
 DURATION_REGEX = re.compile(r"((?P<years>\d+?)y)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?")
@@ -90,7 +92,7 @@ def strip_colors(msg):
         msg = msg[:color_pos] + msg[color_pos + strip_length:]
     msg = msg.replace(chr(2), "").replace(chr(29), "").replace(chr(31), "").replace(chr(15), "").replace(chr(22), "") # bold, italic, underline, plain, reverse
     return msg
-
+    
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
         self._data = {}
@@ -138,3 +140,84 @@ class DefaultCaseInsensitiveDictionary(CaseInsensitiveDictionary):
         except KeyError:
             value = self[key] = self._default_factory(key)
             return value
+
+# Duplicate PBKDF2
+
+# Python 2.1 thru 3.2 compatibility
+if sys.version_info[0] == 2:
+    def isunicode(s):
+        return isinstance(s, unicode)
+    def isbytes(s):
+        return isinstance(s, str)
+    def b(s):
+        return s
+else:
+    def isunicode(s):
+        return isinstance(s, str)
+    def isbytes(s):
+        return isinstance(s, bytes)
+    def b(s):
+       return s.encode("latin-1")
+
+def crypt(word, salt=None, iterations=1000, algorithm="sha256", bytes=24):
+    """PBKDF2-based unix crypt(3) replacement.
+
+    The number of iterations specified in the salt overrides the 'iterations'
+    parameter.
+    """
+    
+    # Reserve algorithms
+    algos = {
+        "md5": hashlib.md5,
+        "sha1": hashlib.sha1,
+        "sha224": hashlib.sha224,
+        "sha256": hashlib.sha256,
+        "sha384": hashlib.sha384,
+        "sha512": hashlib.sha512,
+    }
+    
+    # Generate a (pseudo-)random salt if the user hasn't provided one.
+    if salt is None:
+        salt = _makesalt()
+
+    # salt must be a string or the us-ascii subset of unicode
+    if isunicode(salt):
+        salt = salt.encode('us-ascii').decode('us-ascii')
+    elif isbytes(salt):
+        salt = salt.decode('us-ascii')
+    else:
+        raise TypeError("salt must be a string")
+
+    # word must be a string or unicode (in the latter case, we convert to UTF-8)
+    if isunicode(word):
+        word = word.encode("UTF-8")
+    elif not isbytes(word):
+        raise TypeError("word must be a string or unicode")
+
+    # Try to extract the real salt and iteration count from the salt
+    if ":" in salt:
+        (algorithm, iterations, salt, oldhash) = salt.split(":")
+        if iterations != "":
+            iterations = int(iterations)
+            if iterations < 1:
+                raise ValueError("Invalid salt")
+        bytes = len(b64decode(oldhash))
+
+    # Make sure the salt matches the allowed character set
+    allowed = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/="
+    for ch in salt:
+        if ch not in allowed:
+            raise ValueError("Illegal character {!r} in salt".format(ch))
+    
+    if algorithm not in algos:
+        raise ValueError("Invalid algorithm: {}".format(algorithm))
+
+    hash = b64encode(PBKDF2(word, salt, iterations, algos[algorithm]).read(bytes))
+    return "{}:{!s}:{}:{}".format(algorithm, iterations, salt, hash)
+
+def _makesalt():
+    """Return a 48-bit pseudorandom salt for crypt().
+
+    This function is not suitable for generating cryptographic secrets.
+    """
+    return b64encode(b("").join([pack("@H", randint(0, 0xffff)) for i in range(3)]))
