@@ -36,6 +36,7 @@ irc.RPL_KNOCKDLVR = "711"
 irc.ERR_TOOMANYKNOCK = "712"
 irc.ERR_CHANOPEN = "713"
 irc.ERR_KNOCKONCHAN = "714"
+irc.ERR_CHANNOTALLOWED = "926" # I had to make this one up, too.
 # Fix twisted being silly
 irc.RPL_ADMINLOC1 = "257"
 irc.RPL_ADMINLOC2 = "258"
@@ -56,6 +57,8 @@ default_options = {
     "server_port_ssl": 6697,
     "server_port_web": 8080,
     "server_stats_public": "ou",
+    "server_denychans": [],
+    "server_allowchans": [],
     "server_xlines_k": {},
     "server_xlines_g": {},
     "server_xlines_q": {},
