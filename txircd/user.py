@@ -897,7 +897,7 @@ class IRCUser(object):
         elif udata.mode.has("a"):
             self.sendMessage(irc.RPL_AWAY, udata.nickname, ":{}".format(udata.mode.get("a")))
         else:
-            self.sendMessage(irc.RPL_INVITING, udata.nickname, to=cdata.name)
+            self.sendMessage(irc.RPL_INVITING, udata.nickname, cdata.name)
             udata.sendMessage("INVITE", cdata.name, to=udata.nickname, prefix=self.prefix())
             udata.invites.append(cdata.name)
     
