@@ -6,7 +6,7 @@ from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors, crypt
-import fnmatch, socket, hashlib, collections, os, sys
+import fnmatch, socket, hashlib, collections, os, sys, string
 
 class IRCUser(object):
     cap = {
@@ -23,7 +23,8 @@ class IRCUser(object):
             raise ValueError("Invalid nickname")
         # Parse USER params
         password = password[0] if password else None
-        username = user[0].replace("\x00","").replace("\r","").replace("\n","").replace(" ","").replace("@","")[:12]
+        username = filter(lambda x: x in string.ascii_letters + string.digits + "-_", user[0])[:12]
+        print(repr(username))
         # RFC 2812 allows setting modes in the USER command but RFC 1459 does not
         mode = ""
         try:
