@@ -24,7 +24,6 @@ class IRCUser(object):
         # Parse USER params
         password = password[0] if password else None
         username = filter(lambda x: x in string.ascii_letters + string.digits + "-_", user[0])[:12]
-        print(repr(username))
         # RFC 2812 allows setting modes in the USER command but RFC 1459 does not
         mode = ""
         try:

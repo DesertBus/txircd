@@ -4,7 +4,7 @@ admin_info_server: 'Host Corp: 123 example street, Seattle, WA, USA'
 app_log_dir: logs
 app_ssl_key: test.key
 app_ssl_pem: test.pem
-app_verbose: true
+app_verbose: false
 bidserv_admins:
 - fugiman
 - ashton
@@ -69,6 +69,8 @@ oper_ips:
 - I.Created.You
 oper_logins:
   admin: $p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB
+server_allowchans: []
+server_denychans: []
 server_motd: Welcome to txIRCD
 server_motd_line_length: 80
 server_name: test.txircd.com
