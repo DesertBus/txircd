@@ -632,7 +632,7 @@ class IRCUser(object):
                                 blacklist = True
                                 break
                         if blacklist:
-                            self.sendMessage(irc.ERR_CHANNOTALLOWED, params[0], ":Channel {} is forbidden.".format(params[0]))
+                            self.sendMessage(irc.ERR_CHANNOTALLOWED, c, ":Channel {} is forbidden.".format(c))
                             continue # process the rest of the channel list
                 if c in self.channels:
                     continue # don't join it twice
