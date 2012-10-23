@@ -1166,6 +1166,25 @@ class IRCUser(object):
             statsmethod()
         self.sendMessage(irc.RPL_ENDOFSTATS, params[0][0], ":End of /STATS report")
     
+    def irc_SAJOIN(self, prefix, params):
+        if not self.mode.has("o"):
+            self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - command SAJOIN requires oper privileges")
+            return
+        if not params or len(params) < 2:
+            self.sendMessage(irc.ERR_NEEDMOREPARAMS, "SAJOIN", ":Not enough parameters")
+            return
+        if params[0] not in self.ircd.users:
+            self.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick")
+            return
+        if params[1][0] not in self.ircd.channel_prefixes:
+            self.sendMessage(irc.ERR_BADCHANMASK, channel, ":Bad Channel Mask")
+            return
+        cdata = self.ircd.channels[params[1]]
+        if cdata.mode.has("k"):
+            self.ircd.users[params[0]].join(cdata.name, cdata.mode.get("k"))
+        else:
+            self.ircd.users[params[0]].join(cdata.name, None)
+    
     def irc_unknown(self, prefix, command, params):
         self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
         log.msg("--- Not Implemented Yet: {} {} {}".format(prefix, command, " ".join(params)))
