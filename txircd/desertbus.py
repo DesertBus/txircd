@@ -5,7 +5,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from txircd.user import IRCUser
 from txircd.utils import irc_lower, chunk_message, now, crypt
-import inspect, random, yaml, os
+import inspect, random, yaml, os, math
 
 NICKSERV_HELP_MESSAGE = """
 \x02NickServ\x0F matches your IRC nickname to your Donor account, allowing for a painless 
@@ -536,6 +536,9 @@ class DBUser(IRCUser):
             bid = float(params[0].lstrip("$"))
             bid = round(bid, 2)
         except:
+            self.sendMessage("NOTICE", ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
+            return
+        if math.isnan(bid) or math.isinf(bid):
             self.sendMessage("NOTICE", ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
             return
         if bid >= self.ircd.bidserv_bid_limit:
