@@ -442,6 +442,9 @@ class DBUser(IRCUser):
             self.sendMessage("NOTICE", ":That user is not connected.", prefix=self.service_prefix("NickServ"))
             return
         user = self.ircd.users[params[0]]
+        if user.nickname == self.nickname:
+            self.sendMessage("NOTICE", ":That's you!  You can't ghost yourself.", prefix=self.service_prefix("NickServ"))
+            return
         if user.nickserv_id == self.nickserv_id:
             user.irc_QUIT(None, ["Killed (GHOST command issued by {})".format(self.nickname)])
             self.sendMessage("NOTICE", ":{} has been killed.".format(user.nickname), prefix=self.service_prefix("NickServ"))
