@@ -6,7 +6,7 @@ from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors, crypt
-import fnmatch, socket, hashlib, collections, os, sys
+import fnmatch, socket, hashlib, collections, os, sys, string
 
 class IRCUser(object):
     cap = {
@@ -23,7 +23,9 @@ class IRCUser(object):
             raise ValueError("Invalid nickname")
         # Parse USER params
         password = password[0] if password else None
-        username = user[0]
+        username = filter(lambda x: x in string.ascii_letters + string.digits + "-_", user[0])[:12]
+        if not username:
+            username = "InvalidUsername"
         # RFC 2812 allows setting modes in the USER command but RFC 1459 does not
         mode = ""
         try:
@@ -42,14 +44,17 @@ class IRCUser(object):
         else:
             try:
                 hostname = socket.gethostbyaddr(ip)[0]
-                index = hostname.find(ip)
-                index = hostname.find(".") if index < 0 else index + len(ip)
-                if index < 0:
-                    # Give up
-                    hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
+                if ip == socket.gethostbyname(hostname):
+                    index = hostname.find(ip)
+                    index = hostname.find(".") if index < 0 else index + len(ip)
+                    if index < 0:
+                        # Give up
+                        hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
+                    else:
+                        mask = "tx{}".format(hashlib.md5(hostname[:index]).hexdigest()[12:20])
+                        hostname = "{}{}".format(mask, hostname[index:])
                 else:
-                    mask = "tx{}".format(hashlib.md5(hostname[:index]).hexdigest()[12:20])
-                    hostname = "{}{}".format(mask, hostname[index:])
+                    hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
             except IOError:
                 hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
         
