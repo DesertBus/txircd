@@ -425,6 +425,33 @@ class DBUser(IRCUser):
         d = self.ircd.db.runInteraction(_unregister_nickname, self.nickserv_id, nick, self.ircd.db_marker)
         d.addCallback(self.ns_dropped, nick)
         d.addErrback(self.ns_notdropped, nick)
+    
+    def nickserv_GHOST(self, prefix, params):
+        """Disconnects a user with the given nick
+        Syntax: \x02GHOST \x1Fnickname\x0F
+        
+        If the given nickname is linked with your account,
+        disconnects the user with the given nick."""
+        if not self.nickserv_id:
+            self.sendMessage("NOTICE", ":You have to be logged in to do that.", prefix=self.service_prefix("NickServ"))
+            return
+        if not params:
+            self.sendMessage("NOTICE", ":Syntax: \x02GHOST \x1Fnickname\x0F", prefix=self.service_prefix("NickServ"))
+            return
+        if params[0] not in self.ircd.users:
+            self.sendMessage("NOTICE", ":That user is not connected.", prefix=self.service_prefix("NickServ"))
+            return
+        user = self.ircd.users[params[0]]
+        if user.nickname == self.nickname:
+            self.sendMessage("NOTICE", ":That's you!  You can't ghost yourself.", prefix=self.service_prefix("NickServ"))
+            return
+        if user.nickserv_id == self.nickserv_id:
+            user.irc_QUIT(None, ["Killed (GHOST command issued by {})".format(self.nickname)])
+            self.sendMessage("NOTICE", ":{} has been killed.".format(user.nickname), prefix=self.service_prefix("NickServ"))
+        else:
+            d = self.query("SELECT nick FROM irc_nicks WHERE donor_id = {0} AND nick = {0}", self.nickserv_id, irc_lower(params[0]))
+            d.addCallback(self.ns_ghosted, user)
+            d.addErrback(self.ns_ghosterr, user.nickname)
 
     def ns_listnicks(self, result):
         message = ":Registered Nicknames: {}".format(", ".join([n[0] for n in result]))
@@ -441,6 +468,16 @@ class DBUser(IRCUser):
     
     def ns_notdropped(self, result, nick):
         self.sendMessage("NOTICE", ":Nickname '{}' \x1Fnot\x1F dropped. Ensure it belongs to you.".format(nick), prefix=self.service_prefix("NickServ"))
+    
+    def ns_ghosted(self, result, user):
+        if result:
+            user.irc_QUIT(None, ["Killed (GHOST command used by {})".format(self.nickname)])
+            self.sendMessage("NOTICE", ":{} has been killed.".format(user.nickname), prefix=self.service_prefix("NickServ"))
+        else:
+            self.sendMessage("NOTICE", ":{} does not belong to your account.".format(user.nickname), prefix=self.service_prefix("NickServ"))
+    
+    def ns_ghosterr(self, result, nick):
+        self.sendMessage("NOTICE", ":An error occurred checking the account status.", prefix=self.service_prefix("NickServ"))
     
     """ 
     NS Register was testing code and so it has been removed.
