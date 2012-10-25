@@ -1205,6 +1205,7 @@ class IRCUser(object):
             if mask in self.ircd.server_badwords:
                 del self.ircd.server_badwords[mask]
                 self.sendMessage(irc.RPL_BADWORDREMOVED, mask, ":Badword removed")
+                self.ircd.save_options()
             else:
                 self.sendMessage(irc.ERR_NOSUCHBADWORD, mask, ":No such badword")
         else:
@@ -1212,6 +1213,7 @@ class IRCUser(object):
             replacement = params[1] if len(params) > 1 else ""
             self.ircd.server_badwords[mask] = replacement
             self.sendMessage(irc.RPL_BADWORDADDED, mask, ":{}".format(replacement))
+            self.ircd.save_options()
             
     
     def irc_unknown(self, prefix, command, params):
