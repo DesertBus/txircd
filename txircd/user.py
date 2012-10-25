@@ -974,8 +974,11 @@ class IRCUser(object):
             self.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick")
         else:
             udata = self.ircd.users[params[0]]
-            udata.sendMessage("KILL", ":{} ({})".format(self.nickname, params[1]))
-            udata.irc_QUIT(None, ["Killed by {} ({})".format(self.nickname, params[1])])
+            if udata.mode.has("o"):
+                self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You cannot KILL another oper")
+            else:
+                udata.sendMessage("KILL", ":{} ({})".format(self.nickname, params[1]))
+                udata.irc_QUIT(None, ["Killed by {} ({})".format(self.nickname, params[1])])
     
     def irc_GLINE(self, prefix, params):
         if not self.mode.has("o"):
@@ -1187,11 +1190,15 @@ class IRCUser(object):
         if params[1][0] not in self.ircd.channel_prefixes:
             self.sendMessage(irc.ERR_BADCHANMASK, channel, ":Bad Channel Mask")
             return
-        cdata = self.ircd.channels[params[1]]
-        if cdata.mode.has("k"):
-            self.ircd.users[params[0]].join(cdata.name, cdata.mode.get("k"))
+        user = self.ircd.users[params[0]]
+        if user.mode.has("o"):
+            self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You cannot SAJOIN another oper")
         else:
-            self.ircd.users[params[0]].join(cdata.name, None)
+            cdata = self.ircd.channels[params[1]]
+            if cdata.mode.has("k"):
+                user.join(cdata.name, cdata.mode.get("k"))
+            else:
+                user.join(cdata.name, None)
     
     def irc_SANICK(self, prefix, params):
         if not self.mode.has("o"):
