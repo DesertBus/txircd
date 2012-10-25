@@ -66,7 +66,7 @@ class DBUser(IRCUser):
     def registered(self):
         for channel in self.channels.iterkeys():
             c = self.ircd.channels[channel]
-            mode = self.ircd.channel_auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.channel_auto_ops else "v"
+            mode = self.ircd.channel_auto_ops[self.nickserv_id] if self.nickserv_id in self.ircd.channel_auto_ops else "v"
             m, b, f = c.mode.combine("+{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
                 c.log.write("[{:02d}:{:02d}:{:02d}] {} set modes {}\n".format(now().hour, now().minute, now().second, "BidServ", m))
@@ -123,7 +123,7 @@ class DBUser(IRCUser):
         IRCUser.join(self, channel, key)
         if channel in self.channels and self.nickserv_id:
             c = self.ircd.channels[channel]
-            mode = self.ircd.channel_auto_ops[irc_lower(self.nickname)] if irc_lower(self.nickname) in self.ircd.channel_auto_ops else "v"
+            mode = self.ircd.channel_auto_ops[self.nickserv_id] if self.nickserv_id in self.ircd.channel_auto_ops else "v"
             m, b, f = c.mode.combine("+{}".format(mode),[self.nickname],c.name)
             if m: # Should always be true!?
                 if not c.log.closed:
