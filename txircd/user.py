@@ -6,7 +6,7 @@ from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
 from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors, crypt
-import fnmatch, socket, hashlib, collections, os, sys, string
+import fnmatch, socket, hashlib, collections, os, sys, string, re
 
 class IRCUser(object):
     cap = {
@@ -433,6 +433,10 @@ class IRCUser(object):
                         u.sendMessage("KICK", self.nickname, ":Channel flood triggered ({} lines in {} seconds)".format(lines, seconds), to=c.name)
                     self.leave(c.name)
                     return
+            if self.ircd.server_badwords and not self.mode.has("o"):
+                replacement = self.ircd.server_badword_replacement if self.ircd.server_badword_replacement else ""
+                for mask in self.ircd.server_badwords:
+                    message = re.sub(mask,replacement,message,flags=re.IGNORECASE)
             # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
             dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
             lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it

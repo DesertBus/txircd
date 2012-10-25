@@ -65,8 +65,11 @@ DROP TABLE IF EXISTS `txircd`.`irc_tokens` ;
 CREATE  TABLE IF NOT EXISTS `txircd`.`irc_tokens` (
   `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT ,
   `donor_id` INT(10) UNSIGNED NULL DEFAULT NULL ,
-  `token` VARCHAR(255) NOT NULL ,
-  PRIMARY KEY (`id`) )
+  `token` VARCHAR(64) NOT NULL ,
+  `ip` VARCHAR(45) NOT NULL ,
+  PRIMARY KEY (`id`) ,
+  UNIQUE INDEX `token_UNIQUE` (`token` ASC) ,
+  INDEX `ip` (`ip` ASC) )
 ENGINE = MyISAM
 DEFAULT CHARACTER SET = utf8
 COMMENT = 'IRC Tokens';
