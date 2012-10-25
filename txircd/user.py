@@ -1215,6 +1215,24 @@ class IRCUser(object):
             self.sendMessage(irc.RPL_BADWORDADDED, mask, ":{}".format(replacement))
             self.ircd.save_options()
             
+    def irc_SANICK(self, prefix, params):
+        if not self.mode.has("o"):
+            self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - command SANICK requires oper privileges")
+            return
+        if not params or len(params) < 2:
+            self.sendMessage(irc.ERR_NEEDMOREPARAMS, "SANICK", ":Not enough parameters")
+            return
+        if params[0] not in self.ircd.users:
+            self.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick")
+            return
+        if not VALID_USERNAME.match(params[1]):
+            self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[1], ":Erroneous nickname")
+            return
+        user = self.ircd.users[params[0]]
+        if user.mode.has("o"):
+            self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - you cannot SANICK another oper")
+        else:
+            user.irc_NICK(None, [params[1]])
     
     def irc_unknown(self, prefix, command, params):
         self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
