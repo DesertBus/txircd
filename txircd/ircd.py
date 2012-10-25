@@ -108,7 +108,7 @@ default_options = {
     "bidserv_space_bid": "SPACE BID",
     # Chanserv?? details
     "channel_exempt_chanops": "", # list of modes from which channel operators are exempt
-    "channel_auto_ops": {"fugiman":"q"},
+    "channel_auto_ops": {1:"q"},
     "channel_founder_mode": "q",
     # Admin details
     "admin_info_server": "Host Corp: 123 example street, Seattle, WA, USA",
