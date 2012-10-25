@@ -59,6 +59,8 @@ default_options = {
     "server_stats_public": "ou",
     "server_denychans": [],
     "server_allowchans": [],
+    "server_badword_replacement": "",
+    "server_badwords": [],
     "server_xlines_k": {},
     "server_xlines_g": {},
     "server_xlines_q": {},
