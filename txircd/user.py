@@ -434,9 +434,8 @@ class IRCUser(object):
                     self.leave(c.name)
                     return
             if self.ircd.server_badwords and not self.mode.has("o"):
-                replacement = self.ircd.server_badword_replacement if self.ircd.server_badword_replacement else ""
-                for mask in self.ircd.server_badwords:
-                    message = re.sub(mask,replacement,message,flags=re.IGNORECASE)
+                for mask, replacement in self.ircd.server_badwords.iteritems():
+                    message = re.sub(mask,replacement if replacement else "",message,flags=re.IGNORECASE)
             # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
             dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
             lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
@@ -1193,6 +1192,27 @@ class IRCUser(object):
             self.ircd.users[params[0]].join(cdata.name, cdata.mode.get("k"))
         else:
             self.ircd.users[params[0]].join(cdata.name, None)
+    
+    def irc_BADWORD(self, prefix, params):
+        if not self.mode.has("o"):
+            self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
+            return
+        if not params:
+            self.sendMessage(irc.ERR_NEEDMOREPARAMS, "BADWORD", ":Not enough parameters")
+            return
+        if params[0][0] == "-":
+            mask = params[0][1:]
+            if mask in self.ircd.server_badwords:
+                del self.ircd.server_badwords[mask]
+                self.sendMessage(irc.RPL_BADWORDREMOVED, mask, ":Badword removed")
+            else:
+                self.sendMessage(irc.ERR_NOSUCHBADWORD, mask, ":No such badword")
+        else:
+            mask = params[0]
+            replacement = params[1] if len(params) > 1 else ""
+            self.ircd.server_badwords[mask] = replacement
+            self.sendMessage(irc.RPL_BADWORDADDED, mask, ":{}".format(replacement))
+            
     
     def irc_unknown(self, prefix, command, params):
         self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
