@@ -103,7 +103,7 @@ default_options = {
     "bidserv_auction_state": 0,
     "bidserv_min_increase": 5,
     "bidserv_bids": [],
-    "bidserv_admins": ["fugiman","ashton"],
+    "bidserv_admins": [1,3],
     "bidserv_madness_levels": {1000: "Myth Busted"},
     "bidserv_space_bid": "SPACE BID",
     # Chanserv?? details

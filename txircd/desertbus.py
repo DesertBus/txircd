@@ -626,7 +626,7 @@ class DBUser(IRCUser):
         
         Starts an auction with the given item ID.
         Restricted to admins."""
-        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+        if not self.nickserv_id in self.ircd.bidserv_admins:
             self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is not None:
@@ -644,7 +644,7 @@ class DBUser(IRCUser):
         Syntax: \x02ONCE\x0F [Admin Only]
         
         Calls "Going Once!" and increments auction state."""
-        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+        if not self.nickserv_id in self.ircd.bidserv_admins:
             self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
@@ -663,7 +663,7 @@ class DBUser(IRCUser):
         Syntax: \x02TWICE\x0F [Admin Only]
         
         Calls "Going Twice!" and increments auction state."""
-        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+        if not self.nickserv_id in self.ircd.bidserv_admins:
             self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
@@ -683,7 +683,7 @@ class DBUser(IRCUser):
         
         Declares the auction as finished, cleans up variables, logs the bid
         history and adds the prize to the donors winnings in the database."""
-        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+        if not self.nickserv_id in self.ircd.bidserv_admins:
             self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
@@ -703,7 +703,7 @@ class DBUser(IRCUser):
         
         Stops the auction, awarding it to nobody, cleans
         up variables, and logs the bid history."""
-        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+        if not self.nickserv_id in self.ircd.bidserv_admins:
             self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
@@ -729,7 +729,7 @@ class DBUser(IRCUser):
         
         Purges the highest bid from the face of the earth,
         cleansing the bid pool to its prior pristine state."""
-        if not irc_lower(self.nickname) in self.ircd.bidserv_admins:
+        if not self.nickserv_id in self.ircd.bidserv_admins:
             self.sendMessage("NOTICE", ":You are not an admin.", prefix=self.service_prefix("BidServ"))
             return
         if self.ircd.bidserv_auction_item is None:
@@ -798,9 +798,8 @@ class DBUser(IRCUser):
         return log
     
     def bs_wallops(self, message):
-        for nick in self.ircd.bidserv_admins:
-            if nick in self.ircd.users:
-                u = self.ircd.users[nick]
+        for u in self.ircd.users.itervalues():
+            if u.nickserv_id in self.ircd.bidserv_admins:
                 u.sendMessage("NOTICE", message, prefix=self.service_prefix("BidServ"))
     
     def bs_broadcast(self, message):
