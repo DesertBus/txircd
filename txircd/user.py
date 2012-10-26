@@ -396,7 +396,7 @@ class IRCUser(object):
     def msg_cmd(self, cmd, params):
         if not params:
             return self.sendMessage(irc.ERR_NORECIPIENT, ":No recipient given ({})".format(cmd))
-        if len(params) < 2:
+        if len(params) < 2 or not params[1]: # Don't allow an empty string to be sent, either
             return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
         target = params[0]
         message = params[1]
