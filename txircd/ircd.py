@@ -16,7 +16,7 @@ from txircd.desertbus import DBUser
 from txircd.stats import StatFactory
 from txircd import __version__
 from txsockjs.factory import SockJSFactory
-import uuid, socket, collections, yaml, os, fnmatch, datetime
+import uuid, socket, collections, yaml, os, fnmatch, datetime, pygeoip, json
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_STATSQLINE = "217"
@@ -48,6 +48,7 @@ default_options = {
     # App details
     "app_verbose": False,
     "app_log_dir": "logs",
+    "app_geoip_database": None,
     "app_ssl_key": "test.key",
     "app_ssl_pem": "test.pem",
     # Network details
@@ -158,6 +159,7 @@ class IRCProtocol(irc.IRC):
 
     def dataReceived(self, data):
         self.factory.stats_data["bytes_in"] += len(data)
+        self.factory.stats_data["total_bytes_in"] += len(data)
         self.data += len(data)
         self.last_message = now()
         if self.pinger.running:
@@ -177,6 +179,7 @@ class IRCProtocol(irc.IRC):
     
     def handleCommand(self, command, prefix, params):
         self.factory.stats_data["lines_in"] += 1
+        self.factory.stats_data["total_lines_in"] += 1
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
             return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.factory.server_name)
@@ -188,7 +191,9 @@ class IRCProtocol(irc.IRC):
 
     def sendLine(self, line):
         self.factory.stats_data["lines_out"] += 1
+        self.factory.stats_data["total_lines_out"] += 1
         self.factory.stats_data["bytes_out"] += len(line)+2
+        self.factory.stats_data["total_bytes_out"] += len(line)+2
         log.msg("sendLine: {!r}".format(line))
         return irc.IRC.sendLine(self, line)
 
@@ -309,6 +314,10 @@ class IRCD(Factory):
             "bytes_out": 0,
             "lines_in": 0,
             "lines_out": 0,
+            "total_bytes_in": 0,
+            "total_bytes_out": 0,
+            "total_lines_in": 0,
+            "total_lines_out": 0,
             "connections": 0,
         }
         self.xlines = {
@@ -384,6 +393,8 @@ class IRCD(Factory):
         elif not self.stats_enabled and self.stats:
             self.stats.shutdown()
             self.stats = None
+        # Load geoip data
+        self.geo_db = pygeoip.GeoIP(self.app_geoip_database, pygeoip.MEMORY_CACHE) if self.app_geoip_database else None
     
     def save_options(self):
         # Serialize xlines
@@ -463,12 +474,19 @@ class IRCD(Factory):
         return c
     
     def flush_stats(self):
-        line = "{:d} {:d} {:d} {:d} {:d}".format(self.stats_data["bytes_in"],self.stats_data["bytes_out"],self.stats_data["lines_in"],self.stats_data["lines_out"],self.stats_data["connections"])
+        users = {}
+        countries = {}
+        for u in self.users.itervalues():
+            users[u.nickname] = [u.latitude, u.longitude]
+            if u.country not in countries:
+                countries[u.country] = 0
+            countries[u.country] += 1
+        line = json.dumps({"io":self.stats_data,"users":users,"countries":countries}, separators=(',',':'))
         self.stats_data["bytes_in"] = 0
         self.stats_data["bytes_out"] = 0
         self.stats_data["lines_in"] = 0
         self.stats_data["lines_out"] = 0
-        if not self.stats_log.closed:
-            self.stats_log.write(line+"\n")
+        #if not self.stats_log.closed:
+        #    self.stats_log.write(line+"\n")
         if self.stats:
             self.stats.broadcast(line+"\r\n")

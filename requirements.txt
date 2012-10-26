@@ -7,3 +7,4 @@ pyyaml==3.10
 pymysql==0.5
 pbkdf2==1.3
 txsockjs==0.1.1
+pygeoip==0.2.5
