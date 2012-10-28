@@ -404,8 +404,12 @@ class IRCUser(object):
             return self.sendMessage(irc.ERR_NORECIPIENT, ":No recipient given ({})".format(cmd))
         if len(params) < 2 or not params[1]: # Don't allow an empty string to be sent, either
             return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
-        targets = params[0].split(",")
+        targets = set(params[0].split(","))
         message = params[1]
+        if "" in targets:
+            targets.remove("")
+        if not targets:
+            return self.sendMessage(irc.ERR_NORECIPIENT, ":No recipient given ({})".format(cmd))
         for target in targets:
             if target in self.ircd.users:
                 u = self.ircd.users[target]
