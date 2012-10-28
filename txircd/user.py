@@ -404,62 +404,67 @@ class IRCUser(object):
             return self.sendMessage(irc.ERR_NORECIPIENT, ":No recipient given ({})".format(cmd))
         if len(params) < 2 or not params[1]: # Don't allow an empty string to be sent, either
             return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
-        target = params[0]
+        targets = params[0].split(",")
         message = params[1]
-        if target in self.ircd.users:
-            u = self.ircd.users[target]
-            u.sendMessage(cmd, ":{}".format(message), prefix=self.prefix())
-        elif target in self.ircd.channels or target[1:] in self.ircd.channels:
-            min_status = None
-            if target[0] not in self.ircd.channel_prefixes:
-                symbol_prefix = {v:k for k, v in self.ircd.prefix_symbols.items()}
-                if target[0] not in symbol_prefix:
-                    return self.sendMessage(irc.ERR_NOSUCHNICK, target, ":No such nick/channel")
-                min_status = symbol_prefix[target[0]]
-                target = target[1:]
-            c = self.ircd.channels[target]
-            if c.mode.has("n") and self.nickname not in c.users:
-                return self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (no external messages)")
-            if c.mode.has("m") and not self.hasAccess(c.name, "v"):
-                return self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (+m)")
-            if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
-                return self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (banned)")
-            if c.mode.has("S") and (not self.hasAccess(c.name, "h") or "S" not in self.ircd.channel_exempt_chanops):
-                message = strip_colors(message)
-            if c.mode.has("f") and (not self.hasAccess(c.name, "h") or "f" not in self.ircd.channel_exempt_chanops):
-                nowtime = epoch(now())
-                self.channels[c.name]["msg_rate"].append(nowtime)
-                lines, seconds = c.mode.get("f").split(":")
-                lines = int(lines)
-                seconds = int(seconds)
-                while self.channels[c.name]["msg_rate"] and self.channels[c.name]["msg_rate"][0] < nowtime - seconds:
-                    self.channels[c.name]["msg_rate"].pop(0)
-                if len(self.channels[c.name]["msg_rate"]) > lines:
-                    for u in c.users.itervalues():
-                        u.sendMessage("KICK", self.nickname, ":Channel flood triggered ({} lines in {} seconds)".format(lines, seconds), to=c.name)
-                    self.leave(c.name)
-                    return
-            if self.ircd.server_badwords and not self.mode.has("o"):
-                for mask, replacement in self.ircd.server_badwords.iteritems():
-                    message = re.sub(mask,replacement if replacement else "",message,flags=re.IGNORECASE)
-            # If there's no message after all of this, return an error
-            if not message:
-                self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
-                return
-            # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
-            dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
-            lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
-            msgto = set()
-            for u in c.users.itervalues():
-                if u.nickname is not self.nickname and (not min_status or u.hasAccess(c.name, min_status)):
-                    msgto.add(u)
-            for u in msgto:
-                for l in lines:
-                    u.sendMessage(cmd, ":{}".format(l), to=dest, prefix=self.prefix())
-            if not c.log.closed:
-                c.log.write("[{:02d}:{:02d}:{:02d}] {border_s}{nick}{border_e}: {message}\n".format(now().hour, now().minute, now().second, nick=self.nickname, message=message, border_s=("-" if cmd == "NOTICE" else "<"), border_e=("-" if cmd == "NOTICE" else ">")))
-        else:
-            return self.sendMessage(irc.ERR_NOSUCHNICK, target, ":No such nick/channel")
+        for target in targets:
+            if target in self.ircd.users:
+                u = self.ircd.users[target]
+                u.sendMessage(cmd, ":{}".format(message), prefix=self.prefix())
+            elif target in self.ircd.channels or target[1:] in self.ircd.channels:
+                min_status = None
+                if target[0] not in self.ircd.channel_prefixes:
+                    symbol_prefix = {v:k for k, v in self.ircd.prefix_symbols.items()}
+                    if target[0] not in symbol_prefix:
+                        self.sendMessage(irc.ERR_NOSUCHNICK, target, ":No such nick/channel")
+                        continue
+                    min_status = symbol_prefix[target[0]]
+                    target = target[1:]
+                c = self.ircd.channels[target]
+                if c.mode.has("n") and self.nickname not in c.users:
+                    self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (no external messages)")
+                    continue
+                if c.mode.has("m") and not self.hasAccess(c.name, "v"):
+                    self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (+m)")
+                    continue
+                if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
+                    self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (banned)")
+                    continue
+                if c.mode.has("S") and (not self.hasAccess(c.name, "h") or "S" not in self.ircd.channel_exempt_chanops):
+                    message = strip_colors(message)
+                if c.mode.has("f") and (not self.hasAccess(c.name, "h") or "f" not in self.ircd.channel_exempt_chanops):
+                    nowtime = epoch(now())
+                    self.channels[c.name]["msg_rate"].append(nowtime)
+                    lines, seconds = c.mode.get("f").split(":")
+                    lines = int(lines)
+                    seconds = int(seconds)
+                    while self.channels[c.name]["msg_rate"] and self.channels[c.name]["msg_rate"][0] < nowtime - seconds:
+                        self.channels[c.name]["msg_rate"].pop(0)
+                    if len(self.channels[c.name]["msg_rate"]) > lines:
+                        for u in c.users.itervalues():
+                            u.sendMessage("KICK", self.nickname, ":Channel flood triggered ({} lines in {} seconds)".format(lines, seconds), to=c.name)
+                        self.leave(c.name)
+                        continue
+                if self.ircd.server_badwords and not self.mode.has("o"):
+                    for mask, replacement in self.ircd.server_badwords.iteritems():
+                        message = re.sub(mask,replacement if replacement else "",message,flags=re.IGNORECASE)
+                # If there's no message after all of this, return an error
+                if not message:
+                    self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
+                    continue
+                # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
+                dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
+                lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
+                msgto = set()
+                for u in c.users.itervalues():
+                    if u.nickname is not self.nickname and (not min_status or u.hasAccess(c.name, min_status)):
+                        msgto.add(u)
+                for u in msgto:
+                    for l in lines:
+                        u.sendMessage(cmd, ":{}".format(l), to=dest, prefix=self.prefix())
+                if not c.log.closed:
+                    c.log.write("[{:02d}:{:02d}:{:02d}] {border_s}{nick}{border_e}: {message}\n".format(now().hour, now().minute, now().second, nick=self.nickname, message=message, border_s=("-" if cmd == "NOTICE" else "<"), border_e=("-" if cmd == "NOTICE" else ">")))
+            else:
+                self.sendMessage(irc.ERR_NOSUCHNICK, target, ":No such nick/channel")
     
     def add_to_whowas(self):
         if self.nickname not in self.ircd.whowas:
