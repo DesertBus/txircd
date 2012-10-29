@@ -79,7 +79,7 @@ class Modes(object):
                     forbidden.add(mode)
             elif mode in self.string_modes:
                 if adding:
-                    param = self.prep_param(adding, mode, params.pop(0))
+                    param = self.prep_param(adding, mode, params.pop(0) if params else None)
                 else:
                     param = False
                 if self.perm_checker(adding,mode,user,param):
@@ -89,7 +89,7 @@ class Modes(object):
                 else:
                     forbidden.add(mode)
             elif mode in self.list_modes:
-                param = self.prep_param(adding, mode, params.pop(0))
+                param = self.prep_param(adding, mode, params.pop(0) if params else None)
                 if self.perm_checker(adding,mode,user,param):
                     if mode not in self.modes:
                         self.modes[mode] = CaseInsensitiveDictionary()
