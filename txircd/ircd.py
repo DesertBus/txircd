@@ -123,7 +123,7 @@ default_options = {
 Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
 
 class IRCProtocol(irc.IRC):
-    UNREGISTERED_COMMANDS = ["PASS", "USER", "NICK", "PING", "PONG", "QUIT"]
+    UNREGISTERED_COMMANDS = ["PASS", "USER", "NICK", "PING", "PONG", "QUIT", "CAP"]
 
     def __init__(self, *args, **kwargs):
         self.type = None
@@ -262,6 +262,9 @@ class IRCProtocol(irc.IRC):
             self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.server_name)
 
     def irc_PONG(self, prefix, params):
+        pass
+    
+    def irc_CAP(self, prefix, params):
         pass
     
     def irc_QUIT(self, prefix, params):
