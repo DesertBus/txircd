@@ -21,6 +21,7 @@ To use a command, type \x02/msg BidServ \x1Fcommand\x0F. For more information on
 \x02/bid \x1FAmount\x1F \x1F[Smack Talk]\x0F.
 """.replace("\n","")
 
+""" Commented out for extra safety
 def _register_donor_account(txn, nickname, email, password, username, qmark):
     query = "INSERT INTO donors(email, password, display_name) VALUES({0},{0},{0})".format(qmark)
     txn.execute(query, (email, password, username))
@@ -28,6 +29,7 @@ def _register_donor_account(txn, nickname, email, password, username, qmark):
     query = "INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})".format(qmark)
     txn.execute(query, (id, nickname))
     return id
+"""
 
 def _unregister_nickname(txn, donor_id, nickname, qmark):
     query = "DELETE FROM irc_nicks WHERE donor_id = {0} AND nick = {0}".format(qmark)
@@ -180,8 +182,9 @@ class DBUser(IRCUser):
         self.sendMessage("NOTICE", ":Failed Authorization [{}]".format(reason), prefix=self.service_prefix("NickServ"))
     
     def ohshit(self, result):
-        log.msg("Shit!!!!")
-        self.irc_QUIT(None, ["Catastrophic System Failure"])
+        #log.msg("Shit!!!!")
+        #self.irc_QUIT(None, ["Catastrophic System Failure"])
+        self.irc_NICK(None, [self.genNick()])
         return result
     
     def genNick(self):
