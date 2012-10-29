@@ -220,7 +220,7 @@ class IRCProtocol(irc.IRC):
                     self.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nick if self.nick else "*", params[0], ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.factory.server_name)
                     return
             for mask in expired:
-                del self.ircd.xlines["Q"][mask]
+                del self.factory.xlines["Q"][mask]
             if expired:
                 self.factory.save_options()
             self.nick = params[0]
