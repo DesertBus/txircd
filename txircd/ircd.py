@@ -71,7 +71,6 @@ default_options = {
     "server_xlines_e": {},
     "server_xlines_shun": {},
     # Client details
-    "client_timeout": 180,
     "client_vhosts": {"127.0.0.1":"localhost"},
     "client_max_data": 5000, # Bytes per 5 seconds
     "client_peer_connections": 3,
