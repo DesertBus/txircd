@@ -45,9 +45,9 @@ CREATE INDEX `donor_id` ON `txircd`.`prizes` (`donor_id` ASC) ;
 -- -----------------------------------------------------
 -- Table `txircd`.`irc_nicks`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `txircd`.`irc_nicks` ;
+DROP TABLE IF EXISTS `txircd`.`ircnicks` ;
 
-CREATE  TABLE IF NOT EXISTS `txircd`.`irc_nicks` (
+CREATE  TABLE IF NOT EXISTS `txircd`.`ircnicks` (
   `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT ,
   `donor_id` INT(10) UNSIGNED NULL DEFAULT NULL ,
   `nick` VARCHAR(255) NOT NULL ,
@@ -60,9 +60,9 @@ COMMENT = 'IRC Nicks';
 -- -----------------------------------------------------
 -- Table `txircd`.`irc_tokens`
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `txircd`.`irc_tokens` ;
+DROP TABLE IF EXISTS `txircd`.`irctokens` ;
 
-CREATE  TABLE IF NOT EXISTS `txircd`.`irc_tokens` (
+CREATE  TABLE IF NOT EXISTS `txircd`.`irctokens` (
   `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT ,
   `donor_id` INT(10) UNSIGNED NULL DEFAULT NULL ,
   `token` VARCHAR(64) NOT NULL ,
