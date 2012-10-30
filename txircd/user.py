@@ -5,7 +5,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.mode import UserModes, ChannelModes
-from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors, crypt
+from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors, has_CTCP, crypt
 import fnmatch, socket, hashlib, collections, os, sys, string, re
 
 class IRCUser(object):
@@ -432,6 +432,9 @@ class IRCUser(object):
                     continue
                 if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (banned)")
+                    continue
+                if c.mode.has("C") and (not self.hasAccess(c.name, "h") or "C" not in self.ircd.channel_exempt_chanops) and has_CTCP(message):
+                    self.sendMessage(irc.ERR_NOSERVICEHOST, c.name, ":Can't send CTCP to channel (+C set)") # perhaps a new name?
                     continue
                 if c.mode.has("S") and (not self.hasAccess(c.name, "h") or "S" not in self.ircd.channel_exempt_chanops):
                     message = strip_colors(message)

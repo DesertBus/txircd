@@ -92,6 +92,19 @@ def strip_colors(msg):
         msg = msg[:color_pos] + msg[color_pos + strip_length:]
     msg = msg.replace(chr(2), "").replace(chr(29), "").replace(chr(31), "").replace(chr(15), "").replace(chr(22), "") # bold, italic, underline, plain, reverse
     return msg
+
+def has_CTCP(msg):
+    if chr(1) not in msg:
+        return False
+    findpos = msg.find(chr(1))
+    in_action = False
+    while findpos > -1:
+        if in_action or (msg[findpos+1:findpos+7] == "ACTION" and len(msg) > findpos + 7 and msg[findpos+7] == " "):
+            in_action = not in_action
+            findpos = msg.find(chr(1), findpos + 1)
+        else:
+            return True
+    return False
     
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
