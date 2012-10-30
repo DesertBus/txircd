@@ -26,13 +26,13 @@ def _register_donor_account(txn, nickname, email, password, username, qmark):
     query = "INSERT INTO donors(email, password, display_name) VALUES({0},{0},{0})".format(qmark)
     txn.execute(query, (email, password, username))
     id = txn.lastrowid
-    query = "INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})".format(qmark)
+    query = "INSERT INTO ircnicks(donor_id, nick) VALUES({0},{0})".format(qmark)
     txn.execute(query, (id, nickname))
     return id
 """
 
 def _unregister_nickname(txn, donor_id, nickname, qmark):
-    query = "DELETE FROM irc_nicks WHERE donor_id = {0} AND nick = {0}".format(qmark)
+    query = "DELETE FROM ircnicks WHERE donor_id = {0} AND nick = {0}".format(qmark)
     txn.execute(query, (donor_id, nickname))
     return txn.rowcount
     
@@ -201,7 +201,7 @@ class DBUser(IRCUser):
         return d
     
     def token(self, password):
-        d = self.query("SELECT donor_id FROM irc_tokens WHERE token = {0}", password)
+        d = self.query("SELECT donor_id FROM irctokens WHERE token = {0}", password)
         d.addCallback(self.loadDonorInfo)
         d.addErrback(self.failedAuth, "Internal Server Error")
         return d
@@ -212,7 +212,7 @@ class DBUser(IRCUser):
             self.auth_timer = None
         if irc_lower(self.nickname).startswith(irc_lower(self.ircd.nickserv_guest_prefix)):
             return # Don't check guest nicks
-        d = self.query("SELECT donor_id FROM irc_nicks WHERE nick = {0}", irc_lower(self.nickname))
+        d = self.query("SELECT donor_id FROM ircnicks WHERE nick = {0}", irc_lower(self.nickname))
         d.addCallback(self.beginVerify, self.nickname)
         d.addErrback(self.ohshit)
         return d
@@ -264,7 +264,7 @@ class DBUser(IRCUser):
             self.auth_timer = reactor.callLater(self.ircd.nickserv_timeout, self.changeNick, id, nickname)
         elif self.nickserv_id:
             # Try to register the nick
-            d = self.query("SELECT nick FROM irc_nicks WHERE donor_id = {0}", self.nickserv_id)
+            d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", self.nickserv_id)
             d.addCallback(self.registerNick, nickname)
             d.addErrback(self.failedRegisterNick, nickname)
     
@@ -298,7 +298,7 @@ class DBUser(IRCUser):
             message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.nickserv_limit, nickname, nicklist)
             self.sendMessage("NOTICE", message, prefix=self.service_prefix("NickServ"))
         else:
-            d = self.query("INSERT INTO irc_nicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, irc_lower(nickname))
+            d = self.query("INSERT INTO ircnicks(donor_id, nick) VALUES({0},{0})", self.nickserv_id, irc_lower(nickname))
             d.addCallback(self.successRegisterNick, nickname)
             d.addErrback(self.failedRegisterNick, nickname)
     
@@ -407,7 +407,7 @@ class DBUser(IRCUser):
         if not self.nickserv_id:
             self.sendMessage("NOTICE", ":You have to be logged in to see your registered nicknames.", prefix=self.service_prefix("NickServ"))
             return
-        d = self.query("SELECT nick FROM irc_nicks WHERE donor_id = {0}", self.nickserv_id)
+        d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", self.nickserv_id)
         d.addCallback(self.ns_listnicks)
         d.addErrback(self.ns_listnickserr)
     
@@ -452,7 +452,7 @@ class DBUser(IRCUser):
             user.irc_QUIT(None, ["Killed (GHOST command issued by {})".format(self.nickname)])
             self.sendMessage("NOTICE", ":{} has been killed.".format(user.nickname), prefix=self.service_prefix("NickServ"))
         else:
-            d = self.query("SELECT nick FROM irc_nicks WHERE donor_id = {0} AND nick = {0}", self.nickserv_id, irc_lower(params[0]))
+            d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0} AND nick = {0}", self.nickserv_id, irc_lower(params[0]))
             d.addCallback(self.ns_ghosted, user)
             d.addErrback(self.ns_ghosterr, user.nickname)
 
