@@ -410,6 +410,12 @@ class IRCUser(object):
             targets.remove("")
         if not targets:
             return self.sendMessage(irc.ERR_NORECIPIENT, ":No recipient given ({})".format(cmd))
+        if self.ircd.server_badwords and not self.mode.has("o"):
+            for mask, replacement in self.ircd.server_badwords.iteritems():
+                message = re.sub(mask,replacement if replacement else "",message,flags=re.IGNORECASE)
+        # If there's no message after all of this, return an error
+        if not message:
+            return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
         for target in targets:
             if target in self.ircd.users:
                 u = self.ircd.users[target]
@@ -424,6 +430,20 @@ class IRCUser(object):
                     min_status = symbol_prefix[target[0]]
                     target = target[1:]
                 c = self.ircd.channels[target]
+                # Detect banned/exempt if user isn't actually in the channel
+                if c.name not in self.channels:
+                    hostmask = irc_lower(self.prefix())
+                    banned = False
+                    exempt = False
+                    if c.modes.has("b"):
+                        for pattern in c.modes.get("b").iterkeys():
+                            if fnmatch.fnmatch(hostmask, pattern):
+                                banned = True
+                    if c.modes.has("e"):
+                        for pattern in c.modes.get("e").iterkeys():
+                            if fnmatch.fnmatch(hostmask, pattern):
+                                exempt = True
+                    self.channels[c.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
                 if c.mode.has("n") and self.nickname not in c.users:
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (no external messages)")
                     continue
@@ -451,13 +471,6 @@ class IRCUser(object):
                             u.sendMessage("KICK", self.nickname, ":Channel flood triggered ({} lines in {} seconds)".format(lines, seconds), to=c.name)
                         self.leave(c.name)
                         continue
-                if self.ircd.server_badwords and not self.mode.has("o"):
-                    for mask, replacement in self.ircd.server_badwords.iteritems():
-                        message = re.sub(mask,replacement if replacement else "",message,flags=re.IGNORECASE)
-                # If there's no message after all of this, return an error
-                if not message:
-                    self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
-                    continue
                 # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
                 dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
                 lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
@@ -606,7 +619,8 @@ class IRCUser(object):
                 if not cdata.log.closed:
                     cdata.log.write("[{:02d}:{:02d}:{:02d}] {} is now known as {}\n".format(now().hour, now().minute, now().second, oldnick, newnick))
             for u in tomsg:
-                self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
+                if u in self.ircd.users: # When wouldn't this be true? FIX IT!
+                    self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
     
     def irc_USER(self, prefix, params):
         self.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)")
