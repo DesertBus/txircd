@@ -48,6 +48,7 @@ default_options = {
     # App details
     "app_verbose": False,
     "app_log_dir": "logs",
+    "app_ip_log": "ips.json",
     "app_geoip_database": None,
     "app_ssl_key": "test.key",
     "app_ssl_pem": "test.pem",
@@ -321,6 +322,7 @@ class IRCD(Factory):
             "total_lines_in": 0,
             "total_lines_out": 0,
             "connections": 0,
+            "total_connections": 0
         }
         self.xlines = {
             "G": CaseInsensitiveDictionary(),
@@ -342,6 +344,17 @@ class IRCD(Factory):
         if not options:
             options = {}
         self.load_options(options)
+        
+        
+        if self.app_ip_log:
+            try:
+                with open(self.app_ip_log) as f:
+                    self.unique_ips = set(json.loads(f.read()))
+                    self.stats_data["total_connections"] = len(self.unique_ips)
+            except:
+                self.unique_ips = set()
+        else:
+            self.unique_ips = set()
         
         logfile = "{}/{}".format(self.app_log_dir,"stats")
         if not os.path.exists(logfile):
@@ -452,6 +465,11 @@ class IRCD(Factory):
     def buildProtocol(self, addr):
         self.stats_data["connections"] += 1
         ip = addr.host
+        self.unique_ips.add(ip)
+        self.stats_data["total_connections"] = len(self.unique_ips)
+        if self.app_ip_log:
+            with open(self.app_ip_log,"w") as f:
+                f.write(json.dumps(list(self.unique_ips), separators=(',',':')))
         conn = self.peerConnections.get(ip,0)
         max = self.client_peer_exempt[ip] if ip in self.client_peer_exempt else self.client_peer_connections
         if max and conn >= max:
@@ -478,12 +496,18 @@ class IRCD(Factory):
     def flush_stats(self):
         users = {}
         countries = {}
+        uptime = now() - self.created
         for u in self.users.itervalues():
             users[u.nickname] = [u.latitude, u.longitude]
             if u.country not in countries:
                 countries[u.country] = 0
             countries[u.country] += 1
-        line = json.dumps({"io":self.stats_data,"users":users,"countries":countries}, separators=(',',':'))
+        line = json.dumps({
+            "io":self.stats_data,
+            "users":users,
+            "countries":countries,
+            "uptime": "{}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime))
+        }, separators=(',',':'))
         self.stats_data["bytes_in"] = 0
         self.stats_data["bytes_out"] = 0
         self.stats_data["lines_in"] = 0
