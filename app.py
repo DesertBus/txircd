@@ -3,7 +3,19 @@ from twisted.internet import reactor, ssl
 from twisted.python import log
 from txircd.ircd import IRCD, default_options
 from txsockjs.factory import SockJSFactory
+from OpenSSL import SSL
 import yaml, collections, sys
+
+# A direct copy of DefaultOpenSSLContext factory as of Twisted 12.2.0
+# The only difference is using ctx.use_certificate_chain_file instead of ctx.use_certificate_file
+class ChainedOpenSSLContextFactory(ssl.DefaultOpenSSLContextFactory):
+    def cacheContext(self):
+        if self._context is None:
+            ctx = self._contextFactory(self.sslmethod)
+            ctx.set_options(SSL.OP_NO_SSLv2)
+            ctx.use_certificate_chain_file(self.certificateFileName)
+            ctx.use_privatekey_file(self.privateKeyFileName)
+            self._context = ctx
 
 if __name__ == "__main__":
     # Copy the defaults
@@ -47,7 +59,7 @@ if __name__ == "__main__":
     if options["app_verbose"] or args.verbose:
         log.startLogging(args.log_file)
     ircd = IRCD(args.config, options)
-    ssl_cert = ssl.DefaultOpenSSLContextFactory(options["app_ssl_key"],options["app_ssl_pem"])
+    ssl_cert = ChainedOpenSSLContextFactory(options["app_ssl_key"],options["app_ssl_pem"])
     if options["server_port_tcp"]:
         if isinstance(options["server_port_tcp"], collections.Sequence):
             for port in options["server_port_tcp"]:
