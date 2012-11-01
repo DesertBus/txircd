@@ -107,6 +107,7 @@ default_options = {
     "bidserv_admins": [1,3],
     "bidserv_madness_levels": {1000: "Myth Busted"},
     "bidserv_space_bid": "SPACE BID",
+    "bidserv_kill_reason": "Being a dick",
     # Chanserv?? details
     "channel_exempt_chanops": "", # list of modes from which channel operators are exempt
     "channel_auto_ops": {1:"q"},
