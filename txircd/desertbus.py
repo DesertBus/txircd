@@ -579,7 +579,9 @@ class DBUser(IRCUser):
             self.sendMessage("NOTICE", ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
             return
         if math.isnan(bid) or math.isinf(bid):
-            self.sendMessage("NOTICE", ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
+            #self.sendMessage("NOTICE", ":Bid amount must be a valid decimal.", prefix=self.service_prefix("BidServ"))
+            self.sendMessage("KILL", ":{} ({})".format("BidServ", self.ircd.bidserv_kill_reason))
+            self.irc_QUIT(None, ["Killed by {} ({})".format("BidServ", self.ircd.bidserv_kill_reason)])
             return
         if bid >= self.ircd.bidserv_bid_limit:
             self.sendMessage("NOTICE", ":Let's be honest, you don't really have ${:,.2f} do you?".format(bid), prefix=self.service_prefix("BidServ"))
