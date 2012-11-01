@@ -430,6 +430,9 @@ class IRCUser(object):
                     min_status = symbol_prefix[target[0]]
                     target = target[1:]
                 c = self.ircd.channels[target]
+                if c.mode.has("n") and self.nickname not in c.users:
+                    self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (no external messages)")
+                    continue
                 # Detect banned/exempt if user isn't actually in the channel
                 if c.name not in self.channels:
                     hostmask = irc_lower(self.prefix())
@@ -444,9 +447,6 @@ class IRCUser(object):
                             if fnmatch.fnmatch(hostmask, pattern):
                                 exempt = True
                     self.channels[c.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
-                if c.mode.has("n") and self.nickname not in c.users:
-                    self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (no external messages)")
-                    continue
                 if c.mode.has("m") and not self.hasAccess(c.name, "v"):
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (+m)")
                     continue
