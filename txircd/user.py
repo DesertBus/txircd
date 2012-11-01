@@ -413,7 +413,7 @@ class IRCUser(object):
         if self.ircd.server_badwords and not self.mode.has("o"):
             for mask, replacement in self.ircd.server_badwords.iteritems():
                 message = re.sub(mask,replacement if replacement else "",message,flags=re.IGNORECASE)
-        # If there's no message after all of this, return an error
+        # If there's no message after substitution, return an error
         if not message:
             return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
         for target in targets:
@@ -471,6 +471,9 @@ class IRCUser(object):
                             u.sendMessage("KICK", self.nickname, ":Channel flood triggered ({} lines in {} seconds)".format(lines, seconds), to=c.name)
                         self.leave(c.name)
                         continue
+                # If there's no message after all of this, return an error
+                if not message:
+                    return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
                 # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
                 dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
                 lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
