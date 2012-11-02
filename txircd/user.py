@@ -107,7 +107,7 @@ class IRCUser(object):
         self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.network_name, self.ircd.version))
         self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
         self.sendMessage(irc.RPL_MYINFO, self.ircd.network_name, self.ircd.version, self.mode.allowed(), chanmodes) # usermodes & channel modes
-        self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), ":are supported by this server")
+        self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANNELLEN=64", "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), "TOPICLEN=316", ":are supported by this server")
         self.send_motd()
     
     def checkData(self, data):
@@ -321,7 +321,7 @@ class IRCUser(object):
     def join(self, channel, key):
         if channel[0] not in self.ircd.channel_prefixes:
             return self.sendMessage(irc.ERR_BADCHANMASK, channel, ":Bad Channel Mask")
-        cdata = self.ircd.channels[channel]
+        cdata = self.ircd.channels[channel[:64]] # Limit channel names to 64 characters
         cmodes = cdata.mode
         hostmask = irc_lower(self.prefix())
         banned = False
@@ -787,7 +787,7 @@ class IRCUser(object):
                 self.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not in that channel")
             elif not cdata.mode.has("t") or self.hasAccess(params[0],"h") or self.mode.has("o"):
                 # If the channel is +t and the user has a rank that is halfop or higher, allow the topic change
-                cdata.topic["message"] = params[1]
+                cdata.topic["message"] = params[1][:316] # With the longest possible hostmask and a channel name length of 64, the maximum safe topic length is 316
                 cdata.topic["author"] = self.nickname
                 cdata.topic["created"] = now()
                 for u in cdata.users.itervalues():
