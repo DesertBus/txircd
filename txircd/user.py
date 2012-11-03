@@ -551,6 +551,11 @@ class IRCUser(object):
     def stats_S(self):
         self.stats_xline_list("SHUN", irc.RPL_STATSSHUN)
     
+    def stats_B(self):
+        if self.ircd.server_badwords:
+            for mask, replacement in self.ircd.server_badwords.iteritems():
+                self.sendMessage(irc.RPL_STATS, "B", ":{} {}".format(mask, replacement))
+    
     #======================
     #== Protocol Methods ==
     #======================
