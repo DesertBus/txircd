@@ -433,24 +433,22 @@ class IRCUser(object):
                 if c.mode.has("n") and self.nickname not in c.users:
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (no external messages)")
                     continue
-                # Detect banned/exempt if user isn't actually in the channel
-                if c.name not in self.channels:
-                    hostmask = irc_lower(self.prefix())
-                    banned = False
-                    exempt = False
-                    if c.modes.has("b"):
-                        for pattern in c.modes.get("b").iterkeys():
-                            if fnmatch.fnmatch(hostmask, pattern):
-                                banned = True
-                    if c.modes.has("e"):
-                        for pattern in c.modes.get("e").iterkeys():
-                            if fnmatch.fnmatch(hostmask, pattern):
-                                exempt = True
-                    self.channels[c.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
                 if c.mode.has("m") and not self.hasAccess(c.name, "v"):
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (+m)")
                     continue
-                if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
+                banned = self.channels[c.name]["banned"] if c.name in self.channels else False
+                exempt = self.channels[c.name]["exempt"] if c.name in self.channels else False
+                if c.name not in self.channels: # Detect banned/exempt if user isn't actually in the channel
+                    hostmask = irc_lower(self.prefix())
+                    if c.mode.has("b"):
+                        for pattern in c.mode.get("b").iterkeys():
+                            if fnmatch.fnmatch(hostmask, pattern):
+                                banned = True
+                    if c.mode.has("e"):
+                        for pattern in c.mode.get("e").iterkeys():
+                            if fnmatch.fnmatch(hostmask, pattern):
+                                exempt = True
+                if banned and not (exempt or self.mode.has("o") or self.hasAccess(c.name, "v")):
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (banned)")
                     continue
                 if c.mode.has("C") and (not self.hasAccess(c.name, "h") or "C" not in self.ircd.channel_exempt_chanops) and has_CTCP(message):
