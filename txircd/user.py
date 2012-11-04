@@ -618,7 +618,8 @@ class IRCUser(object):
                     for pattern in cdata.mode.get("e").iterkeys():
                         if fnmatch.fnmatch(hostmask, pattern):
                             exempt = True
-                self.channels[c] = {"banned":banned,"exempt":exempt}
+                self.channels[c]["banned"] = banned
+                self.channels[c]["exempt"] = exempt
                 # Add channel members to message queue
                 for u in self.ircd.channels[c].users.iterkeys():
                     tomsg.add(u)
