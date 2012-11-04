@@ -229,7 +229,7 @@ class ChannelModes(Modes):
                     if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
                         u.channels[self.parent.name]["banned"] = adding
             elif mode == "e":
-                for u in self.parent["users"].itervalues():
+                for u in self.parent.users.itervalues():
                     if fnmatch.fnmatch(irc_lower(u.prefix()), hostmask):
                         u.channels[self.parent.name]["exempt"] = adding
             return hostmask
