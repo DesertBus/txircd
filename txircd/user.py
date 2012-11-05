@@ -628,6 +628,8 @@ class IRCUser(object):
             for u in tomsg:
                 if u in self.ircd.users: # When wouldn't this be true? FIX IT!
                     self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
+                else:
+                    print "WHAT: {} {} {}".format(oldnick, newnick, u)
     
     def irc_USER(self, prefix, params):
         self.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)")
