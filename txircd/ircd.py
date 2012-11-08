@@ -19,6 +19,7 @@ from txsockjs.factory import SockJSFactory
 import uuid, socket, collections, yaml, os, fnmatch, datetime, pygeoip, json
 
 # Add additional numerics to complement the ones in the RFC
+irc.RPL_STATS = "210"
 irc.RPL_STATSQLINE = "217"
 irc.RPL_STATSGLINE = "223"
 irc.RPL_STATSKLINE = "223"

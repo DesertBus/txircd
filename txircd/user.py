@@ -107,7 +107,7 @@ class IRCUser(object):
         self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.network_name, self.ircd.version))
         self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
         self.sendMessage(irc.RPL_MYINFO, self.ircd.network_name, self.ircd.version, self.mode.allowed(), chanmodes) # usermodes & channel modes
-        self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), ":are supported by this server")
+        self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANNELLEN=64", "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), "TOPICLEN=316", ":are supported by this server")
         self.send_motd()
     
     def checkData(self, data):
@@ -321,7 +321,7 @@ class IRCUser(object):
     def join(self, channel, key):
         if channel[0] not in self.ircd.channel_prefixes:
             return self.sendMessage(irc.ERR_BADCHANMASK, channel, ":Bad Channel Mask")
-        cdata = self.ircd.channels[channel]
+        cdata = self.ircd.channels[channel[:64]] # Limit channel names to 64 characters
         cmodes = cdata.mode
         hostmask = irc_lower(self.prefix())
         banned = False
@@ -413,7 +413,7 @@ class IRCUser(object):
         if self.ircd.server_badwords and not self.mode.has("o"):
             for mask, replacement in self.ircd.server_badwords.iteritems():
                 message = re.sub(mask,replacement if replacement else "",message,flags=re.IGNORECASE)
-        # If there's no message after all of this, return an error
+        # If there's no message after substitution, return an error
         if not message:
             return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
         for target in targets:
@@ -430,27 +430,25 @@ class IRCUser(object):
                     min_status = symbol_prefix[target[0]]
                     target = target[1:]
                 c = self.ircd.channels[target]
-                # Detect banned/exempt if user isn't actually in the channel
-                if c.name not in self.channels:
-                    hostmask = irc_lower(self.prefix())
-                    banned = False
-                    exempt = False
-                    if c.modes.has("b"):
-                        for pattern in c.modes.get("b").iterkeys():
-                            if fnmatch.fnmatch(hostmask, pattern):
-                                banned = True
-                    if c.modes.has("e"):
-                        for pattern in c.modes.get("e").iterkeys():
-                            if fnmatch.fnmatch(hostmask, pattern):
-                                exempt = True
-                    self.channels[c.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
                 if c.mode.has("n") and self.nickname not in c.users:
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (no external messages)")
                     continue
                 if c.mode.has("m") and not self.hasAccess(c.name, "v"):
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (+m)")
                     continue
-                if self.channels[c.name]["banned"] and not (self.channels[c.name]["exempt"] or self.mode.has("o") or self.hasAccess(c.name, "v")):
+                banned = self.channels[c.name]["banned"] if c.name in self.channels else False
+                exempt = self.channels[c.name]["exempt"] if c.name in self.channels else False
+                if c.name not in self.channels: # Detect banned/exempt if user isn't actually in the channel
+                    hostmask = irc_lower(self.prefix())
+                    if c.mode.has("b"):
+                        for pattern in c.mode.get("b").iterkeys():
+                            if fnmatch.fnmatch(hostmask, pattern):
+                                banned = True
+                    if c.mode.has("e"):
+                        for pattern in c.mode.get("e").iterkeys():
+                            if fnmatch.fnmatch(hostmask, pattern):
+                                exempt = True
+                if banned and not (exempt or self.mode.has("o") or self.hasAccess(c.name, "v")):
                     self.sendMessage(irc.ERR_CANNOTSENDTOCHAN, c.name, ":Cannot send to channel (banned)")
                     continue
                 if c.mode.has("C") and (not self.hasAccess(c.name, "h") or "C" not in self.ircd.channel_exempt_chanops) and has_CTCP(message):
@@ -471,6 +469,9 @@ class IRCUser(object):
                             u.sendMessage("KICK", self.nickname, ":Channel flood triggered ({} lines in {} seconds)".format(lines, seconds), to=c.name)
                         self.leave(c.name)
                         continue
+                # If there's no message after all of this, return an error
+                if not message:
+                    return self.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
                 # store the destination rather than generating it for everyone in the channel; show the entire destination of the message to recipients
                 dest = "{}{}".format(self.ircd.prefix_symbols[min_status] if min_status else "", c.name)
                 lines = chunk_message(message, 505-len(cmd)-len(dest)-len(self.prefix())) # Split the line up before sending it
@@ -548,6 +549,11 @@ class IRCUser(object):
     def stats_S(self):
         self.stats_xline_list("SHUN", irc.RPL_STATSSHUN)
     
+    def stats_B(self):
+        if self.ircd.server_badwords:
+            for mask, replacement in self.ircd.server_badwords.iteritems():
+                self.sendMessage(irc.RPL_STATS, "B", ":{} {}".format(mask, replacement))
+    
     #======================
     #== Protocol Methods ==
     #======================
@@ -612,7 +618,8 @@ class IRCUser(object):
                     for pattern in cdata.mode.get("e").iterkeys():
                         if fnmatch.fnmatch(hostmask, pattern):
                             exempt = True
-                self.channels[c] = {"banned":banned,"exempt":exempt}
+                self.channels[c]["banned"] = banned
+                self.channels[c]["exempt"] = exempt
                 # Add channel members to message queue
                 for u in self.ircd.channels[c].users.iterkeys():
                     tomsg.add(u)
@@ -621,6 +628,8 @@ class IRCUser(object):
             for u in tomsg:
                 if u in self.ircd.users: # When wouldn't this be true? FIX IT!
                     self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
+                else:
+                    print "WHAT: {} {} {}".format(oldnick, newnick, u)
     
     def irc_USER(self, prefix, params):
         self.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)")
@@ -784,7 +793,7 @@ class IRCUser(object):
                 self.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not in that channel")
             elif not cdata.mode.has("t") or self.hasAccess(params[0],"h") or self.mode.has("o"):
                 # If the channel is +t and the user has a rank that is halfop or higher, allow the topic change
-                cdata.topic["message"] = params[1]
+                cdata.topic["message"] = params[1][:316] # With the longest possible hostmask and a channel name length of 64, the maximum safe topic length is 316
                 cdata.topic["author"] = self.nickname
                 cdata.topic["created"] = now()
                 for u in cdata.users.itervalues():
