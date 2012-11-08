@@ -128,6 +128,7 @@ class IRCProtocol(irc.IRC):
     UNREGISTERED_COMMANDS = ["PASS", "USER", "NICK", "PING", "PONG", "QUIT", "CAP"]
 
     def __init__(self, *args, **kwargs):
+        self.dead = False
         self.type = None
         self.password = None
         self.nick = None
@@ -159,6 +160,8 @@ class IRCProtocol(irc.IRC):
             self.factory.save_options()
 
     def dataReceived(self, data):
+        if self.dead:
+            return
         self.factory.stats_data["bytes_in"] += len(data)
         self.factory.stats_data["total_bytes_in"] += len(data)
         self.data += len(data)
@@ -175,6 +178,7 @@ class IRCProtocol(irc.IRC):
     def ping(self):
         if (now() - self.last_message).total_seconds() > self.factory.client_timeout_delay:
             self.transport.loseConnection()
+            self.connectionLost(None)
         else:
             self.sendMessage("PING",":{}".format(self.factory.server_name))
     
@@ -191,6 +195,8 @@ class IRCProtocol(irc.IRC):
         
 
     def sendLine(self, line):
+        if self.dead:
+            return
         self.factory.stats_data["lines_out"] += 1
         self.factory.stats_data["total_lines_out"] += 1
         self.factory.stats_data["bytes_out"] += len(line)+2
@@ -273,6 +279,9 @@ class IRCProtocol(irc.IRC):
         self.transport.loseConnection()
         
     def connectionLost(self, reason):
+        if self.dead:
+            return
+        self.dead = True
         self.factory.unregisterProtocol(self)
         if self.type:
             self.type.connectionLost(reason)
@@ -300,6 +309,7 @@ class IRCD(Factory):
 
     def __init__(self, config, options = None):
         reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
+        self.dead = False
         
         self.config = config
         self.version = "txircd.{}".format(__version__)
@@ -461,10 +471,12 @@ class IRCD(Factory):
         self.save_options()
         # Return deferreds
         log.msg("Waiting on deferreds...")
+        self.dead = True
         return DeferredList(deferreds)
     
     def buildProtocol(self, addr):
-        self.stats_data["connections"] += 1
+        if self.dead:
+            return None
         ip = addr.host
         self.unique_ips.add(ip)
         self.stats_data["total_connections"] = len(self.unique_ips)
@@ -475,6 +487,7 @@ class IRCD(Factory):
         max = self.client_peer_exempt[ip] if ip in self.client_peer_exempt else self.client_peer_connections
         if max and conn >= max:
             return None
+        self.stats_data["connections"] += 1
         self.peerConnections[ip] = conn + 1
         return Factory.buildProtocol(self, addr)
 

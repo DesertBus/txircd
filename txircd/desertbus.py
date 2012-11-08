@@ -754,6 +754,7 @@ class DBUser(IRCUser):
         self.bs_sold(None)
     
     def bs_sold(self, result):
+        item = self.ircd.bidserv_auction_item
         name = self.ircd.bidserv_auction_name
         bid = self.ircd.bidserv_bids[-1]
         try:
@@ -768,6 +769,9 @@ class DBUser(IRCUser):
         self.ircd.bidserv_bids = []
         self.ircd.save_options() # Save auction state. Just in case.
         self.bs_broadcast(":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(name, bid["nick"],bid["bid"],self.nickname))
+        if bid["nick"] in self.ircd.users:
+            u = self.ircd.users[bid["nick"]]
+            u.socket.sendMessage("NOTICE", ":Congratulations! You won \"{}\". Please log in to your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(name,item), prefix=self.service_prefix("BidServ"))
     
     def bs_failstart(self, result, id):
         self.bs_wallops(":Error finding item ID #{}".format(id))
