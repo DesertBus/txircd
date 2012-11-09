@@ -10,7 +10,8 @@ import fnmatch, socket, hashlib, collections, os, sys, string, re
 
 class IRCUser(object):
 	cap = {
-		"multi-prefix": False
+		"multi-prefix": False,
+		"userhost-in-names": False
 	}
 	
 	def __init__(self, parent, user, password, nick):
