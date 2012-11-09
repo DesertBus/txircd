@@ -9,6 +9,7 @@ class IRCChannel(object):
 		self.topicTime = now()
 		self.mode = {}
 		self.users = CaseInsensitiveDictionary()
+		self.metadata = {}
 	
 	def name(self):
 		return self.name
@@ -26,3 +27,11 @@ class IRCChannel(object):
 	
 	def unsetMode(self, modeList):
 		pass
+	
+	def getMetadata(self, key):
+		if key in self.metadata:
+			return self.metadata[key]
+		return ""
+	
+	def setMetadata(self, key, value):
+		self.metadata[key] = value
