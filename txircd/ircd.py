@@ -123,8 +123,6 @@ default_options = {
 	"stats_port_web": 43790,
 }
 
-Channel = collections.namedtuple("Channel",["name","created","topic","users","mode","log"])
-
 class IRCProtocol(irc.IRC):
 	UNREGISTERED_COMMANDS = ["PASS", "USER", "NICK", "PING", "PONG", "QUIT", "CAP"]
 
