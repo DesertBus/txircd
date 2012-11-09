@@ -8,7 +8,7 @@ from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, DefaultCaseInsensitiveDictionary, VALID_USERNAME, epoch, now, irc_lower, parse_duration, build_duration
+from txircd.utils import CaseInsensitiveDictionary, VALID_USERNAME, epoch, now, irc_lower, parse_duration, build_duration
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
@@ -319,7 +319,7 @@ class IRCD(Factory):
 		self.servers = CaseInsensitiveDictionary()
 		self.users = CaseInsensitiveDictionary()
 		self.whowas = CaseInsensitiveDictionary()
-		self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
+		self.channels = CaseInsensitiveDictionary()
 		self.peerConnections = {}
 		self.db = None
 		self.stats = None
@@ -498,15 +498,6 @@ class IRCD(Factory):
 		self.peerConnections[peerHost] -= 1
 		if self.peerConnections[peerHost] == 0:
 			del self.peerConnections[peerHost]
-	
-	def ChannelFactory(self, name):
-		logfile = "{}/{}".format(self.app_log_dir,irc_lower(name))
-		if not os.path.exists(logfile):
-			os.makedirs(logfile)
-		c = Channel(name,now(),{"message":None,"author":"","created":now()},CaseInsensitiveDictionary(),ChannelModes(self,None),DailyLogFile("log",logfile))
-		c.mode.parent = c
-		c.mode.combine("nt",[],name)
-		return c
 	
 	def flush_stats(self):
 		users = {}
