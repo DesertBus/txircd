@@ -14,7 +14,7 @@ class Module(object):
 		pass
 	def onTopicChange(self, channel, user, topic):
 		pass
-	def onConnect(self, ip):
+	def onConnect(self, connection):
 		pass
 	def onRegister(self, user):
 		pass
