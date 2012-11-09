@@ -134,26 +134,6 @@ class CaseInsensitiveDictionary(MutableMapping):
 	def __setitem__(self, key, value):
 		self._data[irc_lower(key)] = value
 
-
-class DefaultCaseInsensitiveDictionary(CaseInsensitiveDictionary):
-	def __init__(self, default_factory):
-		self._default_factory = default_factory
-		super(DefaultCaseInsensitiveDictionary, self).__init__()
-
-	def __contains__(self, key):
-		try:
-			super(DefaultCaseInsensitiveDictionary, self).__getitem__(key)
-		except KeyError:
-			return False
-		return True
-
-	def __getitem__(self, key):
-		try:
-			return super(DefaultCaseInsensitiveDictionary, self).__getitem__(key)
-		except KeyError:
-			value = self[key] = self._default_factory(key)
-			return value
-
 # Duplicate PBKDF2
 
 # Python 2.1 thru 3.2 compatibility
