@@ -12,7 +12,6 @@ from txircd.utils import CaseInsensitiveDictionary, VALID_USERNAME, epoch, now, 
 from txircd.mode import ChannelModes
 from txircd.server import IRCServer
 from txircd.service import IRCService
-from txircd.desertbus import DBUser
 from txircd.stats import StatFactory
 from txircd import __version__
 from txsockjs.factory import SockJSFactory
@@ -293,7 +292,7 @@ class IRCD(Factory):
 	protocol = IRCProtocol
 	channel_prefixes = "#"
 	types = {
-		"user": DBUser,
+		"user": IRCUser,
 		"server": IRCServer,
 		"service": IRCService,
 	}
