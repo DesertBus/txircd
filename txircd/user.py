@@ -9,10 +9,6 @@ from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, 
 import fnmatch, socket, hashlib, collections, os, sys, string, re
 
 class IRCUser(object):
-	cap = {
-		"multi-prefix": False,
-		"userhost-in-names": False
-	}
 	
 	def __init__(self, parent, user, password, nick):
 		if nick in parent.factory.users:
@@ -296,6 +292,7 @@ class IRCUser(object):
 	def report_names(self, channel):
 		cdata = self.ircd.channels[channel]
 		userlist = []
+		"""
 		if self.cap["multi-prefix"]:
 			for user in cdata.users.itervalues():
 				ranks = user.status(cdata.name)
@@ -305,6 +302,7 @@ class IRCUser(object):
 				name += user.nickname
 				userlist.append(name)
 		else:
+		"""
 			for user in cdata.users.itervalues():
 				ranks = user.status(cdata.name)
 				if ranks:
