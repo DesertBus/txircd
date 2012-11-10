@@ -303,12 +303,12 @@ class IRCUser(object):
 				userlist.append(name)
 		else:
 		"""
-			for user in cdata.users.itervalues():
-				ranks = user.status(cdata.name)
-				if ranks:
-					userlist.append(self.ircd.prefix_symbols[ranks[0]] + user.nickname)
-				else:
-					userlist.append(user.nickname)
+		for user in cdata.users.itervalues():
+			ranks = user.status(cdata.name)
+			if ranks:
+				userlist.append(self.ircd.prefix_symbols[ranks[0]] + user.nickname)
+			else:
+				userlist.append(user.nickname)
 		# Copy of irc.IRC.names
 		prefixLength = len(self.ircd.server_name) + len(irc.RPL_NAMREPLY) + len(cdata.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
 		namesLength = 512 - prefixLength # May get messed up with unicode
