@@ -10,8 +10,7 @@ from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
 from txircd.utils import CaseInsensitiveDictionary, VALID_USERNAME, epoch, now, irc_lower, parse_duration, build_duration
 from txircd.mode import ChannelModes
-from txircd.server import IRCServer
-from txircd.service import IRCService
+from txircd.user import IRCUser
 from txircd.stats import StatFactory
 from txircd import __version__
 from txsockjs.factory import SockJSFactory
