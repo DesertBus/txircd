@@ -150,7 +150,7 @@ else:
 	def isbytes(s):
 		return isinstance(s, bytes)
 	def b(s):
-	return s.encode("latin-1")
+		return s.encode("latin-1")
 
 def crypt(word, salt=None, iterations=1000, algorithm="sha256", bytes=24):
 	"""PBKDF2-based unix crypt(3) replacement.
