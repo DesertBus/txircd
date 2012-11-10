@@ -292,8 +292,8 @@ class IRCD(Factory):
 	channel_prefixes = "#"
 	types = {
 		"user": IRCUser,
-		"server": IRCServer,
-		"service": IRCService,
+		#"server": IRCServer,
+		#"service": IRCService,
 	}
 	prefix_order = "qaohv" # Hardcoded into modes :(
 	prefix_symbols = {
