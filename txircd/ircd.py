@@ -126,10 +126,7 @@ class IRCProtocol(irc.IRC):
 
 	def __init__(self, *args, **kwargs):
 		self.dead = False
-		self.type = None
-		self.password = None
-		self.nick = None
-		self.user = None
+		self.type = self.factory.types["user"](self)
 		self.secure = False
 		self.data = 0
 		self.data_checker = LoopingCall(self.checkData)
