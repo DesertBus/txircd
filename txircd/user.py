@@ -98,14 +98,10 @@ class IRCUser(object):
 		method = getattr(self, "irc_{}".format(command), None)
 		if command != "PING" and command != "PONG":
 			self.lastactivity = now()
-		try:
-			if method is not None:
-				if self.mode.has("o") or self.matches_xline("E") or not self.matches_xline("SHUN") or command in ["PING", "PONG", "JOIN", "PART", "QUIT"]:
-					method(prefix, params)
-			else:
-				self.irc_unknown(prefix, command, params)
-		except:
-			log.deferr()
+		if command in self.ircd.commands:
+			self.ircd.commands[command].onUse(self, params)
+		else:
+			self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
 	
 	def sendMessage(self, command, *parameter_list, **kw):
 		if "prefix" not in kw:
@@ -1286,7 +1282,3 @@ class IRCUser(object):
 		for user in self.ircd.users.itervalues():
 			if user.mode.has("w"):
 				user.sendMessage("WALLOPS", ":{}".format(message), to=None, prefix=self.prefix())
-	
-	def irc_unknown(self, prefix, command, params):
-		self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
-		log.msg("--- Not Implemented Yet: {} {} {}".format(prefix, command, " ".join(params)))
