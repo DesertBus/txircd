@@ -64,6 +64,7 @@ default_options = {
 	"server_denychans": [],
 	"server_allowchans": [],
 	"server_badwords": {},
+	"server_modules": [],
 	"server_xlines_k": {},
 	"server_xlines_g": {},
 	"server_xlines_q": {},
@@ -412,6 +413,9 @@ class IRCD(Factory):
 			self.stats = None
 		# Load geoip data
 		self.geo_db = pygeoip.GeoIP(self.app_geoip_database, pygeoip.MEMORY_CACHE) if self.app_geoip_database else None
+		if self.server_modules:
+			for mod in server_modules:
+				self.load_module(mod)
 	
 	def save_options(self):
 		# Serialize xlines
