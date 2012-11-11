@@ -122,8 +122,6 @@ default_options = {
 }
 
 class IRCProtocol(irc.IRC):
-	UNREGISTERED_COMMANDS = ["PASS", "USER", "NICK", "PING", "PONG", "QUIT", "CAP"]
-
 	def __init__(self, *args, **kwargs):
 		self.dead = False
 		self.type = self.factory.types["user"](self)
@@ -180,14 +178,8 @@ class IRCProtocol(irc.IRC):
 		self.factory.stats_data["lines_in"] += 1
 		self.factory.stats_data["total_lines_in"] += 1
 		log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
-		if not self.type and command not in self.UNREGISTERED_COMMANDS:
-			return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.factory.server_name)
-		elif not self.type:
-			return irc.IRC.handleCommand(self, command, prefix, params)
-		else:
-			return self.type.handleCommand(command, prefix, params)
-		
-
+		return self.type.handleCommand(command, prefix, params)
+	
 	def sendLine(self, line):
 		if self.dead:
 			return
