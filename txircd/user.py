@@ -10,30 +10,7 @@ import fnmatch, socket, hashlib, collections, os, sys, string, re
 
 class IRCUser(object):
 	
-	def __init__(self, parent, user, password, nick):
-		if nick in parent.factory.users:
-			# Race condition, we checked their nick but now it is unavailable
-			# Just give up and crash hard
-			parent.sendMessage(irc.ERR_NICKNAMEINUSE, parent.factory.users[nick].nickname, ":Nickname is already in use", prefix=parent.factory.server_name)
-			parent.sendMessage("ERROR",":Closing Link: {}".format(parent.factory.users[nick].nickname))
-			parent.transport.loseConnection()
-			raise ValueError("Invalid nickname")
-		# Parse USER params
-		password = password[0] if password else None
-		username = filter(lambda x: x in string.ascii_letters + string.digits + "-_", user[0])[:12]
-		if not username:
-			username = "InvalidUsername"
-		# RFC 2812 allows setting modes in the USER command but RFC 1459 does not
-		mode = ""
-		try:
-			m = int(user[1])
-			mode += "w" if m & 4 else ""
-			mode += "i" if m & 8 else ""
-		except ValueError:
-			pass
-		realname = user[3]
-		#TODO: Check password
-		
+	def __init__(self, parent):
 		# Mask the IP
 		ip = parent.transport.getPeer().host
 		if ip in parent.factory.client_vhosts:
@@ -61,9 +38,10 @@ class IRCUser(object):
 		# Set attributes
 		self.ircd = parent.factory
 		self.socket = parent
-		self.nickname = nick
-		self.username = username.lstrip("-")
-		self.realname = realname
+		self.password = None
+		self.nickname = None
+		self.username = None
+		self.realname = None
 		self.hostname = hostname
 		self.ip = ip
 		self.latitude = geo_data["latitude"]
@@ -72,13 +50,11 @@ class IRCUser(object):
 		self.server = parent.factory.server_name
 		self.signon = now()
 		self.lastactivity = now()
-		self.mode = UserModes(self.ircd, self, mode, self.nickname)
+		self.mode = {}
 		self.channels = CaseInsensitiveDictionary()
-		self.invites = []
-		self.knocked = []
-		self.service = False
-		self.account = None
 		self.disconnected = Deferred()
+		self.registered = 2
+		self.metadata = {}
 		
 		if not self.matches_xline("E"):
 			xline_match = self.matches_xline("G")
@@ -91,7 +67,9 @@ class IRCUser(object):
 				self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
 				self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
 				raise ValueError("Banned user")
-		
+	
+	def register(self):
+		# self.username = filter(lambda x: x in string.ascii_letters + string.digits + "-_", self.username)[:12]
 		# Add self to user list
 		self.ircd.users[self.nickname] = self
 		
