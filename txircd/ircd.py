@@ -14,7 +14,7 @@ from txircd.user import IRCUser
 from txircd.stats import StatFactory
 from txircd import __version__
 from txsockjs.factory import SockJSFactory
-import uuid, socket, collections, yaml, os, fnmatch, datetime, pygeoip, json
+import uuid, socket, collections, yaml, os, fnmatch, datetime, pygeoip, json, imp
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_STATS = "210"
@@ -306,6 +306,11 @@ class IRCD(Factory):
 		self.whowas = CaseInsensitiveDictionary()
 		self.channels = CaseInsensitiveDictionary()
 		self.peerConnections = {}
+		self.modules = {}
+		self.actions = []
+		self.commands = {}
+		self.channel_modes = {}
+		self.user_modes = {}
 		self.db = None
 		self.stats = None
 		self.stats_timer = LoopingCall(self.flush_stats)
@@ -459,6 +464,61 @@ class IRCD(Factory):
 		log.msg("Waiting on deferreds...")
 		self.dead = True
 		return DeferredList(deferreds)
+	
+	def load_module(self, name):
+		try:
+			mod_find = imp.find_module("txircd/modules/{}".format(name))
+		except ImportError:
+			log.msg("Module not found: {}".format(name))
+			return None
+		try:
+			mod_load = imp.load_module(name, mod_find[0], mod_find[1], mod_find[2])
+		except ImportError:
+			log.msg("Could not load module: {}".format(name))
+			mod_find[0].close()
+			return None
+		mod_find[0].close()
+		try:
+			mod_contains = mod_load.spawn()
+		except:
+			log.msg("Module is not a valid txircd module: {}".format(name))
+			return None
+		self.modules[name] = {}
+		if "commands" in mod_contains:
+			self.modules[name]["commands"] = []
+			for command, implementation in mod_contains["commands"].iteritems():
+				if command in self.commands:
+					log.msg("Module {} tries to reimplement command {}".format(name, command))
+					continue
+				self.modules[name]["commands"].append(command)
+				self.commands[command] = implementation()
+		if "modes" in mod_contains:
+			for mode, implementation in mod_contains["modes"].iteritems():
+				if len(mode) < 2:
+					continue
+				if mode[0] == "c":
+					if mode[1] in self.channel_modes:
+						log.msg("Module {} tries to reimplement channel mode {}".format(name, mode[1]))
+						continue
+					if "chanmodes" not in self.modules[name]:
+						self.modules[name]["chanmodes"] = []
+					self.modules[name]["chanmodes"].append(mode[1])
+					self.channel_modes[mode[1]] = implementation()
+				elif mode[0] == "u":
+					if mode[1] in self.user_modes:
+						log.msg("Module {} tries to reimplement user mode {}".format(name, mode[1]))
+						continue
+					if "usermodes" not in self.modules[name]:
+						self.modules[name]["usermodes"] = []
+					self.modules[name]["usermodes"].append(mode[1])
+					self.user_modes[mode[1]] = implementation()
+		if "actions" in mod_contains:
+			self.modules[name]["actions"] = []
+			for action in mod_contains["actions"]:
+				new_action = action()
+				self.actions.append(new_action)
+				self.modules[name]["actions"].append(new_action)
+		return mod_load
 	
 	def buildProtocol(self, addr):
 		if self.dead:
