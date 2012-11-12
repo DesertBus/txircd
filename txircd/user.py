@@ -55,6 +55,7 @@ class IRCUser(object):
 		self.disconnected = Deferred()
 		self.registered = 2
 		self.metadata = {}
+		self.data_cache = {}
 		
 		if not self.matches_xline("E"):
 			xline_match = self.matches_xline("G")
@@ -311,57 +312,25 @@ class IRCUser(object):
 			self.sendMessage(irc.RPL_NAMREPLY, "=", cdata.name, ":{}".format(l))
 		self.sendMessage(irc.RPL_ENDOFNAMES, cdata.name, ":End of /NAMES list")
 	
-	def join(self, channel, key):
-		if channel[0] not in self.ircd.channel_prefixes:
-			return self.sendMessage(irc.ERR_BADCHANMASK, channel, ":Bad Channel Mask")
-		cdata = self.ircd.channels[channel[:64]] # Limit channel names to 64 characters
-		cmodes = cdata.mode
+	def join(self, channel, params, bypass):
+		channel = channel[:64] # Limit channel names to 64 characters
+		if channel not in self.ircd.channels:
+			self.ircd.channels[channel] = IRCChannel(channel)
+		cdata = self.ircd.channels[channel]
 		hostmask = irc_lower(self.prefix())
-		banned = False
-		exempt = False
-		invited = cdata.name in self.invites
-		if cmodes.has("b"):
-			for pattern in cmodes.get("b").iterkeys():
-				if fnmatch.fnmatch(hostmask, pattern):
-					banned = True
-		if cmodes.has("e"):
-			for pattern in cmodes.get("e").iterkeys():
-				if fnmatch.fnmatch(hostmask, pattern):
-					exempt = True
-		if not invited and cmodes.has("I"):
-			for pattern in cmodes.get("I").iterkeys():
-				if fnmatch.fnmatch(hostmask, pattern):
-					invited = True
-		if cmodes.has("k") and cmodes.get("k") != key and not self.mode.has("o"):
-			self.sendMessage(irc.ERR_BADCHANNELKEY, cdata.name, ":Cannot join channel (Incorrect channel key)")
-			return
-		if cmodes.has("l") and cmodes.get("l") <= len(cdata.users) and not exempt and not self.mode.has("o"):
-			self.sendMessage(irc.ERR_CHANNELISFULL, cdata.name, ":Cannot join channel (Channel is full)")
-			return
-		if cmodes.has("i") and not invited and not self.mode.has("o"):
-			self.sendMessage(irc.ERR_INVITEONLYCHAN, cdata.name, ":Cannot join channel (Invite only)")
-			return
-		if banned and not exempt and not self.mode.has("o"):
-			self.sendMessage(irc.ERR_BANNEDFROMCHAN, cdata.name, ":Cannot join channel (Banned)")
-			return
-		self.channels[cdata.name] = {"banned":banned,"exempt":exempt,"msg_rate":[]}
-		if cdata.name in self.invites:
-			self.invites.remove(cdata.name)
-		if cdata.name in self.knocked:
-			self.knocked.remove(cdata.name)
-		if not cdata.users and self.ircd.channel_founder_mode:
-			cdata.mode.combine("+{}".format(self.ircd.channel_founder_mode),[self.nickname],cdata.name) # Set first user as founder
+		self.channels[cdata.name] = {"status":""}
 		cdata.users[self.nickname] = self
+		# TODO: check actions/modes for permission
 		for u in cdata.users.itervalues():
 			u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix())
-		if cdata.topic["message"] is None:
+		if cdata.topic is None:
 			self.sendMessage(irc.RPL_NOTOPIC, cdata.name, "No topic is set")
 		else:
-			self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic["message"]))
-			self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topic["author"], str(epoch(cdata.topic["created"])))
+			self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
+			self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topicSetter, str(epoch(cdata.topicTime)))
 		self.report_names(cdata.name)
-		if not cdata.log.closed:
-			cdata.log.write("[{:02d}:{:02d}:{:02d}] {} joined the channel\n".format(now().hour, now().minute, now().second, self.nickname))
+		for module in self.ircd.actions:
+			action.onJoinComplete(cdata, self)
 	
 	def leave(self, channel):
 		cdata = self.ircd.channels[channel]

@@ -7,7 +7,7 @@ class Module(object):
 	def hook(self, base):
 		self.ircd = base
 		return self
-	def onJoinCheck(self, channel, user):
+	def onJoinCheck(self, channel, user, final):
 		pass
 	def onJoinComplete(self, channel, user):
 		pass
