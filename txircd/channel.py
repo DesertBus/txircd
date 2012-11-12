@@ -14,9 +14,6 @@ class IRCChannel(object):
 	def name(self):
 		return self.name
 	
-	def getTopic(self):
-		return self.topic
-	
 	def setTopic(self, topic, setter):
 		self.topic = topic
 		self.topicSetter = setter
