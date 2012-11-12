@@ -541,68 +541,6 @@ class IRCUser(object):
 	def irc_PONG(self, prefix, params):
 		pass
 	
-	def irc_NICK(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")
-		elif params[0] in self.ircd.users and irc_lower(params[0]) != irc_lower(self.nickname): # Just changing case on your own nick is fine
-			self.sendMessage(irc.ERR_NICKNAMEINUSE, self.ircd.users[params[0]].nickname, ":Nickname is already in use")
-		elif not VALID_USERNAME.match(params[0]):
-			self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname")
-		elif params[0] == self.nickname:
-			pass # Don't send ERR_NICKNAMEINUSE if they're changing to exactly the nick they're already using
-		else:
-			oldnick = self.nickname
-			newnick = params[0]
-			self.nickname = newnick
-			reserved_nick = self.matches_xline("Q")
-			self.nickname = oldnick # restore the old nick temporarily so we can do the rest of the stuff we need to with the old nick
-			if reserved_nick:
-				self.sendMessage(irc.ERR_ERRONEUSNICKNAME, newnick, ":Invalid nickname: {}".format(reserved_nick))
-				return
-			# Add to WHOWAS before changing everything
-			self.add_to_whowas()
-			# Out with the old, in with the new
-			del self.ircd.users[oldnick]
-			self.ircd.users[newnick] = self
-			tomsg = set() # Ensure users are only messaged once
-			tomsg.add(irc_lower(newnick))
-			# Prefix shenanigans
-			oldprefix = self.prefix()
-			self.nickname = newnick
-			hostmask = irc_lower(self.prefix())
-			for c in self.channels.iterkeys():
-				cdata = self.ircd.channels[c]
-				# Change reference in users map
-				del cdata.users[oldnick]
-				cdata.users[newnick] = self
-				# Transfer modes
-				mode = self.status(c)
-				cdata.mode.combine("+{}".format(mode),[newnick for _ in mode],cdata.name)
-				cdata.mode.combine("-{}".format(mode),[oldnick for _ in mode],cdata.name)
-				# Update ban/exempt status
-				banned = False
-				exempt = False
-				if cdata.mode.has("b"):
-					for pattern in cdata.mode.get("b").iterkeys():
-						if fnmatch.fnmatch(hostmask, pattern):
-							banned = True
-				if cdata.mode.has("e"):
-					for pattern in cdata.mode.get("e").iterkeys():
-						if fnmatch.fnmatch(hostmask, pattern):
-							exempt = True
-				self.channels[c]["banned"] = banned
-				self.channels[c]["exempt"] = exempt
-				# Add channel members to message queue
-				for u in self.ircd.channels[c].users.iterkeys():
-					tomsg.add(u)
-				if not cdata.log.closed:
-					cdata.log.write("[{:02d}:{:02d}:{:02d}] {} is now known as {}\n".format(now().hour, now().minute, now().second, oldnick, newnick))
-			for u in tomsg:
-				if u in self.ircd.users: # When wouldn't this be true? FIX IT!
-					self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
-				else:
-					print "WHAT: {} {} {}".format(oldnick, newnick, u)
-	
 	def irc_OPER(self, prefix, params):
 		if len(params) < 2:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters")
