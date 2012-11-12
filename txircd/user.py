@@ -69,9 +69,11 @@ class IRCUser(object):
 				raise ValueError("Banned user")
 	
 	def register(self):
+		if self.nickname in self.ircd.users:
+			return
 		for action in self.ircd.actions:
 			if not action.onRegister(self):
-				return self.disconnect()
+				return self.disconnect(None)
 		
 		# Add self to user list
 		self.ircd.users[self.nickname] = self
