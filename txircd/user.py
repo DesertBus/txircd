@@ -529,9 +529,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_PASS(self, prefix, params):
-		self.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)")
-	
 	def irc_PING(self, prefix, params):
 		if params:
 			self.sendMessage("PONG", ":{}".format(params[0]), to=self.ircd.server_name)

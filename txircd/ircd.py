@@ -65,6 +65,7 @@ default_options = {
 	"server_allowchans": [],
 	"server_badwords": {},
 	"server_modules": [],
+	"server_password": None,
 	"server_xlines_k": {},
 	"server_xlines_g": {},
 	"server_xlines_q": {},
@@ -190,11 +191,6 @@ class IRCProtocol(irc.IRC):
 		self.factory.stats_data["total_bytes_out"] += len(line)+2
 		log.msg("sendLine: {!r}".format(line))
 		return irc.IRC.sendLine(self, line)
-
-	def irc_PASS(self, prefix, params):
-		if not params:
-			return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.factory.server_name)
-		self.password = params[0]
 
 	def irc_SERVICE(self, prefix, params):
 		try:
