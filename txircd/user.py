@@ -4,7 +4,7 @@ from twisted.internet import reactor
 from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
-from txircd.mode import UserModes, ChannelModes
+from txircd.channel import IRCChannel
 from txircd.utils import irc_lower, parse_duration, VALID_USERNAME, now, epoch, CaseInsensitiveDictionary, chunk_message, strip_colors, has_CTCP, crypt
 import fnmatch, socket, hashlib, collections, os, sys, string, re
 
@@ -79,15 +79,15 @@ class IRCUser(object):
 		self.ircd.users[self.nickname] = self
 		
 		# Send all those lovely join messages
-		chanmodes = ChannelModes.bool_modes + ChannelModes.string_modes + ChannelModes.list_modes
-		chanmodes2 = ChannelModes.list_modes.translate(None, self.ircd.prefix_order) + ",," + ChannelModes.string_modes + "," + ChannelModes.bool_modes
+		chanmodelist = "".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes] + "".join(self.ircd.prefixes.keys()))
+		chanmodeseplist = ",".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes])
 		prefixes = "({}){}".format(self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order]))
 		statuses = "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])
 		self.sendMessage(irc.RPL_WELCOME, ":Welcome to the Internet Relay Network {}".format(self.prefix()))
 		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.network_name, self.ircd.version))
 		self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
-		self.sendMessage(irc.RPL_MYINFO, self.ircd.network_name, self.ircd.version, self.mode.allowed(), chanmodes) # usermodes & channel modes
-		self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANNELLEN=64", "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), "TOPICLEN=316", ":are supported by this server")
+		self.sendMessage(irc.RPL_MYINFO, self.ircd.network_name, self.ircd.version, self.mode.allowed(), chanmodelist) # usermodes & channel modes
+		self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodeseplist), "CHANNELLEN=64", "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), "TOPICLEN=316", ":are supported by this server")
 		self.send_motd()
 	
 	def disconnect(self, reason):
