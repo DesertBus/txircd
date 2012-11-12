@@ -4,6 +4,9 @@
 # particular function isn't defined.
 
 class Module(object):
+	def hook(self, base):
+		self.ircd = base
+		return self
 	def onJoinCheck(self, channel, user):
 		pass
 	def onJoinComplete(self, channel, user):
@@ -30,6 +33,9 @@ class Module(object):
 		pass
 
 class Mode(object):
+	def hook(self, base):
+		self.ircd = base
+		return self
 	def checkSet(self, channel, param):
 		pass
 	def checkUnset(self, channel, param):
@@ -46,5 +52,8 @@ class Mode(object):
 		pass
 
 def Command(object):
+	def hook(self, base):
+		self.ircd = base
+		return self
 	def onUse(self, user, params):
 		pass

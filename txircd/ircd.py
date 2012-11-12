@@ -459,7 +459,7 @@ class IRCD(Factory):
 					log.msg("Module {} tries to reimplement command {}".format(name, command))
 					continue
 				self.modules[name]["commands"].append(command)
-				self.commands[command] = implementation(self)
+				self.commands[command] = implementation.hook(self)
 		if "modes" in mod_contains:
 			for mode, implementation in mod_contains["modes"].iteritems():
 				if len(mode) < 2:
@@ -471,7 +471,7 @@ class IRCD(Factory):
 					if "chanmodes" not in self.modules[name]:
 						self.modules[name]["chanmodes"] = []
 					self.modules[name]["chanmodes"].append(mode[1])
-					self.channel_modes[mode[1]] = implementation(self)
+					self.channel_modes[mode[1]] = implementation.hook(self)
 				elif mode[0] == "u":
 					if mode[1] in self.user_modes:
 						log.msg("Module {} tries to reimplement user mode {}".format(name, mode[1]))
@@ -479,11 +479,11 @@ class IRCD(Factory):
 					if "usermodes" not in self.modules[name]:
 						self.modules[name]["usermodes"] = []
 					self.modules[name]["usermodes"].append(mode[1])
-					self.user_modes[mode[1]] = implementation(self)
+					self.user_modes[mode[1]] = implementation.hook(self)
 		if "actions" in mod_contains:
 			self.modules[name]["actions"] = []
 			for action in mod_contains["actions"]:
-				new_action = action(self)
+				new_action = action.hook(self)
 				self.actions.append(new_action)
 				self.modules[name]["actions"].append(new_action)
 		return mod_load
