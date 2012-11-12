@@ -36,6 +36,8 @@ class Mode(object):
 	def hook(self, base):
 		self.ircd = base
 		return self
+	def prefixSymbol(self):
+		return None
 	def checkSet(self, channel, param):
 		pass
 	def checkUnset(self, channel, param):

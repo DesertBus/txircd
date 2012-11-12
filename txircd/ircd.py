@@ -9,7 +9,6 @@ from twisted.python import log
 from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
 from txircd.utils import CaseInsensitiveDictionary, VALID_USERNAME, epoch, now, irc_lower, parse_duration, build_duration
-from txircd.mode import ChannelModes
 from txircd.user import IRCUser
 from txircd.stats import StatFactory
 from txircd import __version__
@@ -252,8 +251,11 @@ class IRCD(Factory):
 		self.modules = {}
 		self.actions = []
 		self.commands = {}
-		self.channel_modes = {}
-		self.user_modes = {}
+		self.channel_modes = [{}, {}, {}, {}]
+		self.channel_mode_type = {}
+		self.user_modes = [{}, {}, {}, {}]
+		self.user_mode_type = {}
+		self.prefixes = {}
 		self.db = None
 		self.stats = None
 		self.stats_timer = LoopingCall(self.flush_stats)
@@ -446,22 +448,48 @@ class IRCD(Factory):
 			for mode, implementation in mod_contains["modes"].iteritems():
 				if len(mode) < 2:
 					continue
+				if mode[1] == "l":
+					modetype = 0
+				elif mode[1] == "u":
+					modetype = 1
+				elif mode[1] == "p":
+					modetype = 2
+				elif mode[1] == "n":
+					modetype = 3
+				elif mode[1] == "s":
+					modetype = -1
+				else:
+					log.msg("Module {} registers a mode of an invalid type".format(name))
+					continue
 				if mode[0] == "c":
-					if mode[1] in self.channel_modes:
-						log.msg("Module {} tries to reimplement channel mode {}".format(name, mode[1]))
+					if mode[2] in self.channel_mode_type:
+						log.msg("Module {} tries to reimplement channel mode {}".format(name, mode))
 						continue
+					if modetype >= 0:
+						self.channel_modes[modetype][mode[2]] = implementation.hook(self)
+					else:
+						symbol = implementation.prefixSymbol()
+						if not symbol:
+							log.msg("Module {} tries to register a prefix without a symbol")
+							continue
+						symbol = symbol[0]
+						self.prefixes[mode[2]] = [implementation.prefixSymbol(), implementation]
 					if "chanmodes" not in self.modules[name]:
-						self.modules[name]["chanmodes"] = []
-					self.modules[name]["chanmodes"].append(mode[1])
-					self.channel_modes[mode[1]] = implementation.hook(self)
+						self.modules[name]["chanmodes"] = {}
+					self.modules[name]["chanmodes"][mode[2]] = modetype
+					self.channel_mode_type[mode[2]] = modetype
 				elif mode[0] == "u":
-					if mode[1] in self.user_modes:
-						log.msg("Module {} tries to reimplement user mode {}".format(name, mode[1]))
+					if modetype == -1:
+						log.msg("Module {} registers a mode of an invalid type".format(name))
+						continue
+					if mode[2] in self.user_mode_type:
+						log.msg("Module {} tries to reimplement user mode {}".format(name, mode))
 						continue
 					if "usermodes" not in self.modules[name]:
 						self.modules[name]["usermodes"] = []
-					self.modules[name]["usermodes"].append(mode[1])
-					self.user_modes[mode[1]] = implementation.hook(self)
+					self.modules[name]["usermodes"].append(mode[2])
+					self.user_modes[modetype][mode[2]] = implementation.hook(self)
+					self.user_mode_type[mode[2]] = modetype
 		if "actions" in mod_contains:
 			self.modules[name]["actions"] = []
 			for action in mod_contains["actions"]:
