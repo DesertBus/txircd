@@ -69,7 +69,6 @@ class IRCUser(object):
 				raise ValueError("Banned user")
 	
 	def register(self):
-		# self.username = filter(lambda x: x in string.ascii_letters + string.digits + "-_", self.username)[:12]
 		# Add self to user list
 		self.ircd.users[self.nickname] = self
 		
@@ -603,9 +602,6 @@ class IRCUser(object):
 					self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
 				else:
 					print "WHAT: {} {} {}".format(oldnick, newnick, u)
-	
-	def irc_USER(self, prefix, params):
-		self.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)")
 	
 	def irc_OPER(self, prefix, params):
 		if len(params) < 2:
