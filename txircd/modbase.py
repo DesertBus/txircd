@@ -21,7 +21,7 @@ class Module(object):
 		pass
 	def onRegister(self, user):
 		pass
-	def onQuit(self, user, reason):
+	def onQuit(self, user):
 		pass
 	def onCommandExtra(self, command, params):
 		pass

@@ -88,6 +88,15 @@ class IRCUser(object):
 		self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANNELLEN=64", "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), "TOPICLEN=316", ":are supported by this server")
 		self.send_motd()
 	
+	def disconnect(self):
+		if self.nickname in self.ircd.users:
+			for action in self.ircd.actions:
+				action.onQuit(self)
+			for channel in self.channels.iterkeys():
+				del self.ircd.channels[channel].users[self.nickname]
+			del self.ircd.users[self.nickname]
+		self.socket.transport.loseConnection()
+	
 	def checkData(self, data):
 		if data > self.ircd.client_max_data and not self.mode.has("o"):
 			log.msg("Killing user '{}' for flooding".format(self.nickname))
