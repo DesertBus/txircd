@@ -45,6 +45,6 @@ class NickCommand(command):
 def spawn():
 	return {
 		"commands": {
-			"NICK": NickCommand
+			"NICK": NickCommand()
 		}
 	}

@@ -22,6 +22,6 @@ class UserCommand(Command):
 def spawn():
 	return {
 		"commands": {
-			"USER": UserCommand
+			"USER": UserCommand()
 		}
 	}
