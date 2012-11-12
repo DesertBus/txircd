@@ -88,13 +88,19 @@ class IRCUser(object):
 		self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodes2), "CHANNELLEN=64", "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), "TOPICLEN=316", ":are supported by this server")
 		self.send_motd()
 	
-	def disconnect(self):
+	def disconnect(self, reason):
 		if self.nickname in self.ircd.users:
 			for action in self.ircd.actions:
-				action.onQuit(self)
+				action.onQuit(self, reason)
+			quitdest = set()
 			for channel in self.channels.iterkeys():
-				del self.ircd.channels[channel].users[self.nickname]
+				chanusers = self.ircd.channels[channel].users
+				del chanusers[self.nickname]
+				for u in chanusers.itervalues():
+					quitdest.add(u)
 			del self.ircd.users[self.nickname]
+			for user in quitdest:
+				user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
 		self.socket.transport.loseConnection()
 	
 	def checkData(self, data):
