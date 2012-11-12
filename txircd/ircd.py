@@ -196,35 +196,6 @@ class IRCProtocol(irc.IRC):
 			return self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PASS", ":Not enough parameters", prefix=self.factory.server_name)
 		self.password = params[0]
 
-	def irc_NICK(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given", prefix=self.factory.server_name)
-		elif not VALID_USERNAME.match(params[0]):
-			self.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname", prefix=self.factory.server_name)
-		elif params[0] in self.factory.users:
-			self.sendMessage(irc.ERR_NICKNAMEINUSE, self.factory.users[params[0]].nickname, ":Nickname is already in use", prefix=self.factory.server_name)
-		else:
-			lower_nick = irc_lower(params[0])
-			expired = []
-			for mask, linedata in self.factory.xlines["Q"].iteritems():
-				if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
-					expired.append(mask)
-					continue
-				if fnmatch.fnmatch(lower_nick, mask):
-					self.sendMessage(irc.ERR_ERRONEUSNICKNAME, self.nick if self.nick else "*", params[0], ":Invalid nickname: {}".format(linedata["reason"]), prefix=self.factory.server_name)
-					return
-			for mask in expired:
-				del self.factory.xlines["Q"][mask]
-			if expired:
-				self.factory.save_options()
-			self.nick = params[0]
-			if self.user:
-				try:
-					self.type = self.factory.types["user"](self, self.user, self.password, self.nick)
-				except ValueError:
-					self.type = None
-					self.transport.loseConnection()
-
 	def irc_SERVICE(self, prefix, params):
 		try:
 			self.type = self.factory.types["service"](self, params, self.password)
