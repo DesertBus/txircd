@@ -324,6 +324,10 @@ class IRCD(Factory):
 			os.makedirs(logfile)
 		self.stats_log = DailyLogFile("log",logfile)
 		self.stats_timer.start(1)
+		
+		# load RFC-required modules
+		self.load_module("cmd_user")
+		self.load_module("cmd_nick")
 	
 	def rehash(self):
 		try:
