@@ -192,20 +192,6 @@ class IRCProtocol(irc.IRC):
 		log.msg("sendLine: {!r}".format(line))
 		return irc.IRC.sendLine(self, line)
 
-	def irc_SERVICE(self, prefix, params):
-		try:
-			self.type = self.factory.types["service"](self, params, self.password)
-		except ValueError:
-			self.type = None
-			self.transport.loseConnection()
-
-	def irc_SERVER(self, prefix, params):
-		try:
-			self.type = self.factory.types["server"](self, params, self.password)
-		except ValueError:
-			self.type = None
-			self.transport.loseConnection()
-
 	def irc_PING(self, prefix, params):
 		if params:
 			self.sendMessage("PONG", self.factory.server_name, ":{}".format(params[0]), prefix=self.factory.server_name)
