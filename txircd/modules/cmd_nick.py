@@ -3,9 +3,6 @@ from txircd.modbase import Command
 from txircd.utils import VALID_USERNAME, irc_lower
 
 class NickCommand(command):
-	def __init__(self, base):
-		self.ircd = base
-	
 	def onUse(self, user, params):
 		if not params:
 			user.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")
