@@ -54,6 +54,7 @@ class IRCUser(object):
 		self.channels = CaseInsensitiveDictionary()
 		self.disconnected = Deferred()
 		self.registered = 2
+		self.cap = {}
 		self.metadata = {}
 		self.data_cache = {}
 		
