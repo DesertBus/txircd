@@ -11,9 +11,6 @@ class IRCChannel(object):
 		self.users = CaseInsensitiveDictionary()
 		self.metadata = {}
 	
-	def name(self):
-		return self.name
-	
 	def setTopic(self, topic, setter):
 		self.topic = topic
 		self.topicSetter = setter
@@ -29,6 +26,3 @@ class IRCChannel(object):
 		if key in self.metadata:
 			return self.metadata[key]
 		return ""
-	
-	def setMetadata(self, key, value):
-		self.metadata[key] = value
