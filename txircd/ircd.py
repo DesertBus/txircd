@@ -312,6 +312,7 @@ class IRCD(Factory):
 		# load RFC-required modules
 		self.load_module("cmd_user")
 		self.load_module("cmd_nick")
+		self.load_module("cmd_pass")
 	
 	def rehash(self):
 		try:
