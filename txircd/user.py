@@ -337,18 +337,20 @@ class IRCUser(object):
 				if permission == "again":
 					again_mod.append(module)
 			if not allow:
-				for mode in self.ircd.channel_modes:
-					permission = mode.onJoin(cdata, self, params)
-					if permission == "allow":
-						allow = True
-						break
-					if permission == "block":
-						if not cdata.users:
-							del self.ircd.channels[channel]
-							del cdata
-						return
-					if permission == "again":
-						again_mode.append(mode)
+				for modetype in self.ircd.channel_modes:
+					for mode, handler in modetype.iteritems():
+						if mode in cdata.mode:
+							permission = handler.onJoin(cdata, self, params)
+							if permission == "allow":
+								allow = True
+								break
+							if permission == "block":
+								if not cdata.users:
+									del self.ircd.channels[channel]
+									del cdata
+								return
+							if permission == "again":
+								again_mode.append(handler)
 			if not allow:
 				for module in again_mod:
 					permission = module.onJoinCheck(cdata, self, True)
