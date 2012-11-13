@@ -320,7 +320,57 @@ class IRCUser(object):
 		hostmask = irc_lower(self.prefix())
 		self.channels[cdata.name] = {"status":""}
 		cdata.users[self.nickname] = self
-		# TODO: check actions/modes for permission
+		if not bypass:
+			allow = False
+			again_mod = []
+			again_mode = []
+			for module in self.ircd.actions:
+				permission = module.onJoinCheck(cdata, self, False)
+				if permission == "allow":
+					allow = True
+					break
+				if permission == "block":
+					if not cdata.users:
+						del self.ircd.channels[channel]
+						del cdata
+					return
+				if permission == "again":
+					again_mod.append(module)
+			if not allow:
+				for mode in self.ircd.channel_modes:
+					permission = mode.onJoin(cdata, self, params)
+					if permission == "allow":
+						allow = True
+						break
+					if permission == "block":
+						if not cdata.users:
+							del self.ircd.channels[channel]
+							del cdata
+						return
+					if permission == "again":
+						again_mode.append(mode)
+			if not allow:
+				for module in again_mod:
+					permission = module.onJoinCheck(cdata, self, True)
+					if permission == "allow":
+						allow = True
+						break
+					if permission == "block":
+						if not cdata.users:
+							del self.ircd.channels[channel]
+							del cdata
+						return
+			if not allow:
+				for mode in again_mode:
+					permission = mode.onJoin(cdata, self, params)
+					if permission == "allow":
+						allow = True
+						break
+					if permission == "block":
+						if not cdata.users:
+							del self.ircd.channels[channel]
+							del cdata
+						return
 		for u in cdata.users.itervalues():
 			u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix())
 		if cdata.topic is None:
