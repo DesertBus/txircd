@@ -598,6 +598,7 @@ class IRCUser(object):
             oldprefix = self.prefix()
             self.nickname = newnick
             hostmask = irc_lower(self.prefix())
+            self.nickname = oldnick # Needed for self.status below
             for c in self.channels.iterkeys():
                 cdata = self.ircd.channels[c]
                 # Change reference in users map
@@ -625,6 +626,7 @@ class IRCUser(object):
                     tomsg.add(u)
                 if not cdata.log.closed:
                     cdata.log.write("[{:02d}:{:02d}:{:02d}] {} is now known as {}\n".format(now().hour, now().minute, now().second, oldnick, newnick))
+            self.nickname = newnick # Finally safe to swap the nick
             for u in tomsg:
                 if u in self.ircd.users: # When wouldn't this be true? FIX IT!
                     self.ircd.users[u].sendMessage("NICK", to=newnick, prefix=oldprefix)
