@@ -8,11 +8,11 @@ class Module(object):
 		self.ircd = base
 		return self
 	def onJoinCheck(self, channel, user, final):
-		pass
+		return "pass"
 	def onJoinComplete(self, channel, user):
 		pass
 	def onMessage(self, msgType, sender, target, message):
-		pass
+		return ["allow"]
 	def onPart(self, channel, user, reason):
 		pass
 	def onTopicChange(self, channel, user, topic):
@@ -20,7 +20,7 @@ class Module(object):
 	def onConnect(self, connection):
 		pass
 	def onRegister(self, user):
-		pass
+		return True
 	def onQuit(self, user, reason):
 		pass
 	def onCommandExtra(self, command, params):
@@ -39,13 +39,13 @@ class Mode(object):
 	def prefixSymbol(self):
 		return None
 	def checkSet(self, channel, param):
-		pass
+		return True
 	def checkUnset(self, channel, param):
-		pass
+		return True
 	def onJoin(self, channel, user, params):
-		pass
+		return "pass"
 	def onMessage(self, sender, target, message):
-		pass
+		return ["pass"]
 	def onPart(self, channel, user, reason):
 		pass
 	def onTopicChange(self, channel, user, topic):
