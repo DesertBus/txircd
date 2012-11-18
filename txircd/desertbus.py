@@ -682,8 +682,8 @@ class DBUser(IRCUser):
         self.ircd.save_options() # Save auction state. Just in case.
         self.bs_broadcast(":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(name, bid["nick"],bid["bid"],self.nickname))
         ## End of bs_sold
-        d = self.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}",bid["id"],bid["bid"],self.ircd.bidserv_auction_item)
-        d.addCallback(self.bs_sold, bid)
+        d = self.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}",bid["id"],bid["bid"],item)
+        d.addCallback(self.bs_sold, bid, item, name)
         d.addErrback(self.bs_failsold, bid)
     
     def bidserv_STOP(self, prefix, params):
@@ -735,7 +735,7 @@ class DBUser(IRCUser):
     def bs_failsold(self, result, bid):
         self.bs_wallops(":Error updating database!! Donor ID = {}, Nick = {}, Amount = ${:,.2f} - Good Luck!".format(bid["id"], bid["nick"], bid["bid"]))
     
-    def bs_sold(self, result, bid):
+    def bs_sold(self, result, bid, item, name):
         if bid["nick"] in self.ircd.users:
             u = self.ircd.users[bid["nick"]]
             u.socket.sendMessage("NOTICE", ":Congratulations! You won \"{}\". Please log in to your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(name,item), prefix=self.service_prefix("BidServ"))
