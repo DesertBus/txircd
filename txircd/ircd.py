@@ -163,8 +163,8 @@ class IRCProtocol(irc.IRC):
     def dataReceived(self, data):
         if self.dead:
             return
-        self.factory.stats_data["bytes_in"] += len(data)
-        self.factory.stats_data["total_bytes_in"] += len(data)
+        #self.factory.stats_data["bytes_in"] += len(data)
+        #self.factory.stats_data["total_bytes_in"] += len(data)
         self.data += len(data)
         self.last_message = now()
         if self.pinger.running:
@@ -184,8 +184,8 @@ class IRCProtocol(irc.IRC):
             self.sendMessage("PING",":{}".format(self.factory.server_name))
     
     def handleCommand(self, command, prefix, params):
-        self.factory.stats_data["lines_in"] += 1
-        self.factory.stats_data["total_lines_in"] += 1
+        #self.factory.stats_data["lines_in"] += 1
+        #self.factory.stats_data["total_lines_in"] += 1
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
         if not self.type and command not in self.UNREGISTERED_COMMANDS:
             return self.sendMessage(irc.ERR_NOTREGISTERED, command, ":You have not registered", prefix=self.factory.server_name)
@@ -198,10 +198,10 @@ class IRCProtocol(irc.IRC):
     def sendLine(self, line):
         if self.dead:
             return
-        self.factory.stats_data["lines_out"] += 1
-        self.factory.stats_data["total_lines_out"] += 1
-        self.factory.stats_data["bytes_out"] += len(line)+2
-        self.factory.stats_data["total_bytes_out"] += len(line)+2
+        #self.factory.stats_data["lines_out"] += 1
+        #self.factory.stats_data["total_lines_out"] += 1
+        #self.factory.stats_data["bytes_out"] += len(line)+2
+        #self.factory.stats_data["total_bytes_out"] += len(line)+2
         log.msg("sendLine: {!r}".format(line))
         return irc.IRC.sendLine(self, line)
 
@@ -322,20 +322,20 @@ class IRCD(Factory):
         self.channels = DefaultCaseInsensitiveDictionary(self.ChannelFactory)
         self.peerConnections = {}
         self.db = None
-        self.stats = None
-        self.stats_timer = LoopingCall(self.flush_stats)
-        self.stats_data = {
-            "bytes_in": 0,
-            "bytes_out": 0,
-            "lines_in": 0,
-            "lines_out": 0,
-            "total_bytes_in": 0,
-            "total_bytes_out": 0,
-            "total_lines_in": 0,
-            "total_lines_out": 0,
-            "connections": 0,
-            "total_connections": 0
-        }
+        #self.stats = None
+        #self.stats_timer = LoopingCall(self.flush_stats)
+        #self.stats_data = {
+        #    "bytes_in": 0,
+        #    "bytes_out": 0,
+        #    "lines_in": 0,
+        #    "lines_out": 0,
+        #    "total_bytes_in": 0,
+        #    "total_bytes_out": 0,
+        #    "total_lines_in": 0,
+        #    "total_lines_out": 0,
+        #    "connections": 0,
+        #    "total_connections": 0
+        #}
         self.xlines = {
             "G": CaseInsensitiveDictionary(),
             "K": CaseInsensitiveDictionary(),
@@ -358,21 +358,21 @@ class IRCD(Factory):
         self.load_options(options)
         
         
-        if self.app_ip_log:
-            try:
-                with open(self.app_ip_log) as f:
-                    self.unique_ips = set(json.loads(f.read()))
-                    self.stats_data["total_connections"] = len(self.unique_ips)
-            except:
-                self.unique_ips = set()
-        else:
-            self.unique_ips = set()
+        #if self.app_ip_log:
+        #    try:
+        #        with open(self.app_ip_log) as f:
+        #            self.unique_ips = set(json.loads(f.read()))
+        #            self.stats_data["total_connections"] = len(self.unique_ips)
+        #    except:
+        #        self.unique_ips = set()
+        #else:
+        #    self.unique_ips = set()
         
-        logfile = "{}/{}".format(self.app_log_dir,"stats")
-        if not os.path.exists(logfile):
-            os.makedirs(logfile)
-        self.stats_log = DailyLogFile("log",logfile)
-        self.stats_timer.start(1)
+        #logfile = "{}/{}".format(self.app_log_dir,"stats")
+        #if not os.path.exists(logfile):
+        #    os.makedirs(logfile)
+        #self.stats_log = DailyLogFile("log",logfile)
+        #self.stats_timer.start(1)
     
     def rehash(self):
         try:
@@ -405,23 +405,23 @@ class IRCD(Factory):
         if self.db_library:
             self.db = adbapi.ConnectionPool(self.db_library, host=self.db_host, port=self.db_port, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
         # Turn on stats factory if needed, or shut it down if needed
-        if self.stats_enabled and not self.stats:
-            self.stats = StatFactory()
-            if self.stats_port_tcp:
-                try:
-                    reactor.listenTCP(int(self.stats_port_tcp), self.stats)
-                except:
-                    pass # Wasn't a number
-            if self.stats_port_web:
-                try:
-                    reactor.listenTCP(int(self.stats_port_web), SockJSFactory(self.stats))
-                except:
-                    pass # Wasn't a number
-        elif not self.stats_enabled and self.stats:
-            self.stats.shutdown()
-            self.stats = None
+        #if self.stats_enabled and not self.stats:
+        #    self.stats = StatFactory()
+        #    if self.stats_port_tcp:
+        #        try:
+        #            reactor.listenTCP(int(self.stats_port_tcp), self.stats)
+        #        except:
+        #            pass # Wasn't a number
+        #    if self.stats_port_web:
+        #        try:
+        #            reactor.listenTCP(int(self.stats_port_web), SockJSFactory(self.stats))
+        #        except:
+        #            pass # Wasn't a number
+        #elif not self.stats_enabled and self.stats:
+        #    self.stats.shutdown()
+        #    self.stats = None
         # Load geoip data
-        self.geo_db = pygeoip.GeoIP(self.app_geoip_database, pygeoip.MEMORY_CACHE) if self.app_geoip_database else None
+        #self.geo_db = pygeoip.GeoIP(self.app_geoip_database, pygeoip.MEMORY_CACHE) if self.app_geoip_database else None
     
     def save_options(self):
         # Serialize xlines
@@ -466,7 +466,7 @@ class IRCD(Factory):
         log.msg("Closing logs...")
         for c in self.channels.itervalues():
             c.log.close()
-        self.stats_log.close()
+        #self.stats_log.close()
         # Finally, save the config. Just in case.
         log.msg("Saving options...")
         self.save_options()
@@ -479,21 +479,21 @@ class IRCD(Factory):
         if self.dead:
             return None
         ip = addr.host
-        self.unique_ips.add(ip)
-        self.stats_data["total_connections"] = len(self.unique_ips)
-        if self.app_ip_log:
-            with open(self.app_ip_log,"w") as f:
-                f.write(json.dumps(list(self.unique_ips), separators=(',',':')))
+        #self.unique_ips.add(ip)
+        #self.stats_data["total_connections"] = len(self.unique_ips)
+        #if self.app_ip_log:
+        #    with open(self.app_ip_log,"w") as f:
+        #        f.write(json.dumps(list(self.unique_ips), separators=(',',':')))
         conn = self.peerConnections.get(ip,0)
         max = self.client_peer_exempt[ip] if ip in self.client_peer_exempt else self.client_peer_connections
         if max and conn >= max:
             return None
-        self.stats_data["connections"] += 1
+        #self.stats_data["connections"] += 1
         self.peerConnections[ip] = conn + 1
         return Factory.buildProtocol(self, addr)
 
     def unregisterProtocol(self, p):
-        self.stats_data["connections"] -= 1
+        #self.stats_data["connections"] -= 1
         peerHost = p.transport.getPeer().host
         self.peerConnections[peerHost] -= 1
         if self.peerConnections[peerHost] == 0:
@@ -509,6 +509,7 @@ class IRCD(Factory):
         return c
     
     def flush_stats(self):
+        return
         users = {}
         countries = {}
         uptime = now() - self.created

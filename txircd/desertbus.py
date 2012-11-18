@@ -697,9 +697,25 @@ class DBUser(IRCUser):
         if self.ircd.bidserv_auction_state != 2:
             self.sendMessage("NOTICE", ":We're not at the proper place to call \"Sold!\".", prefix=self.service_prefix("BidServ"))
             return
+        ## Moved out of bs_sold
+        item = self.ircd.bidserv_auction_item
+        name = self.ircd.bidserv_auction_name
         bid = self.ircd.bidserv_bids[-1]
+        try:
+            with open(self.bs_log(self.ircd.bidserv_auction_item),"w") as f:
+                yaml.dump(self.ircd.bidserv_bids, f, default_flow_style=False)
+        except:
+            self.bs_wallops(":Failed to save auction logs, you'll have to read the channel logs. Sorry :(")
+            log.err()
+        self.ircd.bidserv_auction_state = 0
+        self.ircd.bidserv_auction_item = None
+        self.ircd.bidserv_auction_name = None
+        self.ircd.bidserv_bids = []
+        self.ircd.save_options() # Save auction state. Just in case.
+        self.bs_broadcast(":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(name, bid["nick"],bid["bid"],self.nickname))
+        ## End of bs_sold
         d = self.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}",bid["id"],bid["bid"],self.ircd.bidserv_auction_item)
-        d.addCallback(self.bs_sold)
+        d.addCallback(self.bs_sold, bid)
         d.addErrback(self.bs_failsold)
     
     def bidserv_STOP(self, prefix, params):
@@ -748,27 +764,10 @@ class DBUser(IRCUser):
         self.ircd.bidserv_auction_state = 0
         self.bs_broadcast(":\x02\x034Bid by {} for ${:,.2f} removed. New highest bid is by {} for ${:,.2f}!\x02 - Called by {}".format(bad["nick"],bad["bid"],bid["nick"],bid["bid"],self.nickname))
     
-    def bs_failsold(self, result):
-        bid = self.ircd.bidserv_bids[-1]
-        self.bs_wallops(":Error updating database!! Stopping the auction regardless. Donor ID = {}, Nick = {}, Amount = ${:,.2f} - Good Luck!".format(bid["id"], bid["nick"], bid["bid"]))
-        self.bs_sold(None)
+    def bs_failsold(self, result, bid):
+        self.bs_wallops(":Error updating database!! Donor ID = {}, Nick = {}, Amount = ${:,.2f} - Good Luck!".format(bid["id"], bid["nick"], bid["bid"]))
     
-    def bs_sold(self, result):
-        item = self.ircd.bidserv_auction_item
-        name = self.ircd.bidserv_auction_name
-        bid = self.ircd.bidserv_bids[-1]
-        try:
-            with open(self.bs_log(self.ircd.bidserv_auction_item),"w") as f:
-                yaml.dump(self.ircd.bidserv_bids, f, default_flow_style=False)
-        except:
-            self.bs_wallops(":Failed to save auction logs, you'll have to read the channel logs. Sorry :(")
-            log.err()
-        self.ircd.bidserv_auction_state = 0
-        self.ircd.bidserv_auction_item = None
-        self.ircd.bidserv_auction_name = None
-        self.ircd.bidserv_bids = []
-        self.ircd.save_options() # Save auction state. Just in case.
-        self.bs_broadcast(":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(name, bid["nick"],bid["bid"],self.nickname))
+    def bs_sold(self, result, bid):
         if bid["nick"] in self.ircd.users:
             u = self.ircd.users[bid["nick"]]
             u.socket.sendMessage("NOTICE", ":Congratulations! You won \"{}\". Please log in to your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(name,item), prefix=self.service_prefix("BidServ"))
