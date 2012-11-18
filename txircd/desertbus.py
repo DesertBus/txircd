@@ -786,11 +786,11 @@ class DBUser(IRCUser):
 
 DBUser.help_info = {}
 DBUser.help_info['nickserv'] = {}
-nickserv = inspect.getmembers(DBUser, lambda meth: inspect.ismethod(meth) and meth.__name__.startswith('nickserv_'))
+members = inspect.getmembers(DBUser, lambda meth: inspect.ismethod(meth) and meth.__name__.startswith('nickserv_'))
 fmtstr = "    {{:<{!s}}}  {{}}"
-name_length = max([len(m[0]) for m in nickserv]) - 9
+name_length = max([len(m[0]) for m in members]) - len('nickserv_')
 fmtstr = fmtstr.format(name_length)
-for name, method in nickserv:
+for name, method in members:
     name = name[len('nickserv_'):]
     doc = inspect.getdoc(method)
     if doc:
@@ -800,11 +800,11 @@ for name, method in nickserv:
             'long': doclines,
         }
 DBUser.help_info['bidserv'] = {}
-nickserv = inspect.getmembers(DBUser, lambda meth: inspect.ismethod(meth) and meth.__name__.startswith('bidserv_'))
+members = inspect.getmembers(DBUser, lambda meth: inspect.ismethod(meth) and meth.__name__.startswith('bidserv_'))
 fmtstr = "    {{:<{!s}}}  {{}}"
-name_length = max([len(m[0]) for m in nickserv]) - 9
+name_length = max([len(m[0]) for m in members]) - len('bidserv_')
 fmtstr = fmtstr.format(name_length)
-for name, method in nickserv:
+for name, method in members:
     name = name[len('bidserv_'):]
     doc = inspect.getdoc(method)
     if doc:
