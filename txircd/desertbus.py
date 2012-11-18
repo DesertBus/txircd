@@ -684,7 +684,7 @@ class DBUser(IRCUser):
         ## End of bs_sold
         d = self.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}",bid["id"],bid["bid"],self.ircd.bidserv_auction_item)
         d.addCallback(self.bs_sold, bid)
-        d.addErrback(self.bs_failsold)
+        d.addErrback(self.bs_failsold, bid)
     
     def bidserv_STOP(self, prefix, params):
         """Cancel the current auction [Admin Only]
