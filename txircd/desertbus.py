@@ -321,33 +321,17 @@ class DBUser(IRCUser):
     
     def nickserv_HELP(self, prefix, params):
         if not params:
-            # Get all available commands
-            methods = filter(lambda x: x[0].startswith("nickserv_"), inspect.getmembers(self, inspect.ismethod))
-            # Prepare the format string to make everything nice
-            fmtstr = "    {{:<{!s}}}  {{}}"
-            name_length = max([len(m[0]) for m in methods]) - 9
-            fmtstr = fmtstr.format(name_length)
-            # Include the header
             lines = chunk_message(NICKSERV_HELP_MESSAGE, self.ircd.server_motd_line_length)
             lines.append("")
-            # Add the commands and make them pretty
-            for m in methods:
-                if m[0] == "nickserv_USAGE" or m[0] == "nickserv_HELP":
-                    continue
-                doc = inspect.getdoc(m[1])
-                lines.append(fmtstr.format(m[0][9:], doc.splitlines()[0]))
-            # Now dump all that text to the user
+            lines.extend(info['short'] for key, info in self.help_info['nickserv'].items() if key not in ['USAGE', 'HELP'])
             for l in lines:
                 self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("NickServ"))
         else:
-            # Try to load the command
-            func = getattr(self, "nickserv_{}".format(params[0].upper()), None)
-            if not func: # Doesn't exist :(
+            info = self.help_info['nickserv'].get(params[0].upper(), None)
+            if not info: # Doesn't exist :(
                 self.sendMessage("NOTICE", ":Unknown command \x02{}\x0F. \"/msg NickServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("NickServ"))
             else:
-                doc = inspect.getdoc(func)
-                lines = doc.splitlines()[1:] # Cut out the short help message
-                for l in lines: # Print the long message
+                for l in info['long']: # Print the long message
                     self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("NickServ"))
     
     def nickserv_ID(self, prefix, params):
@@ -525,35 +509,19 @@ class DBUser(IRCUser):
     
     def bidserv_HELP(self, prefix, params):
         if not params:
-            # Get all available commands
-            methods = filter(lambda x: x[0].startswith("bidserv_"), inspect.getmembers(self, inspect.ismethod))
-            # Prepare the format string to make everything nice
-            fmtstr = "    {{:<{!s}}}  {{}}"
-            name_length = max([len(m[0]) for m in methods]) - 8
-            fmtstr = fmtstr.format(name_length)
-            # Include the header
             lines = chunk_message(BIDSERV_HELP_MESSAGE, self.ircd.server_motd_line_length)
             lines.append("")
-            # Add the commands and make them pretty
-            for m in methods:
-                if m[0] == "bidserv_USAGE" or m[0] == "bidserv_HELP":
-                    continue
-                doc = inspect.getdoc(m[1])
-                lines.append(fmtstr.format(m[0][8:], doc.splitlines()[0]))
-            # Now dump all that text to the user
+            lines.extend(info['short'] for key, info in self.help_info['bidserv'].items() if key not in ['USAGE', 'HELP'])
             for l in lines:
                 self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("BidServ"))
         else:
-            # Try to load the command
-            func = getattr(self, "bidserv_{}".format(params[0].upper()), None)
-            if not func: # Doesn't exist :(
+            info = self.help_info['bidserv'].get(params[0].upper(), None)
+            if not info: # Doesn't exist :(
                 self.sendMessage("NOTICE", ":Unknown command \x02{}\x0F. \"/msg BidServ HELP\" for help.".format(params[0]), prefix=self.service_prefix("BidServ"))
             else:
-                doc = inspect.getdoc(func)
-                lines = doc.splitlines()[1:] # Cut out the short help message
-                for l in lines: # Print the long message
+                for l in info['long']: # Print the long message
                     self.sendMessage("NOTICE", ":{}".format(l), prefix=self.service_prefix("BidServ"))
-    
+
     def bidserv_BID(self, prefix, params):
         """Bid in the active auction
         Syntax: \x02BID \x1Famount\x1F \x1F[Smack Talk]\x0F
@@ -563,7 +531,7 @@ class DBUser(IRCUser):
         BidServ will echo it to the channel along with any provided
         smack talk."""
         if not params:
-            self.sendMessage("NOTICE", ":Syntax: \x02BID \x1Famount\x1F \x1F[Smack Talk]\x0F".format(params[0]), prefix=self.service_prefix("BidServ"))
+            self.sendMessage("NOTICE", ":Syntax: \x02BID \x1Famount\x1F \x1F[Smack Talk]\x0F", prefix=self.service_prefix("BidServ"))
             return
         if not self.nickserv_id:
             self.sendMessage("NOTICE", ":You must be logged in to bid. \"/msg NickServ HELP\" for help.", prefix=self.service_prefix("BidServ"))
@@ -814,3 +782,34 @@ class DBUser(IRCUser):
         for c in self.ircd.channels.itervalues():
             for u in c.users.itervalues():
                 u.sendMessage("PRIVMSG", message, to=c.name, prefix=self.service_prefix("BidServ"))
+
+
+DBUser.help_info = {}
+DBUser.help_info['nickserv'] = {}
+nickserv = inspect.getmembers(DBUser, lambda meth: inspect.ismethod(meth) and meth.__name__.startswith('nickserv_'))
+fmtstr = "    {{:<{!s}}}  {{}}"
+name_length = max([len(m[0]) for m in nickserv]) - 9
+fmtstr = fmtstr.format(name_length)
+for name, method in nickserv:
+    name = name[len('nickserv_'):]
+    doc = inspect.getdoc(method)
+    if doc:
+        doclines = doc.splitlines()
+        DBUser.help_info['nickserv'][name] = {
+            'short': fmtstr.format(name, doclines.pop(0)),
+            'long': doclines,
+        }
+DBUser.help_info['bidserv'] = {}
+nickserv = inspect.getmembers(DBUser, lambda meth: inspect.ismethod(meth) and meth.__name__.startswith('bidserv_'))
+fmtstr = "    {{:<{!s}}}  {{}}"
+name_length = max([len(m[0]) for m in nickserv]) - 9
+fmtstr = fmtstr.format(name_length)
+for name, method in nickserv:
+    name = name[len('bidserv_'):]
+    doc = inspect.getdoc(method)
+    if doc:
+        doclines = doc.splitlines()
+        DBUser.help_info['bidserv'][name] = {
+            'short': fmtstr.format(name, doclines.pop(0)),
+            'long': doclines,
+        }
