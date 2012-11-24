@@ -7,30 +7,6 @@ class Module(object):
 	def hook(self, base):
 		self.ircd = base
 		return self
-	def onJoinCheck(self, channel, user, final):
-		return "pass"
-	def onJoinComplete(self, channel, user):
-		pass
-	def onMessage(self, msgType, sender, target, message):
-		return ["allow"]
-	def onPart(self, channel, user, reason):
-		pass
-	def onTopicChange(self, channel, user, topic):
-		pass
-	def onConnect(self, connection):
-		pass
-	def onRegister(self, user):
-		return True
-	def onQuit(self, user, reason):
-		pass
-	def onCommandExtra(self, command, params):
-		pass
-	def onMetadataUpdate(self, user, key, oldvalue, newvalue):
-		pass
-	def onRecvData(self, data):
-		pass
-	def onSendData(self, data):
-		pass
 
 class Mode(object):
 	def hook(self, base):
