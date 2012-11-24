@@ -42,9 +42,16 @@ class NickCommand(command):
 			if user.registered == 0:
 				user.register()
 
-def spawn():
-	return {
-		"commands": {
-			"NICK": NickCommand()
+def Spawner(object):
+	def __init__(self, ircd):
+		self.ircd = ircd
+	
+	def spawn(self):
+		return {
+			"commands": {
+				"NICK": NickCommand()
+			}
 		}
-	}
+	
+	def cleanup(self):
+		del self.ircd.commands["NICK"]
