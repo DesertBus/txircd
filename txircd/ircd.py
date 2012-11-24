@@ -310,9 +310,13 @@ class IRCD(Factory):
 		self.stats_timer.start(1)
 		
 		# load RFC-required modules
-		self.load_module("cmd_user")
-		self.load_module("cmd_nick")
-		self.load_module("cmd_pass")
+		rfc_spec = ["cmd_user", "cmd_nick", "cmd_pass"]
+		for module in rfc_spec:
+			check = self.load_module(module)
+			if not check:
+				log.msg("An RFC-required capability could not be loaded!")
+				reactor.stop()
+				return
 	
 	def rehash(self):
 		try:
