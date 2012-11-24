@@ -249,7 +249,21 @@ class IRCD(Factory):
 		self.channels = CaseInsensitiveDictionary()
 		self.peerConnections = {}
 		self.modules = {}
-		self.actions = []
+		self.actions = {
+			"joincheck": [],
+			"joincomplete": [],
+			"message": [],
+			"part": [],
+			"topicchange": [],
+			"connect": [],
+			"register": [],
+			"quit": [],
+			"commandextra": [],
+			"commandunknown": [],
+			"metadataupdate": [],
+			"recvdata": [],
+			"senddata": []
+		}
 		self.commands = {}
 		self.channel_modes = [{}, {}, {}, {}]
 		self.channel_mode_type = {}
