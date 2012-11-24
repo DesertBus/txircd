@@ -423,20 +423,25 @@ class IRCD(Factory):
 			mod_find = imp.find_module("txircd/modules/{}".format(name))
 		except ImportError:
 			log.msg("Module not found: {}".format(name))
-			return None
+			return False
 		try:
 			mod_load = imp.load_module(name, mod_find[0], mod_find[1], mod_find[2])
 		except ImportError:
 			log.msg("Could not load module: {}".format(name))
 			mod_find[0].close()
-			return None
+			return False
 		mod_find[0].close()
 		try:
-			mod_contains = mod_load.spawn()
+			mod_spawner = mod_load.Spawner(self)
 		except:
 			log.msg("Module is not a valid txircd module: {}".format(name))
-			return None
-		self.modules[name] = {}
+			return False
+		try:
+			mod_contains = mod_spawner.spawn()
+		except:
+			log.msg("Module is not a valid txircd module: {}".format(name))
+			return False
+		self.modules[name] = mod_spawner
 		if "commands" in mod_contains:
 			self.modules[name]["commands"] = []
 			for command, implementation in mod_contains["commands"].iteritems():
@@ -497,7 +502,7 @@ class IRCD(Factory):
 				new_action = action.hook(self)
 				self.actions.append(new_action)
 				self.modules[name]["actions"].append(new_action)
-		return mod_load
+		return True
 	
 	def buildProtocol(self, addr):
 		if self.dead:
