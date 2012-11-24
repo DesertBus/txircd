@@ -250,8 +250,7 @@ class IRCD(Factory):
 		self.peerConnections = {}
 		self.modules = {}
 		self.actions = {
-			"joincheck": [],
-			"joincomplete": [],
+			"join": [],
 			"message": [],
 			"part": [],
 			"topicchange": [],
@@ -260,6 +259,7 @@ class IRCD(Factory):
 			"quit": [],
 			"commandextra": [],
 			"commandunknown": [],
+			"commandpermission": [],
 			"metadataupdate": [],
 			"recvdata": [],
 			"senddata": []
@@ -302,6 +302,7 @@ class IRCD(Factory):
 			"SHUN": ["{ident}@{host}", "{ident}@{ip}"]
 		}
 		
+		self.servconfig = {}
 		if not options:
 			options = {}
 		self.load_options(options)
@@ -331,6 +332,8 @@ class IRCD(Factory):
 				log.msg("An RFC-required capability could not be loaded!")
 				reactor.stop()
 				return
+		for module in self.server_modules:
+			self.load_module(module)
 	
 	def rehash(self):
 		try:
@@ -344,6 +347,9 @@ class IRCD(Factory):
 		# Populate attributes with options
 		for var in default_options.iterkeys():
 			setattr(self, var, options[var] if var in options else default_options[var])
+		for var, value in options.itervalues():
+			if var not in default_options:
+				self.servconfig[var] = value
 		# Unserialize xlines
 		for key in self.xlines.iterkeys():
 			self.xlines[key] = CaseInsensitiveDictionary()
@@ -464,12 +470,10 @@ class IRCD(Factory):
 			return False
 		self.modules[name] = mod_spawner
 		if "commands" in mod_contains:
-			self.modules[name]["commands"] = []
 			for command, implementation in mod_contains["commands"].iteritems():
 				if command in self.commands:
 					log.msg("Module {} tries to reimplement command {}".format(name, command))
 					continue
-				self.modules[name]["commands"].append(command)
 				self.commands[command] = implementation.hook(self)
 		if "modes" in mod_contains:
 			for mode, implementation in mod_contains["modes"].iteritems():
@@ -501,9 +505,6 @@ class IRCD(Factory):
 							continue
 						symbol = symbol[0]
 						self.prefixes[mode[2]] = [implementation.prefixSymbol(), implementation]
-					if "chanmodes" not in self.modules[name]:
-						self.modules[name]["chanmodes"] = {}
-					self.modules[name]["chanmodes"][mode[2]] = modetype
 					self.channel_mode_type[mode[2]] = modetype
 				elif mode[0] == "u":
 					if modetype == -1:
@@ -512,17 +513,12 @@ class IRCD(Factory):
 					if mode[2] in self.user_mode_type:
 						log.msg("Module {} tries to reimplement user mode {}".format(name, mode))
 						continue
-					if "usermodes" not in self.modules[name]:
-						self.modules[name]["usermodes"] = []
-					self.modules[name]["usermodes"].append(mode[2])
 					self.user_modes[modetype][mode[2]] = implementation.hook(self)
 					self.user_mode_type[mode[2]] = modetype
 		if "actions" in mod_contains:
-			self.modules[name]["actions"] = []
 			for action in mod_contains["actions"]:
 				new_action = action.hook(self)
 				self.actions.append(new_action)
-				self.modules[name]["actions"].append(new_action)
 		return True
 	
 	def buildProtocol(self, addr):

@@ -20,6 +20,8 @@ class Mode(object):
 		return True
 	def onJoin(self, channel, user, params):
 		return "pass"
+	def checkPermission(self, user, cmd, params):
+		return "pass"
 	def onMessage(self, sender, target, message):
 		return ["pass"]
 	def onPart(self, channel, user, reason):
@@ -36,7 +38,7 @@ def Command(object):
 	def onUse(self, user, params):
 		pass
 	def processParams(self, user, params):
-		return {
+		return [ "cu", {
 			"user": user,
 			"params": params
-		}
+		} ]
