@@ -35,3 +35,8 @@ def Command(object):
 		return self
 	def onUse(self, user, params):
 		pass
+	def processParams(self, user, params):
+		return {
+			"user": user,
+			"params": params
+		}
