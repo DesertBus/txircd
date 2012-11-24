@@ -419,6 +419,9 @@ class IRCD(Factory):
 		return DeferredList(deferreds)
 	
 	def load_module(self, name):
+		if name in self.modules:
+			self.modules[name].cleanup()
+			del self.modules[name]
 		try:
 			mod_find = imp.find_module("txircd/modules/{}".format(name))
 		except ImportError:
