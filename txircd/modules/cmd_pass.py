@@ -16,11 +16,20 @@ class PassCommand(Command, Module):
 			user.sendMessage("ERROR", ":Closing link: ({}@{}) [Access denied]".format(user.username, user.hostname), to=None, prefix=None)
 			return False
 
-def spawn():
-	passcmd = PassCommand()
-	return {
-		"actions": [passcmd],
-		"commands": {
-			"PASS": passcmd
+def Spawner(object):
+	def __init__(self, ircd):
+		self.ircd = ircd
+		self.passcmd = PassCommand()
+	
+	def spawn():
+		return {
+			"actions": [self.passcmd],
+			"commands": {
+				"PASS": self.passcmd
+			}
 		}
-	}
+	
+	def cleanup():
+		self.ircd.actions.remove(self.passcmd)
+		del self.ircd.commands["PASS"]
+		del self.passcmd

@@ -19,9 +19,16 @@ class UserCommand(Command):
 		if user.registered == 0:
 			user.register()
 
-def spawn():
-	return {
-		"commands": {
-			"USER": UserCommand()
+def Spawner(object):
+	def __init__(self, ircd):
+		self.ircd = ircd
+	
+	def spawn():
+		return {
+			"commands": {
+				"USER": UserCommand()
+			}
 		}
-	}
+	
+	def cleanup():
+		del self.ircd.commands["USER"]
