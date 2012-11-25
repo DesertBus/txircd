@@ -324,6 +324,9 @@ class IRCD(Factory):
 		self.stats_log = DailyLogFile("log",logfile)
 		self.stats_timer.start(1)
 		
+		self.all_module_load()
+	
+	def all_module_load(self):
 		# load RFC-required modules
 		rfc_spec = ["cmd_user", "cmd_nick", "cmd_pass"]
 		for module in rfc_spec:
@@ -339,6 +342,7 @@ class IRCD(Factory):
 		try:
 			with open(self.config) as f:
 				self.load_options(yaml.safe_load(f))
+			self.all_module_load()
 		except:
 			return False
 		return True
