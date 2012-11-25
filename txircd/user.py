@@ -50,6 +50,7 @@ class IRCUser(object):
 		self.server = parent.factory.server_name
 		self.signon = now()
 		self.lastactivity = now()
+		self.lastpong = now()
 		self.mode = {}
 		self.channels = CaseInsensitiveDictionary()
 		self.disconnected = Deferred()
@@ -519,15 +520,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_PING(self, prefix, params):
-		if params:
-			self.sendMessage("PONG", ":{}".format(params[0]), to=self.ircd.server_name)
-		else:
-			self.sendMessage(irc.ERR_NOORIGIN, ":No origin specified")
-	
-	def irc_PONG(self, prefix, params):
-		pass
-	
 	def irc_OPER(self, prefix, params):
 		if len(params) < 2:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters")
