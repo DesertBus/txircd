@@ -428,6 +428,11 @@ class IRCD(Factory):
 		return True
 	
 	def cleanup(self):
+		for module in self.modules.itervalues():
+			try:
+				module.cleanup()
+			except:
+				pass
 		# Track the disconnections so we know they get done
 		deferreds = []
 		# Cleanly disconnect all clients
@@ -451,7 +456,10 @@ class IRCD(Factory):
 	
 	def load_module(self, name):
 		if name in self.modules:
-			self.modules[name].cleanup()
+			try:
+				self.modules[name].cleanup()
+			except:
+				pass
 			del self.modules[name]
 		try:
 			mod_find = imp.find_module("txircd/modules/{}".format(name))
