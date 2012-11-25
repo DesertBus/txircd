@@ -12,8 +12,6 @@ class Mode(object):
 	def hook(self, base):
 		self.ircd = base
 		return self
-	def prefixSymbol(self):
-		return None
 	def checkSet(self, channel, param):
 		return True
 	def checkUnset(self, channel, param):
@@ -38,7 +36,7 @@ def Command(object):
 	def onUse(self, user, params):
 		pass
 	def processParams(self, user, params):
-		return [ "cu", {
+		return {
 			"user": user,
 			"params": params
-		} ]
+		}
