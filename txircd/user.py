@@ -119,10 +119,10 @@ class IRCUser(object):
 	
 	def handleCommand(self, command, prefix, params):
 		method = getattr(self, "irc_{}".format(command), None)
-		if command != "PING" and command != "PONG":
-			self.lastactivity = now()
 		if command in self.ircd.commands:
-			self.ircd.commands[command].onUse(self, params)
+			cmd = self.ircd.commands[command]
+			cmd.updateActivity(self)
+			cmd.onUse(self, params)
 		else:
 			self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
 	
