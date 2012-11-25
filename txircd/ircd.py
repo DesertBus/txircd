@@ -499,12 +499,10 @@ class IRCD(Factory):
 					if modetype >= 0:
 						self.channel_modes[modetype][mode[2]] = implementation.hook(self)
 					else:
-						symbol = implementation.prefixSymbol()
-						if not symbol:
+						if len(mode) < 4:
 							log.msg("Module {} tries to register a prefix without a symbol")
 							continue
-						symbol = symbol[0]
-						self.prefixes[mode[2]] = [implementation.prefixSymbol(), implementation]
+						self.prefixes[mode[2]] = [mode[3], implementation]
 					self.channel_mode_type[mode[2]] = modetype
 				elif mode[0] == "u":
 					if modetype == -1:
@@ -516,9 +514,11 @@ class IRCD(Factory):
 					self.user_modes[modetype][mode[2]] = implementation.hook(self)
 					self.user_mode_type[mode[2]] = modetype
 		if "actions" in mod_contains:
-			for action in mod_contains["actions"]:
-				new_action = action.hook(self)
-				self.actions.append(new_action)
+			for actiontype, actionfunc in mod_contains["actions"].iteritems():
+				if actiontype in self.actions:
+					self.actions[actiontype].append(actionfunc)
+				else:
+					log.msg("Module {} registers an action of an invalid type".format(name))
 		return True
 	
 	def buildProtocol(self, addr):
