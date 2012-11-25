@@ -313,54 +313,6 @@ class IRCUser(object):
 			self.sendMessage(irc.RPL_NAMREPLY, "=", cdata.name, ":{}".format(l))
 		self.sendMessage(irc.RPL_ENDOFNAMES, cdata.name, ":End of /NAMES list")
 	
-	def join_check(self, channel, params):
-		channel = channel[:64]
-		again_mod = []
-		again_mode = []
-		for module in self.ircd.actions:
-			permission = module.onJoinCheck(cdata, self, False)
-			if permission == "allow":
-				return True
-			if permission == "block":
-				if not cdata.users:
-					del self.ircd.channels[channel]
-					del cdata
-				return False
-			if permission == "again":
-				again_mod.append(module)
-		for modetype in self.ircd.channel_modes:
-			for mode, handler in modetype.iteritems():
-				if mode in cdata.mode:
-					permission = handler.onJoin(cdata, self, params)
-					if permission == "allow":
-						return True
-					if permission == "block":
-						if not cdata.users:
-							del self.ircd.channels[channel]
-							del cdata
-						return False
-					if permission == "again":
-						again_mode.append(handler)
-		for module in again_mod:
-			permission = module.onJoinCheck(cdata, self, True)
-			if permission == "allow":
-				return True
-			if permission == "block":
-				if not cdata.users:
-					del self.ircd.channels[channel]
-					del cdata
-				return False
-		for mode in again_mode:
-			permission = mode.onJoin(cdata, self, params)
-			if permission == "allow":
-				return True
-			if permission == "block":
-				if not cdata.users:
-					del self.ircd.channels[channel]
-					del cdata
-				return False
-		return True # If nothing blocked, it's acceptable
-	
 	def join(self, channel):
 		channel = channel[:64] # Limit channel names to 64 characters
 		if channel not in self.ircd.channels:
