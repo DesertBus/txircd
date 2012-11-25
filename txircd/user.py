@@ -329,8 +329,8 @@ class IRCUser(object):
 			self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
 			self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topicSetter, str(epoch(cdata.topicTime)))
 		self.report_names(cdata.name)
-		for module in self.ircd.actions:
-			action.onJoinComplete(cdata, self)
+		for modfunc in self.ircd.actions["join"]:
+			modfunc(cdata, self)
 	
 	def leave(self, channel):
 		cdata = self.ircd.channels[channel]
