@@ -3,6 +3,9 @@ from txircd.modbase import Command
 class PongCommand(Command):
 	def onUse(self, user, params):
 		user.lastpong = now()
+	
+	def updateActivity(self, user):
+		pass
 
 class Spawner(object):
 	def __init__(self, ircd):

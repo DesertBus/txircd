@@ -40,3 +40,5 @@ def Command(object):
 			"user": user,
 			"params": params
 		}
+	def updateActivity(self, user):
+		user.lastactivity = now()
