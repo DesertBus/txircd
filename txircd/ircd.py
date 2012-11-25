@@ -190,15 +190,6 @@ class IRCProtocol(irc.IRC):
 		self.factory.stats_data["total_bytes_out"] += len(line)+2
 		log.msg("sendLine: {!r}".format(line))
 		return irc.IRC.sendLine(self, line)
-
-	def irc_PING(self, prefix, params):
-		if params:
-			self.sendMessage("PONG", self.factory.server_name, ":{}".format(params[0]), prefix=self.factory.server_name)
-		else: # TODO: There's no nickname here, what do?
-			self.sendMessage(irc.ERR_NOORIGIN, "CHANGE_THIS", ":No origin specified", prefix=self.factory.server_name)
-
-	def irc_PONG(self, prefix, params):
-		pass
 	
 	def irc_CAP(self, prefix, params):
 		pass
