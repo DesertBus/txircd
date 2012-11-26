@@ -18,7 +18,7 @@ class Mode(object):
 		return True
 	def onJoin(self, channel, user, params):
 		return "pass"
-	def checkPermission(self, user, cmd, params):
+	def checkPermission(self, user, cmd, data):
 		return "pass"
 	def onMessage(self, sender, target, message):
 		return ["pass"]
@@ -33,7 +33,7 @@ def Command(object):
 	def hook(self, base):
 		self.ircd = base
 		return self
-	def onUse(self, user, params):
+	def onUse(self, user, data):
 		pass
 	def processParams(self, user, params):
 		return {
