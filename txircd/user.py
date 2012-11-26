@@ -122,9 +122,55 @@ class IRCUser(object):
 		if command in self.ircd.commands:
 			cmd = self.ircd.commands[command]
 			cmd.updateActivity(self)
-			cmd.onUse(self, params)
+			data = cmd.processParams(self, params)
+			permData = self.commandPermission(command, data)
+			if permData:
+				cmd.onUse(self, permData)
 		else:
 			self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
+	
+	def commandPermission(self, command, data):
+		tryagain = set()
+		for modfunc in self.ircd.actions["commandpermission"]:
+			permData = modfunc(self, command, data)
+			if perm == "again":
+				tryagain.add(modfunc)
+			else:
+				data = permData
+				if "force" in data and data["force"]:
+					return data
+				if not data:
+					return {}
+		if "targetchan" in data:
+			for modeset in self.ircd.channel_modes:
+				for implementation in modeset.itervalues():
+					permData = implementation.checkPermission(self, command, data)
+					if permData == "again":
+						tryagain.add(implementation.checkPermission)
+					else:
+						data = permData
+						if "force" in data and data["force"]:
+							return data
+						if not data:
+							return {}
+		for modeset in self.ircd.user_modes:
+			for implementation in modeset.itervalues():
+				permData = implementation.checkPermission(self, command, data)
+				if permData == "again":
+					tryagain.add(implementation.checkPermission)
+				else:
+					data = permData
+					if "force" in data and data["force"]:
+						return data
+					if not data:
+						return {}
+		for modfunc in tryagain:
+			data = modfunc(self, command, data)
+			if "force" in data and data["force"]:
+				return data
+			if not data:
+				return {}
+		return data
 	
 	def sendMessage(self, command, *parameter_list, **kw):
 		if "prefix" not in kw:
