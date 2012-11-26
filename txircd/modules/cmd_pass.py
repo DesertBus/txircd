@@ -24,7 +24,7 @@ def Spawner(object):
 	def spawn():
 		return {
 			"actions": {
-				"register": [self.passcmd]
+				"register": [self.passcmd.onRegister]
 			},
 			"commands": {
 				"PASS": self.passcmd
