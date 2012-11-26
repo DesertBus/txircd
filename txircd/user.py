@@ -123,6 +123,8 @@ class IRCUser(object):
 			cmd = self.ircd.commands[command]
 			cmd.updateActivity(self)
 			data = cmd.processParams(self, params)
+			if not data:
+				return
 			permData = self.commandPermission(command, data)
 			if permData:
 				cmd.onUse(self, permData)
