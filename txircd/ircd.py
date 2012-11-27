@@ -247,6 +247,7 @@ class IRCD(Factory):
 			"topicchange": [],
 			"connect": [],
 			"register": [],
+			"nick": [],
 			"quit": [],
 			"commandextra": [],
 			"commandunknown": [],
