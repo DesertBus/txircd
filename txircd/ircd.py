@@ -320,7 +320,7 @@ class IRCD(Factory):
 	
 	def all_module_load(self):
 		# load RFC-required modules
-		rfc_spec = ["cmd_user", "cmd_nick", "cmd_pass"]
+		rfc_spec = ["cmd_user", "cmd_nick", "cmd_pass", "cmd_ping", "cmd_pong", "cmd_join"]
 		for module in rfc_spec:
 			check = self.load_module(module)
 			if not check:
