@@ -19,8 +19,6 @@ class NickCommand(command):
 		if params[0] == user.nickname:
 			return # do nothing when the given nick is the exact same as the user's current nick
 		# changing nicks now
-		for action in self.ircd.actions:
-			action.onCommandExtra("NICK", params)
 		if user.registered == 0:
 			del self.ircd.users[user.nickname]
 			self.ircd.users[params[0]] = user
