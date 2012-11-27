@@ -3,7 +3,11 @@ from txircd.modbase import Command, Module
 
 class PassCommand(Command, Module):
 	def onUse(self, user, data):
+		if self.ircd.server_password and not user.password:
+			user.registered -= 1
 		user.password = data["password"]
+		if user.registered == 0:
+			user.register()
 	
 	def processParams(self, user, params):
 		if user.registered == 0:
@@ -16,6 +20,10 @@ class PassCommand(Command, Module):
 			"user": user,
 			"password": params[0]
 		}
+	
+	def onConnect(self, user):
+		if self.ircd.server_password:
+			user.registered += 1 # Make password a required step in registration
 	
 	def onRegister(self, user):
 		if self.ircd.server_password and self.ircd.server_password != user.password:
@@ -30,6 +38,7 @@ def Spawner(object):
 	def spawn():
 		return {
 			"actions": {
+				"connect": [self.passcmd.onConnect],
 				"register": [self.passcmd.onRegister]
 			},
 			"commands": {
