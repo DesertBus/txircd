@@ -410,6 +410,25 @@ class IRCUser(object):
 			u.sendMessage("PART", ":{}".format(reason), to=cdata.name, prefix=self.prefix())
 		self.leave(channel)
 	
+	def nick(self, newNick):
+		oldNick = self.nickname
+		del self.ircd.users[self.nickname]
+		self.ircd.users[newNick] = user
+		notify = set()
+		notify.append(user)
+		for chan in self.channels.iterkeys():
+			cdata = self.ircd.channels[chan]
+			del cdata.users[self.nickname]
+			cdata.users[newNick] = self
+			for cuser in cdata.users:
+				notify.append(cuser)
+		oldprefix = user.prefix()
+		user.nickname = newNick
+		for u in notify:
+			u.sendMessage("NICK", to=params[0], prefix=oldprefix)
+		for modfunc in self.ircd.actions["nick"]:
+			modfunc(self, oldNick)
+	
 	def msg_cmd(self, cmd, params):
 		if not params:
 			return self.sendMessage(irc.ERR_NORECIPIENT, ":No recipient given ({})".format(cmd))
