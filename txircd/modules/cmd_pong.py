@@ -1,7 +1,7 @@
 from txircd.modbase import Command
 
 class PongCommand(Command):
-	def onUse(self, user, params):
+	def onUse(self, user, data):
 		user.lastpong = now()
 	
 	def updateActivity(self, user):
