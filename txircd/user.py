@@ -577,22 +577,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_QUIT(self, prefix, params):
-		if not self.nickname in self.ircd.users:
-			return # Can't quit twice
-		self.add_to_whowas()
-		reason = params[0] if params else "Client exited"
-		quit_to = set()
-		for c in self.channels.keys():
-			for u in self.ircd.channels[c].users.itervalues():
-				quit_to.add(u)
-			self.leave(c)
-		for user in quit_to:
-			user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
-		del self.ircd.users[self.nickname]
-		self.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason), to=None, prefix=None)
-		self.socket.transport.loseConnection()
-	
 	def irc_MODE(self, prefix, params):
 		if not params:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "MODE", ":Not enough parameters")
