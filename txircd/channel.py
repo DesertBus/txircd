@@ -10,6 +10,7 @@ class IRCChannel(object):
 		self.mode = {}
 		self.users = CaseInsensitiveDictionary()
 		self.metadata = {}
+		self.cache = {}
 	
 	def setTopic(self, topic, setter):
 		self.topic = topic
