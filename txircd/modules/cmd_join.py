@@ -22,7 +22,10 @@ class JoinCommand(Command):
 		remove = []
 		for chan in joining:
 			if chan["channel"] in user.channels:
-				remove.add(chan)
+				remove.append(chan)
+			if chan["channel"][0] not in self.ircd.channel_prefixes:
+				user.sendMessage(irc.ERR_BADCHANMASK, chan["channel"], ":Bad Channel Mask")
+				remove.append(chan)
 		for chan in remove:
 			joining.remove(chan)
 		channels = keys = []
