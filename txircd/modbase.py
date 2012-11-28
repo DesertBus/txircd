@@ -12,9 +12,9 @@ class Mode(object):
 	def hook(self, base):
 		self.ircd = base
 		return self
-	def checkSet(self, channel, param):
+	def checkSet(self, target, param):
 		return True
-	def checkUnset(self, channel, param):
+	def checkUnset(self, target, param):
 		return True
 	def onJoin(self, channel, user, params):
 		return "pass"
