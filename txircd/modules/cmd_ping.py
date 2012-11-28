@@ -1,3 +1,4 @@
+from twisted.words.protocols import irc
 from txircd.modbase import Command
 
 class PingCommand(Command):
