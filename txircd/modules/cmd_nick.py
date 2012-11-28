@@ -4,26 +4,12 @@ from txircd.utils import VALID_USERNAME, irc_lower
 
 class NickCommand(command):
 	def onUse(self, user, data):
-		if not params:
-			user.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")
-			return
-		if not params[0]:
-			user.sendMessage(irc.ERR_ERRONEUSNICKNAME, "*", ":Erroneous nickname")
-			return
-		if not VALID_USERNAME.match(params[0]):
-			user.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname")
-			return
-		if params[0] in self.ircd.users and irc_lower(params[0]) != irc_lower(user.nickname):
-			user.sendMessage(irc.ERR_NICKNAMEINUSE, self.ircd.users[params[0]].nickname, ":Nickname is already in use")
-			return
-		if params[0] == user.nickname:
-			return # do nothing when the given nick is the exact same as the user's current nick
 		if user.registered == 0:
-			user.nick(params["nick"])
+			user.nick(data["nick"])
 		else:
 			if not user.nickname:
 				user.registered -= 1
-			user.nickname = params["nick"]
+			user.nickname = data["nick"]
 			if user.registered == 0:
 				user.register()
 	
