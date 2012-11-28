@@ -375,7 +375,7 @@ class IRCUser(object):
 		for u in cdata.users.itervalues():
 			u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix())
 		if cdata.topic is None:
-			self.sendMessage(irc.RPL_NOTOPIC, cdata.name, "No topic is set")
+			self.sendMessage(irc.RPL_NOTOPIC, cdata.name, ":No topic is set")
 		else:
 			self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
 			self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topicSetter, str(epoch(cdata.topicTime)))
