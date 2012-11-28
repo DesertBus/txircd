@@ -400,18 +400,6 @@ class IRCUser(object):
 			del self.ircd.channels[cdata.name] # destroy the empty channel
 			cdata.log.close()
 	
-	def part(self, channel, reason):
-		if channel not in self.ircd.channels:
-			self.sendMessage(irc.ERR_NOSUCHCHANNEL, channel, ":No such channel")
-			return
-		cdata = self.ircd.channels[channel]
-		if self.nickname not in cdata.users:
-			self.sendMessage(irc.ERR_NOTONCHANNEL, channel, ":You're not on that channel")
-			return
-		for u in cdata.users.itervalues():
-			u.sendMessage("PART", ":{}".format(reason), to=cdata.name, prefix=self.prefix())
-		self.leave(channel)
-	
 	def nick(self, newNick):
 		oldNick = self.nickname
 		del self.ircd.users[self.nickname]
@@ -604,14 +592,6 @@ class IRCUser(object):
 		del self.ircd.users[self.nickname]
 		self.sendMessage("ERROR",":Closing Link: {} [{}]".format(self.prefix(), reason), to=None, prefix=None)
 		self.socket.transport.loseConnection()
-
-	def irc_PART(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "PART", ":Not enough parameters")
-		channels = params[0].split(",")
-		reason = params[1] if len(params) > 1 else self.nickname
-		for c in channels:
-			self.part(c, reason)
 	
 	def irc_MODE(self, prefix, params):
 		if not params:
