@@ -15,7 +15,7 @@ class JoinCommand(Command):
 		joining = []
 		for i in range(0, len(channels)):
 			joining.append({"channel": channels[i][:64], "key": keys[i]})
-		remove = set()
+		remove = []
 		for chan in joining:
 			if chan["channel"] in user.channels:
 				remove.add(chan)
