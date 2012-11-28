@@ -651,35 +651,6 @@ class IRCUser(object):
 					self.sendMessage(irc.RPL_INVITELIST, cdata.name, invexmask, settertime[0], str(epoch(settertime[1])))
 			self.sendMessage(irc.RPL_ENDOFINVITELIST, cdata.name, ":End of channel invite exception list")
 
-	def irc_TOPIC(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "TOPIC", ":Not enough parameters")
-			return
-		if params[0] not in self.ircd.channels:
-			self.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
-			return
-		cdata = self.ircd.channels[params[0]]
-		if len(params) == 1:
-			if cdata.topic["message"] is None:
-				self.sendMessage(irc.RPL_NOTOPIC, cdata.name, "No topic is set")
-			else:
-				self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic["message"]))
-				self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topic["author"], str(epoch(cdata.topic["created"])))
-		else:
-			if self.nickname not in cdata.users:
-				self.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not in that channel")
-			elif not cdata.mode.has("t") or self.hasAccess(params[0],"h") or self.mode.has("o"):
-				# If the channel is +t and the user has a rank that is halfop or higher, allow the topic change
-				cdata.topic["message"] = params[1][:316] # With the longest possible hostmask and a channel name length of 64, the maximum safe topic length is 316
-				cdata.topic["author"] = self.nickname
-				cdata.topic["created"] = now()
-				for u in cdata.users.itervalues():
-					u.sendMessage("TOPIC", ":{}".format(cdata.topic["message"]), to=cdata.name, prefix=self.prefix())
-				if not cdata.log.closed:
-					cdata.log.write("[{:02d}:{:02d}:{:02d}] {} changed the topic to {}\n".format(now().hour, now().minute, now().second, self.nickname, params[1]))
-			else:
-				self.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You do not have access to change the topic on this channel")
-	
 	def irc_KICK(self, prefix, params):
 		if not params or len(params) < 2:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "KICK", ":Not enough parameters")
