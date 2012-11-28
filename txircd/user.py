@@ -587,17 +587,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_OPER(self, prefix, params):
-		if len(params) < 2:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters")
-		elif self.ip not in self.ircd.oper_ips:
-			self.sendMessage(irc.ERR_NOOPERHOST, ":No O-lines for your host")
-		elif params[0] not in self.ircd.oper_logins or self.ircd.oper_logins[params[0]] != crypt(params[1],self.ircd.oper_logins[params[0]]):
-			self.sendMessage(irc.ERR_PASSWDMISMATCH, ":Password incorrect")
-		else:
-			self.mode.modes["o"] = True
-			self.sendMessage(irc.RPL_YOUREOPER, ":You are now an IRC operator")
-	
 	def irc_QUIT(self, prefix, params):
 		if not self.nickname in self.ircd.users:
 			return # Can't quit twice
