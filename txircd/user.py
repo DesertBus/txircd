@@ -364,6 +364,8 @@ class IRCUser(object):
 	
 	def join(self, channel):
 		channel = channel[:64] # Limit channel names to 64 characters
+		if channel in self.channels:
+			return
 		if channel not in self.ircd.channels:
 			self.ircd.channels[channel] = IRCChannel(channel)
 		cdata = self.ircd.channels[channel]
