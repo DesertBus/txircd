@@ -8,6 +8,9 @@ class JoinCommand(Command):
 			user.join(chan)
 	
 	def processParams(self, user, params):
+		if not params:
+			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "JOIN", ":Not enough parameters")
+			return {}
 		channels = params[0].split(",")
 		keys = params[1].split(",") if len(params) > 1 else []
 		while len(keys) < len(channels):
