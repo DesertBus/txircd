@@ -367,7 +367,7 @@ class IRCUser(object):
 		if channel in self.channels:
 			return
 		if channel not in self.ircd.channels:
-			self.ircd.channels[channel] = IRCChannel(channel)
+			self.ircd.channels[channel] = IRCChannel(self.ircd, channel)
 		cdata = self.ircd.channels[channel]
 		hostmask = irc_lower(self.prefix())
 		self.channels[cdata.name] = {"status":""}
