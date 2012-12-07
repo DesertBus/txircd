@@ -13,14 +13,15 @@ class IRCChannel(object):
 		self.metadata = {}
 		self.cache = {}
 	
-	def modeString(self):
+	def modeString(self, user):
 		modes = "+"
 		params = []
 		for mode, param in self.mode.iteritems():
-			if self.ircd.channel_mode_type[mode] > 0:
+			modetype = self.ircd.channel_mode_type[mode]
+			if modetype > 0:
 				modes += mode
 				if param:
-					params.append(param)
+					params.append(self.ircd.channel_modes[modetype][mode].showParam(user, param))
 		return ("{} {}".format(modes, " ".join(params)) if params else modes)
 	
 	def setTopic(self, topic, setter):

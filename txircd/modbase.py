@@ -16,6 +16,8 @@ class Mode(object):
 		return True
 	def checkUnset(self, user, target, param):
 		return True
+	def showParam(self, user, param):
+		return param
 	def onJoin(self, channel, user, params):
 		return "pass"
 	def checkPermission(self, user, cmd, data):
