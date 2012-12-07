@@ -506,10 +506,15 @@ class IRCD(Factory):
 					if modetype >= 0:
 						self.channel_modes[modetype][mode[2]] = implementation.hook(self)
 					else:
-						if len(mode) < 4:
-							log.msg("Module {} tries to register a prefix without a symbol")
+						if len(mode) < 5:
+							log.msg("Module {} tries to register a prefix without a symbol or level")
 							continue
-						self.prefixes[mode[2]] = [mode[3], implementation]
+						try:
+							level = int(mode[4:])
+						except:
+							log.msg("Module {} tries to register a prefix without a numeric level")
+							continue
+						self.prefixes[mode[2]] = [mode[3], level, implementation]
 					self.channel_mode_type[mode[2]] = modetype
 				elif mode[0] == "u":
 					if modetype == -1:
