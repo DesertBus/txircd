@@ -14,15 +14,15 @@ class IRCChannel(object):
 		self.cache = {}
 	
 	def modeString(self, user):
-		modes = "+"
+		modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
 		params = []
 		for mode, param in self.mode.iteritems():
 			modetype = self.ircd.channel_mode_type[mode]
 			if modetype > 0:
-				modes += mode
+				modes.append(mode)
 				if param:
 					params.append(self.ircd.channel_modes[modetype][mode].showParam(user, param))
-		return ("{} {}".format(modes, " ".join(params)) if params else modes)
+		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "".join(modes))
 	
 	def setTopic(self, topic, setter):
 		self.topic = topic
