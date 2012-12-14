@@ -41,7 +41,12 @@ class ModeCommand(Command):
 						udata.channels[channel.name]["status"].remove(mode)
 						modeDisplay.append(modedata)
 			elif modetype == 0:
-				if adding:
+				if not param:
+					if mode in channels.mode:
+						self.ircd.channel_modes[modetype][mode].showParam(user, channels.mode[mode])
+					else:
+						self.ircd.channel_modes[modetype][mode].showParam(user, [])
+				elif adding:
 					if mode not in channel.mode:
 						channel.mode[mode] = []
 					if param not in channel.mode[mode]:
@@ -94,7 +99,12 @@ class ModeCommand(Command):
 		for modedata in modes:
 			modetype, adding, mode, param = modedata
 			if modetype == 0:
-				if adding:
+				if not param:
+					if mode in channels.mode:
+						self.ircd.channel_modes[modetype][mode].showParam(user, channels.mode[mode])
+					else:
+						self.ircd.channel_modes[modetype][mode].showParam(user, [])
+				elif adding:
 					if mode not in user.mode:
 						user.mode[mode] = []
 					if param not in user.mode[mode]:
