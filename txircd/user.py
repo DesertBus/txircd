@@ -323,6 +323,17 @@ class IRCUser(object):
 			self.ircd.save_options()
 		return matched
 	
+	def modeString(self, user):
+		modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
+		params = []
+		for mode, param in self.mode.iteritems():
+			modetype = self.ircd.user_mode_type[mode]
+			if modetype > 0:
+				modes.append(mode)
+				if param:
+					params.append(self.ircd.user_modes[modetype][mode].showParam(user, param))
+		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "".join(modes))
+	
 	def send_motd(self):
 		if self.ircd.server_motd:
 			chunks = chunk_message(self.ircd.server_motd, self.ircd.server_motd_line_length)
