@@ -396,20 +396,10 @@ class IRCUser(object):
 	
 	def leave(self, channel):
 		cdata = self.ircd.channels[channel]
-		if not cdata.log.closed:
-			cdata.log.write("[{:02d}:{:02d}:{:02d}] {} left the channel\n".format(now().hour, now().minute, now().second, self.nickname))
-		mode = self.status(cdata.name) # Clear modes
-		cdata.mode.combine("-{}".format(mode),[self.nickname for _ in mode],cdata.name)
 		del self.channels[cdata.name]
 		del cdata.users[self.nickname] # remove channel user entry
 		if not cdata.users:
-			for user in self.ircd.users.itervalues(): # Remove remaining invites and knocks
-				if cdata.name in user.invites:
-					user.invites.remove(cdata.name)
-				if cdata.name in user.knocked:
-					user.knocked.remove(cdata.name)
 			del self.ircd.channels[cdata.name] # destroy the empty channel
-			cdata.log.close()
 	
 	def nick(self, newNick):
 		oldNick = self.nickname
