@@ -578,33 +578,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_KICK(self, prefix, params):
-		if not params or len(params) < 2:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "KICK", ":Not enough parameters")
-			return
-		if len(params) == 2:
-			params.append(self.nickname) # default reason used on many IRCds
-		if params[0] not in self.ircd.channels:
-			self.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
-			return
-		if params[1] not in self.ircd.users:
-			self.sendMessage(irc.ERR_NOSUCHNICK, params[1], ":No such nick")
-			return
-		cdata = self.ircd.channels[params[0]]
-		udata = self.ircd.users[params[1]]
-		if self.nickname not in cdata.users and not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOTONCHANNEL, cdata["names"], ":You're not on that channel!")
-			return
-		if udata.nickname not in cdata.users:
-			self.sendMessage(irc.ERR_USERNOTINCHANNEL, udata.nickname, cdata.name, ":They are not on that channel")
-			return
-		if (not self.hasAccess(params[0], "h") or not self.accessLevel(params[0]) > udata.accessLevel(params[0])) and not self.mode.has("o"):
-			self.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You must be a channel half-operator")
-			return
-		for u in cdata.users.itervalues():
-			u.sendMessage("KICK", udata.nickname, ":{}".format(params[2]), to=cdata.name, prefix=self.prefix())
-		udata.leave(params[0])
-
 	def irc_WHO(self, prefix, params):
 		# When server-to-server is implemented, replace self.ircd.hostname in the replies with a way to get the (real or masked) server name for each user
 		# We don't need to worry about fixing the hopcount since most IRCds always send 0
