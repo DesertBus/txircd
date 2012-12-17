@@ -27,9 +27,12 @@ class PartCommand(Command):
 				delChan.append(chan)
 		for chan in delChan:
 			channels.remove(chan)
+		chanInstList = []
+		for chan in channels:
+			chanInstList.append(self.ircd.channels[chan])
 		return {
 			"user": user,
-			"targetchan": channels,
+			"targetchan": chanInstList,
 			"reason": reason
 		}
 

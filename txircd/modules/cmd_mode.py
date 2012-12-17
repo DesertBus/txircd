@@ -176,7 +176,7 @@ class ModeCommand(Command):
 							modeChanges.append([mode_type, adding, mode, None])
 			return {
 				"user": user,
-				"targetuser": params[0],
+				"targetuser": self.ircd.users[params[0]],
 				"modes": []
 			}
 		if params[0] in self.ircd.channels:
@@ -206,7 +206,7 @@ class ModeCommand(Command):
 							modeChanges.append([mode_type, adding, mode, None])
 			return {
 				"user": user,
-				"targetchan": params[0],
+				"targetchan": self.ircd.channels[params[0]],
 				"modes": []
 			}
 		user.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick/channel")
