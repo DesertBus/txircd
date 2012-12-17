@@ -31,11 +31,11 @@ class TopicCommand(Command):
 		if len(params) == 1:
 			return {
 				"user": user,
-				"targetchan": params[0]
+				"targetchan": self.ircd.channels[params[0]]
 			}
 		return {
 			"user": user,
-			"targetchan": params[0],
+			"targetchan": self.ircd.channels[params[0]],
 			"topic": params[1]
 		}
 
