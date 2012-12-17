@@ -217,14 +217,6 @@ class IRCD(Factory):
 		#"server": IRCServer,
 		#"service": IRCService,
 	}
-	prefix_order = "qaohv" # Hardcoded into modes :(
-	prefix_symbols = {
-		"q": "~",
-		"a": "&",
-		"o": "@",
-		"h": "%",
-		"v": "+"
-	}
 
 	def __init__(self, config, options = None):
 		reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
@@ -262,6 +254,8 @@ class IRCD(Factory):
 		self.user_modes = [{}, {}, {}, {}]
 		self.user_mode_type = {}
 		self.prefixes = {}
+		self.prefix_symbols = {}
+		self.prefix_order = []
 		self.db = None
 		self.stats = None
 		self.stats_timer = LoopingCall(self.flush_stats)
@@ -519,7 +513,25 @@ class IRCD(Factory):
 						except:
 							log.msg("Module {} tries to register a prefix without a numeric level")
 							continue
+						closestLevel = 0
+						closestModeChar = None
+						orderFail = False
+						for levelMode, levelData in self.prefixes.iteritems():
+							if level == levelData[0]:
+								log.msg("Module {} tries to register a prefix with the same rank level as an existing prefix")
+								orderFail = True
+								break
+							if levelData[0] < level and levelData > closestLevel:
+								closestLevel = levelData[0]
+								closestModeChar = levelMode
+						if orderFail:
+							continue
+						if closestModeChar:
+							self.prefix_order.insert(self.prefix_order.find(closestModeChar), mode[2])
+						else:
+							self.prefix_order.insert(0, mode[2])
 						self.prefixes[mode[2]] = [mode[3], level, implementation]
+						self.prefix_symbols[mode[3]] = mode[2]
 					self.channel_mode_type[mode[2]] = modetype
 				elif mode[0] == "u":
 					if modetype == -1:
