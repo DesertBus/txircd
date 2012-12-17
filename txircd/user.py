@@ -382,8 +382,8 @@ class IRCUser(object):
 		cdata = self.ircd.channels[channel]
 		hostmask = irc_lower(self.prefix())
 		self.channels[cdata.name] = {"status":""}
-		cdata.users[self.nickname] = self
-		for u in cdata.users.itervalues():
+		cdata.users.add(self)
+		for u in cdata.users:
 			u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix())
 		if cdata.topic is None:
 			self.sendMessage(irc.RPL_NOTOPIC, cdata.name, ":No topic is set")
@@ -397,7 +397,7 @@ class IRCUser(object):
 	def leave(self, channel):
 		cdata = self.ircd.channels[channel]
 		del self.channels[cdata.name]
-		del cdata.users[self.nickname] # remove channel user entry
+		cdata.users.remove(self) # remove channel user entry
 		if not cdata.users:
 			del self.ircd.channels[cdata.name] # destroy the empty channel
 	
@@ -406,13 +406,11 @@ class IRCUser(object):
 		del self.ircd.users[self.nickname]
 		self.ircd.users[newNick] = user
 		notify = set()
-		notify.append(user)
+		notify.add(user)
 		for chan in self.channels.iterkeys():
 			cdata = self.ircd.channels[chan]
-			del cdata.users[self.nickname]
-			cdata.users[newNick] = self
 			for cuser in cdata.users:
-				notify.append(cuser)
+				notify.add(cuser)
 		oldprefix = user.prefix()
 		user.nickname = newNick
 		for u in notify:

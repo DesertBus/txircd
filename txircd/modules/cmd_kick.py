@@ -8,7 +8,7 @@ class KickCommand(Command):
 		cdata = data["targetchan"]
 		udata = data["targetuser"]
 		reason = data["reason"]
-		for u in data["targetchan"].users.itervalues():
+		for u in data["targetchan"].users:
 			u.sendMessage("KICK", udata.nickname, ":{}".format(reason), to=cdata.name, prefix=user.prefix())
 		udata.leave(cdata.name)
 	

@@ -7,7 +7,7 @@ class QuitCommand(Command):
 		for chan in user.channels.iterkeys():
 			cdata = self.ircd.channels[chan]
 			self.leave(chan)
-			for u in cdata.users.itervalues():
+			for u in cdata.users:
 				quit_to.add(u)
 		for u in quit_to:
 			u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=user.prefix())
