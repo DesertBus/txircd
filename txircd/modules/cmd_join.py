@@ -1,12 +1,15 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.channel import IRCChannel
 
 class JoinCommand(Command):
 	def onUse(self, user, data):
 		if "targetchan" not in data or not data["targetchan"]:
 			return
 		for chan in data["targetchan"]:
-			user.join(chan)
+			if chan.name not in self.ircd.channels: # creating a channel
+				self.ircd.channels[chan.name] = chan
+			user.join(chan.name)
 	
 	def processParams(self, user, params):
 		if not params:
@@ -18,7 +21,7 @@ class JoinCommand(Command):
 			keys.append(None)
 		joining = []
 		for i in range(0, len(channels)):
-			joining.append({"channel": channels[i][:64], "key": keys[i]})
+			joining.append({"channel": channels[i][:64], "key": keys[i] if len(keys) >= i else ""})
 		remove = []
 		for chan in joining:
 			if chan["channel"] in user.channels:
@@ -30,12 +33,12 @@ class JoinCommand(Command):
 			joining.remove(chan)
 		channels = keys = []
 		for chan in joining:
-			channels.append(chan["channel"])
+			channels.append(self.ircd.channels[chan["channel"]] if chan["channel"] in self.ircd.channels else IRCChannel(chan["channel"]))
 			keys.append(chan["key"])
 		return {
 			"user": user,
-			"targetchan": params[0].split(","),
-			"keys": params[1].split(",") if len(params) > 1 else [],
+			"targetchan": channels,
+			"keys": keys,
 			"moreparams": params[2:]
 		}
 
