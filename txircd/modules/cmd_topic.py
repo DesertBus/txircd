@@ -15,7 +15,7 @@ class TopicCommand(Command):
 			cdata.topic = data["topic"]
 			cdata.topicSetter = user.nickname
 			cdata.topicTime = now()
-			for u in cdata.users.itervalues():
+			for u in cdata.users:
 				u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=user.prefix())
 	
 	def processParams(self, user, params):

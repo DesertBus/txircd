@@ -88,7 +88,7 @@ class ModeCommand(Command):
 				if mode[3]:
 					params.append(mode[3])
 			modeLine = "{} {}".format("".join(modestring), " ".join(params)) if params else "".join(modestring)
-			for udata in channel.users.itervalues():
+			for udata in channel.users:
 				udata.sendMessage("MODE", modeLine, to=channel.name, prefix=user.prefix())
 	
 	def userUse(self, user, modes):

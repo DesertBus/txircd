@@ -9,7 +9,7 @@ class IRCChannel(object):
 		self.topicSetter = ""
 		self.topicTime = now()
 		self.mode = {}
-		self.users = CaseInsensitiveDictionary()
+		self.users = set()
 		self.metadata = {}
 		self.cache = {}
 	
