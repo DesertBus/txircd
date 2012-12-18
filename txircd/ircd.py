@@ -316,7 +316,7 @@ class IRCD(Factory):
 		# load RFC-required modules
 		rfc_spec = ["cmd_user", "cmd_nick", "cmd_pass", # registration
 		            "cmd_ping", "cmd_pong", # connection keep-alive
-		            "cmd_join", "cmd_part", "cmd_kick", "cmd_topic", "cmd_mode", # channels
+		            "cmd_join", "cmd_part", "cmd_kick", "cmd_topic", "cmd_mode", "cmd_names", # channels
 		            "cmd_quit", # connection end
 		            "cmd_oper", "umode_o", # oper
 		            "cmd_motd" # miscellaneous
