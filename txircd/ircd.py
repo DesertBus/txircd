@@ -318,7 +318,8 @@ class IRCD(Factory):
 		            "cmd_ping", "cmd_pong", # connection keep-alive
 		            "cmd_join", "cmd_part", "cmd_kick", "cmd_topic", "cmd_mode", # channels
 		            "cmd_quit", # connection end
-		            "cmd_oper", "umode_o" # oper
+		            "cmd_oper", "umode_o", # oper
+		            "cmd_motd" # miscellaneous
 		            ]
 		for module in rfc_spec:
 			check = self.load_module(module)
