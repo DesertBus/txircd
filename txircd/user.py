@@ -649,9 +649,6 @@ class IRCUser(object):
 			if user.hasAccess(cdata.name, "h"):
 				user.sendMessage(irc.RPL_KNOCK, cdata.name, self.prefix(), ":{}".format(" ".join(params[1:])))
 	
-	def irc_MOTD(self, prefix, params):
-		self.send_motd()
-	
 	def irc_AWAY(self, prefix, params):
 		if not params:
 			if self.mode.has("a"):
