@@ -346,7 +346,6 @@ class IRCUser(object):
 			self.sendMessage(irc.ERR_NOMOTD, ":MOTD File is missing")
 	
 	def report_names(self, channel):
-		cdata = self.ircd.channels[channel]
 		userlist = []
 		"""
 		if self.cap["multi-prefix"]:
@@ -359,8 +358,8 @@ class IRCUser(object):
 				userlist.append(name)
 		else:
 		"""
-		for user in cdata.users.itervalues():
-			ranks = user.status(cdata.name)
+		for user in channel.users.itervalues():
+			ranks = user.status(channel.name)
 			if ranks:
 				userlist.append(self.ircd.prefix_symbols[ranks[0]] + user.nickname)
 			else:
@@ -390,7 +389,7 @@ class IRCUser(object):
 		else:
 			self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
 			self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topicSetter, str(epoch(cdata.topicTime)))
-		self.report_names(cdata.name)
+		self.report_names(cdata)
 		for modfunc in self.ircd.actions["join"]:
 			modfunc(cdata, self)
 	
