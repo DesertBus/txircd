@@ -547,15 +547,6 @@ class IRCUser(object):
 				self.sendMessage(irc.RPL_WHOISSERVER, u["nickname"], self.ircd.server_name, ":{}".format(u["time"]))
 			self.sendMessage(irc.RPL_ENDOFWHOWAS, uname, ":End of /WHOWAS list.")
 	
-	def irc_NAMES(self, prefix, params):
-		#params[0] = channel list, params[1] = target server. We ignore the target
-		channels = self.channels.keys()
-		if params:
-			channels = params[0].split(",")
-		channels = filter(lambda x: x in self.channels and x in self.ircd.channels, channels)
-		for c in channels:
-			self.report_names(c)
-	
 	def irc_LIST(self, prefix, params):
 		#params[0] = channel list, params[1] = target server. We ignore the target
 		channels = []
