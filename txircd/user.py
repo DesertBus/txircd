@@ -954,15 +954,3 @@ class IRCUser(object):
 		for user in self.ircd.users.itervalues():
 			if user.mode.has("o"):
 				user.sendMessage("NOTICE", ":*** GLOBOPS from {}: {}".format(self.nickname, message)) # notice is from server
-	
-	def irc_WALLOPS(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - command WALLOPS requires oper privileges")
-			return
-		if not params:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "WALLOPS", ":Not enough parameters")
-			return
-		message = " ".join(params)
-		for user in self.ircd.users.itervalues():
-			if user.mode.has("w"):
-				user.sendMessage("WALLOPS", ":{}".format(message), to=None, prefix=self.prefix())
