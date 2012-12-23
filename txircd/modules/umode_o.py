@@ -2,7 +2,7 @@ from txircd.modbase import Mode
 
 class OperMode(Mode):
 	def checkSet(self, target, param):
-		return False
+		return False # Should only be set by the OPER command; hence, reject any normal setting of the mode
 
 def Spawner(object):
 	def __init__(self, ircd):
