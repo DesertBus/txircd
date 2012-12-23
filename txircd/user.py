@@ -58,6 +58,7 @@ class IRCUser(object):
 		self.cap = {}
 		self.metadata = {}
 		self.data_cache = {}
+		self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
 		
 		if not self.matches_xline("E"):
 			xline_match = self.matches_xline("G")
@@ -128,6 +129,9 @@ class IRCUser(object):
 			permData = self.commandPermission(command, data)
 			if permData:
 				cmd.onUse(self, permData)
+				if not self.cmd_extra:
+					self.commandExtraHook(command, permData)
+				self.cmd_extra = False
 		else:
 			self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
 	
@@ -173,6 +177,11 @@ class IRCUser(object):
 			if not data:
 				return {}
 		return data
+	
+	def commandExtraHook(self, command, data):
+		self.cmd_extra = True
+		for modfunc in self.ircd.actions["commandextra"]:
+			modfunc(command, data)
 	
 	def sendMessage(self, command, *parameter_list, **kw):
 		if "prefix" not in kw:
