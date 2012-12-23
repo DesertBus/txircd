@@ -35,7 +35,7 @@ def Spawner(object):
 		self.ircd = ircd
 		self.passcmd = PassCommand()
 	
-	def spawn():
+	def spawn(self):
 		return {
 			"actions": {
 				"connect": [self.passcmd.onConnect],
@@ -46,7 +46,7 @@ def Spawner(object):
 			}
 		}
 	
-	def cleanup():
+	def cleanup(self):
 		self.ircd.actions.remove(self.passcmd)
 		del self.ircd.commands["PASS"]
 		del self.passcmd

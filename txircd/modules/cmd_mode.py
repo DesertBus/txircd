@@ -216,12 +216,12 @@ class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	
-	def spawn():
+	def spawn(self):
 		return {
 			"commands": {
 				"MODE": ModeCommand()
 			}
 		}
 	
-	def cleanup():
+	def cleanup(self):
 		del self.ircd.commands["MODE"]

@@ -8,12 +8,12 @@ def Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	
-	def spawn():
+	def spawn(self):
 		return {
 			"modes": {
 				"uno": OperMode()
 			}
 		}
 	
-	def cleanup():
+	def cleanup(self):
 		del self.ircd.user_modes[3]["o"]

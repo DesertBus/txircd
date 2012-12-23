@@ -78,7 +78,7 @@ class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	
-	def spawn():
+	def spawn(self):
 		messageHandler = MessageCommand(self.ircd)
 		return {
 			"commands": {
@@ -87,6 +87,6 @@ class Spawner(object):
 			}
 		}
 	
-	def cleanup():
+	def cleanup(self):
 		del self.ircd.commands["PRIVMSG"]
 		del self.ircd.commands["NOTICE"]

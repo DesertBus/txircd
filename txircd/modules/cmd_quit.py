@@ -26,12 +26,12 @@ class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	
-	def spawn():
+	def spawn(self):
 		return {
 			"commands": {
 				"QUIT": QuitCommand()
 			}
 		}
 	
-	def cleanup():
+	def cleanup(self):
 		del self.ircd.commands["QUIT"]
