@@ -531,43 +531,6 @@ class IRCUser(object):
 				self.sendMessage(irc.RPL_ENDOFWHO, params[0], ":End of /WHO list.")
 				# params[0] is used here for the target so that the original glob pattern is returned
 	
-	def irc_WHOIS(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")
-			return
-		users = params[0].split(",")
-		for uname in users:
-			if uname not in self.ircd.users:
-				self.sendMessage(irc.ERR_NOSUCHNICK, uname, ":No such nick/channel")
-				self.sendMessage(irc.RPL_ENDOFWHOIS, "*", ":End of /WHOIS list.")
-				continue
-			udata = self.ircd.users[uname]
-			self.sendMessage(irc.RPL_WHOISUSER, udata.nickname, udata.username, udata.ip if self.mode.has("o") else udata.hostname, "*", ":{}".format(udata.realname))
-			if udata.channels:
-				chanlist = []
-				for channel in udata.channels.iterkeys():
-					cdata = self.ircd.channels[channel]
-					if cdata.name in self.channels or (not cdata.mode.has("s") and not cdata.mode.has("p")):
-						level = udata.accessLevel(cdata.name)
-						if level == 0:
-							chanlist.append(cdata.name)
-						else:
-							symbol = self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - level]]
-							chanlist.append("{}{}".format(symbol, cdata.name))
-				if chanlist:
-					self.sendMessage(irc.RPL_WHOISCHANNELS, udata.nickname, ":{}".format(" ".join(chanlist)))
-			self.sendMessage(irc.RPL_WHOISSERVER, udata.nickname, self.ircd.server_name, ":{}".format(self.ircd.network_name))
-			if udata.mode.has("a"):
-				self.sendMessage(irc.RPL_AWAY, udata.nickname, ":{}".format(udata.mode.get("a")))
-			if udata.mode.has("o"):
-				self.sendMessage(irc.RPL_WHOISOPERATOR, udata.nickname, ":is an IRC operator")
-			if udata.account:
-				self.sendMessage(irc.RPL_WHOISACCOUNT, udata.nickname, udata.account, ":is logged in as")
-			if udata.socket.secure:
-				self.sendMessage(irc.RPL_WHOISSECURE, udata.nickname, ":is using a secure connection")
-			self.sendMessage(irc.RPL_WHOISIDLE, udata.nickname, str(epoch(now()) - epoch(udata.lastactivity)), str(epoch(udata.signon)), ":seconds idle, signon time")
-			self.sendMessage(irc.RPL_ENDOFWHOIS, udata.nickname, ":End of /WHOIS list.")
-	
 	def irc_WHOWAS(self, prefix, params):
 		if not params:
 			self.sendMessage(irc.ERR_NONICKNAMEGIVEN, self.nickname, ":No nickname given")
