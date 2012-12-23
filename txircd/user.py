@@ -942,15 +942,3 @@ class IRCUser(object):
 			self.ircd.server_badwords[mask] = replacement
 			self.sendMessage(irc.RPL_BADWORDADDED, mask, ":{}".format(replacement))
 			self.ircd.save_options()
-			
-	def irc_GLOBOPS(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - command GLOBOPS requires oper privileges")
-			return
-		if not params:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "GLOBOPS", ":Not enough parameters")
-			return
-		message = " ".join(params)
-		for user in self.ircd.users.itervalues():
-			if user.mode.has("o"):
-				user.sendMessage("NOTICE", ":*** GLOBOPS from {}: {}".format(self.nickname, message)) # notice is from server
