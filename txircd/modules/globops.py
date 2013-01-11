@@ -10,6 +10,9 @@ class GlobopsCommand(Command):
 					u.sendMessage("NOTICE", ":*** GLOBOPS from {}: {}".format(user.nickname, message))
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "GLOBOPS", ":You have not registered")
+			return {}
 		if "o" not in user.mode:
 			user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - command GLOBOPS requires oper privileges")
 			return {}

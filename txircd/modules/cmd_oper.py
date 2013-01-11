@@ -11,6 +11,9 @@ class OperCommand(Command):
 			user.sendMessage(irc.RPL_YOUREOPER, ":You are now an IRC operator")
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "OPER", ":You have not registered")
+			return {}
 		if len(params) < 2:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters")
 			return {}

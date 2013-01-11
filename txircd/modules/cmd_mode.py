@@ -149,6 +149,9 @@ class ModeCommand(Command):
 			user.sendMessage("MODE", modeLine, prefix=user.prefix())
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "MODE", ":You have not registered")
+			return {}
 		if not params:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "MODE", ":Not enough parameters")
 			return {}

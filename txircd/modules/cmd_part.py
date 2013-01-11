@@ -12,6 +12,9 @@ class PartCommand(Command):
 			user.leave(channel)
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "PART", ":You have not registered")
+			return {}
 		if not params:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "PART", ":Not enough parameters")
 			return {}

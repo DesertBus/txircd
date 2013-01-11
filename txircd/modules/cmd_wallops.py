@@ -10,6 +10,9 @@ class WallopsCommand(Command):
 					u.sendMessage("WALLOPS", ":{}".format(message), to=None, prefix=user.prefix())
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "WALLOPS", ":You have not registered")
+			return {}
 		if "o" not in user.mode:
 			user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - command WALLOPS requires oper privileges")
 			return {}

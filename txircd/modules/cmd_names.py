@@ -7,6 +7,9 @@ class NamesCommand(Command):
 			user.report_names(chan)
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "NAMES", ":You have not registered")
+			return {}
 		if params:
 			channels = filter(lambda x: x in self.channels and x in self.ircd.channels, params[0].split(","))
 		else:

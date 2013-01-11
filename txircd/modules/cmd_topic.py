@@ -19,6 +19,9 @@ class TopicCommand(Command):
 				u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=user.prefix())
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "TOPIC", ":You have not registered")
+			return {}
 		if not params:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "TOPIC", ":Not enough parameters")
 			return {}

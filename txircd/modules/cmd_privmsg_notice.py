@@ -26,6 +26,9 @@ class MessageCommand(object):
 					u.sendMessage(cmd, message, to=channel.name, prefix=user.prefix())
 	
 	def processParams(self, cmd, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, cmd, ":You have not registered")
+			return {}
 		if not params:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, cmd, ":Not enough parameters")
 			return {}

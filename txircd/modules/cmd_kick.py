@@ -13,6 +13,9 @@ class KickCommand(Command):
 		udata.leave(cdata.name)
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "KICK", ":You have not registered")
+			return {}
 		if not params or len(params) < 2:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KICK", ":Not enough parameters")
 			return {}
