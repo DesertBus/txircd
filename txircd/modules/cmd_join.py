@@ -12,6 +12,9 @@ class JoinCommand(Command):
 			user.join(chan.name)
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "JOIN", ":You have not registered")
+			return {}
 		if not params:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "JOIN", ":Not enough parameters")
 			return {}

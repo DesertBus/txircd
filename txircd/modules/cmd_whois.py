@@ -23,6 +23,9 @@ class WhoisCommand(Command):
 			user.sendMessage(irc.RPL_ENDOFWHOIS, u.nickname, ":End of /WHOIS list")
 	
 	def processParams(self, user, params):
+		if user.registered > 0:
+			user.sendMessage(irc.ERR_NOTREGISTERED, "WHOIS", ":You have not registered")
+			return {}
 		if not params:
 			user.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")
 			return {}
