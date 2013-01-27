@@ -47,6 +47,7 @@ def Spawner(object):
 		}
 	
 	def cleanup(self):
-		self.ircd.actions.remove(self.passcmd)
+		self.ircd.actions["connect"].remove(self.passcmd.onConnect)
+		self.ircd.actions["register"].remove(self.passcmd.onRegister)
 		del self.ircd.commands["PASS"]
 		del self.passcmd
