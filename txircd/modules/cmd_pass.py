@@ -33,9 +33,10 @@ class PassCommand(Command, Module):
 def Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
-		self.passcmd = PassCommand()
+		self.passcmd = None
 	
 	def spawn(self):
+		self.passcmd = PassCommand()
 		return {
 			"actions": {
 				"connect": [self.passcmd.onConnect],
