@@ -596,15 +596,6 @@ class IRCUser(object):
 			if user.hasAccess(cdata.name, "h"):
 				user.sendMessage(irc.RPL_KNOCK, cdata.name, self.prefix(), ":{}".format(" ".join(params[1:])))
 	
-	def irc_AWAY(self, prefix, params):
-		if not params:
-			if self.mode.has("a"):
-				del self.mode.modes["a"]
-			self.sendMessage(irc.RPL_UNAWAY, ":You are no longer marked as being away")
-		else:
-			self.mode.modes["a"] = params[0]
-			self.sendMessage(irc.RPL_NOWAWAY, ":You have been marked as being away")
-	
 	def irc_KILL(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission Denied - You do not have the required operator privileges")
