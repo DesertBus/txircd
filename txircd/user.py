@@ -547,21 +547,6 @@ class IRCUser(object):
 				self.sendMessage(irc.RPL_WHOISSERVER, u["nickname"], self.ircd.server_name, ":{}".format(u["time"]))
 			self.sendMessage(irc.RPL_ENDOFWHOWAS, uname, ":End of /WHOWAS list.")
 	
-	def irc_LIST(self, prefix, params):
-		#params[0] = channel list, params[1] = target server. We ignore the target
-		channels = []
-		if params:
-			channels = filter(lambda x: x in self.ircd.channels, params[0].split(","))
-		if not channels:
-			channels = self.ircd.channels.keys()
-		for c in channels:
-			cdata = self.ircd.channels[c]
-			if self.nickname in cdata.users or (not cdata.mode.has("s") and not cdata.mode.has("p")):
-				self.sendMessage(irc.RPL_LIST, cdata.name, str(len(cdata.users)), ":{}".format(cdata.topic["message"]))
-			elif cdata.mode.has("p") and not cdata.mode.has("s"):
-				self.sendMessage(irc.RPL_LIST, "*", str(len(cdata.users)), ":")
-		self.sendMessage(irc.RPL_LISTEND, ":End of /LIST")
-	
 	def irc_INVITE(self, prefix, params):
 		if len(params) < 2:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "INVITE", ":Not enough parameters")
