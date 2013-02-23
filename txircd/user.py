@@ -739,10 +739,6 @@ class IRCUser(object):
 		self.sendMessage(irc.RPL_ADMINLOC2, ":{}".format(self.ircd.admin_info_organization))
 		self.sendMessage(irc.RPL_ADMINEMAIL, ":{}".format(self.ircd.admin_info_person))
 	
-	def irc_INFO(self, prefix, params):
-		self.sendMessage(irc.RPL_INFO, ":txircd")
-		self.sendMessage(irc.RPL_ENDOFINFO, ":End of INFO list")
-	
 	def irc_REHASH(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
