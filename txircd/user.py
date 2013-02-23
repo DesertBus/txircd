@@ -84,15 +84,35 @@ class IRCUser(object):
 		
 		# Send all those lovely join messages
 		chanmodelist = "".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes] + "".join(self.ircd.prefixes.keys()))
-		chanmodeseplist = ",".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes])
-		prefixes = "({}){}".format(self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order]))
-		statuses = "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])
 		self.sendMessage(irc.RPL_WELCOME, ":Welcome to the Internet Relay Network {}".format(self.prefix()))
 		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.network_name, self.ircd.version))
 		self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
 		self.sendMessage(irc.RPL_MYINFO, self.ircd.network_name, self.ircd.version, self.mode.allowed(), chanmodelist) # usermodes & channel modes
-		self.sendMessage(irc.RPL_ISUPPORT, "CASEMAPPING=rfc1459", "CHANMODES={}".format(chanmodeseplist), "CHANNELLEN=64", "CHANTYPES={}".format(self.ircd.channel_prefixes), "MODES=20", "NETWORK={}".format(self.ircd.network_name), "NICKLEN=32", "PREFIX={}".format(prefixes), "STATUSMSG={}".format(statuses), "TOPICLEN=316", ":are supported by this server")
+		self.send_isupport()
 		self.send_motd()
+	
+	def send_isupport(self):
+		isupport = [
+			"CASEMAPPING=rfc1459",
+			"CHANMODES={}".format(",".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes])),
+			"CHANNELLEN=64",
+			"CHANTYPES={}".format(self.ircd.channel_prefixes),
+			"MODES=20",
+			"NETWORK={}".format(self.ircd.network_name),
+			"NICKLEN=32",
+			"PREFIX=({}){}".format(self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])),
+			"STATUSMSG={}".format("".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])),
+			"TOPICLEN=316"
+		]
+		prevar_len = len(" ".join([self.ircd.server_name, irc.RPL_ISUPPORT, self.nickname])) + 31 # including ":are supported by this server"
+		thisline = []
+		while isupport:
+			if len(" ".join(thisline)) + len(isupport[0]) + prevar_len > 509:
+				self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
+				thisline = []
+			thisline.append(isupport.pop(0))
+		if thisline:
+			self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
 	
 	def disconnect(self, reason):
 		if self.nickname in self.ircd.users:
@@ -725,9 +745,6 @@ class IRCUser(object):
 			elif "@" not in banmask:
 				banmask = "*@{}".format(banmask)
 			self.add_xline("SHUN", banmask, parse_duration(params[1]), " ".join(params[2:]))
-	
-	def irc_VERSION(self, prefix, params):
-		self.sendMessage(irc.RPL_VERSION, self.ircd.version, self.ircd.server_name, ":txircd")
 	
 	def irc_ADMIN(self, prefix, params):
 		self.sendMessage(irc.RPL_ADMINME, self.ircd.server_name, ":Administrative info")
