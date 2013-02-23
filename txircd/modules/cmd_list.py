@@ -21,6 +21,8 @@ class ListCommand(Command):
 				"topic": channel.topic if topic else ""
 			}
 			user.commandExtraHook("LIST", cdata)
+			if not cdata:
+				continue
 			modeStr = "+"
 			params = []
 			for mode, param in cdata.mode.iteritems():
