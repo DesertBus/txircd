@@ -119,7 +119,6 @@ class IRCUser(object):
 		self.disconnected.callback(None)
 	
 	def handleCommand(self, command, prefix, params):
-		method = getattr(self, "irc_{}".format(command), None)
 		if command in self.ircd.commands:
 			cmd = self.ircd.commands[command]
 			cmd.updateActivity(self)
