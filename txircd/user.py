@@ -730,9 +730,6 @@ class IRCUser(object):
 	def irc_VERSION(self, prefix, params):
 		self.sendMessage(irc.RPL_VERSION, self.ircd.version, self.ircd.server_name, ":txircd")
 	
-	def irc_TIME(self, prefix, params):
-		self.sendMessage(irc.RPL_TIME, self.ircd.server_name, ":{}".format(now()))
-	
 	def irc_ADMIN(self, prefix, params):
 		self.sendMessage(irc.RPL_ADMINME, self.ircd.server_name, ":Administrative info")
 		self.sendMessage(irc.RPL_ADMINLOC1, ":{}".format(self.ircd.admin_info_server))
