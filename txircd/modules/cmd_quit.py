@@ -12,10 +12,10 @@ class QuitCommand(Command):
 					quit_to.add(u)
 			for u in quit_to:
 				u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=user.prefix())
-			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.prefix(), reason), to=None, prefix=None)
+			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
 			del self.ircd.users[user.nickname]
 		else:
-			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.hostname, reason), to=None, prefix=None)
+			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.hostname, data["reason"]), to=None, prefix=None)
 		user.socket.transport.loseConnection()
 	
 	def processParams(self, user, params):
