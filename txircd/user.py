@@ -746,13 +746,6 @@ class IRCUser(object):
 				banmask = "*@{}".format(banmask)
 			self.add_xline("SHUN", banmask, parse_duration(params[1]), " ".join(params[2:]))
 	
-	def irc_REHASH(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		self.ircd.rehash()
-		self.sendMessage(irc.RPL_REHASHING, self.ircd.config, ":Rehashing")
-	
 	def irc_DIE(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
