@@ -54,17 +54,19 @@ class WhowasCommand(Command):
 class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
+		self.whowasCmd = None
 	
 	def spawn(self):
-		cmd_whowas = WhowasCommand()
+		self.whowasCmd = WhowasCommand()
 		return {
 			"commands": {
-				"WHOWAS": cmd_whowas
+				"WHOWAS": self.whowasCmd
 			},
 			"actions": {
-				"quit": [cmd_whowas.addToWhowas]
+				"quit": [self.whowasCmd.addToWhowas]
 			}
 		}
 	
 	def cleanup(self):
 		del self.ircd.commands["WHOWAS"]
+		self.ircd.actions["quit"].remove(self.whowasCmd.addToWhowas)
