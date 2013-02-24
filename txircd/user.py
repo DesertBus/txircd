@@ -774,22 +774,6 @@ class IRCUser(object):
 		reactor.addSystemEventTrigger("after", "shutdown", restart)
 		reactor.stop()
 	
-	def irc_USERHOST(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "USERHOST", ":Not enough parameters")
-			return
-		users = params[:5]
-		reply_list = []
-		for u in users:
-			if u in self.ircd.users:
-				udata = self.ircd.users[u]
-				nick = udata.nickname
-				oper = "*" if udata.mode.has("o") else ""
-				away = "-" if udata.mode.has("a") else "+"
-				host = "{}@{}".format(udata.username, udata.hostname)
-				reply_list.append("{}{}={}{}".format(nick, oper, away, host))
-		self.sendMessage(irc.RPL_USERHOST, ":{}".format(" ".join(reply_list)))
-	
 	def irc_STATS(self, prefix, params):
 		if not params:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "STATS", ":Not enough parameters")
