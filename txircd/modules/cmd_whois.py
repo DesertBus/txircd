@@ -35,7 +35,7 @@ class WhoisCommand(Command):
 			if u not in self.ircd.users:
 				user.sendMessage(irc.ERR_NOSUCHNICK, u, ":No such nick/channel")
 				continue
-			targets.append(self.ircd.usrs[u])
+			targets.append(self.ircd.users[u])
 		if not targets:
 			user.sendMessage(irc.RPL_ENDOFWHOIS, "*", ":End of /WHOIS list")
 			return {}
