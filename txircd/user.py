@@ -746,12 +746,6 @@ class IRCUser(object):
 				banmask = "*@{}".format(banmask)
 			self.add_xline("SHUN", banmask, parse_duration(params[1]), " ".join(params[2:]))
 	
-	def irc_ADMIN(self, prefix, params):
-		self.sendMessage(irc.RPL_ADMINME, self.ircd.server_name, ":Administrative info")
-		self.sendMessage(irc.RPL_ADMINLOC1, ":{}".format(self.ircd.admin_info_server))
-		self.sendMessage(irc.RPL_ADMINLOC2, ":{}".format(self.ircd.admin_info_organization))
-		self.sendMessage(irc.RPL_ADMINEMAIL, ":{}".format(self.ircd.admin_info_person))
-	
 	def irc_REHASH(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
