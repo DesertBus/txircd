@@ -241,6 +241,8 @@ class IRCD(Factory):
 			"register": [],
 			"nick": [],
 			"quit": [],
+			"chancreate": [],
+			"chandestroy": [],
 			"commandextra": [],
 			"commandunknown": [],
 			"commandpermission": [],

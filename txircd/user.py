@@ -512,29 +512,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_INVITE(self, prefix, params):
-		if len(params) < 2:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "INVITE", ":Not enough parameters")
-		elif params[0] not in self.ircd.users:
-			self.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick/channel")
-		elif params[1] not in self.ircd.channels:
-			self.sendMessage(irc.ERR_NOSUCHNICK, params[1], ":No such nick/channel")
-		
-		udata = self.ircd.users[params[0]]
-		cdata = self.ircd.channels[params[1]]
-		if cdata.name in udata.channels:
-			self.sendMessage(irc.ERR_USERONCHANNEL, udata.nickname, cdata.name, ":is already on channel")
-		elif cdata.name not in self.channels:
-			self.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not on that channel")
-		elif cdata.mode.has("i") and not self.hasAccess(cdata.name, "h"):
-			self.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You're not channel operator")
-		elif udata.mode.has("a"):
-			self.sendMessage(irc.RPL_AWAY, udata.nickname, ":{}".format(udata.mode.get("a")))
-		else:
-			self.sendMessage(irc.RPL_INVITING, udata.nickname, cdata.name)
-			udata.sendMessage("INVITE", cdata.name, to=udata.nickname, prefix=self.prefix())
-			udata.invites.append(cdata.name)
-	
 	def irc_KNOCK(self, prefix, params):
 		if not params or len(params) < 2:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "KNOCK", ":Not enough parameters")
