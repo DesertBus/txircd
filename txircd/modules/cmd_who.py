@@ -15,7 +15,7 @@ class WhoCommand(Command):
 						common_channel = True
 						break
 				if not common_channel:
-					self.sendMessage(irc.RPL_WHOREPLY, "*", u.username, u.hostname, self.ircd.server_name, u.nickname, "{}{}".format("G" if "away" in user.metadata else "H", "*" if "o" in user.mode else ""), ":0 {}".format(u.realname))
+					self.sendMessage(irc.RPL_WHOREPLY, "*", u.username, u.hostname, self.ircd.server_name, u.nickname, "{}{}".format("G" if "away" in user.metadata["ext"] else "H", "*" if "o" in user.mode else ""), ":0 {}".format(u.realname))
 			self.sendMessage(irc.RPL_ENDOFWHO, self.nickname, "*", ":End of /WHO list.")
 		else:
 			if data["target"] in self.ircd.channels:
@@ -23,12 +23,12 @@ class WhoCommand(Command):
 				in_channel = cdata.name in user.channels # cache this value instead of searching self.channels every iteration
 				for u in cdata.users.itervalues():
 					if (in_channel or "i" not in u.mode) and ("o" not in filters or "o" in u.mode):
-						self.sendMessage(irc.RPL_WHOREPLY, cdata.name, u.username, u.hostname, self.ircd.server_name, u.nickname, "{}{}{}".format("G" if "away" in u.metadata else "H", "*" if "o" in u.mode else "", self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - u.accessLevel(cdata.name)]] if u.accessLevel(cdata.name) > 0 else ""), ":0 {}".format(u.realname))
+						self.sendMessage(irc.RPL_WHOREPLY, cdata.name, u.username, u.hostname, self.ircd.server_name, u.nickname, "{}{}{}".format("G" if "away" in u.metadata["ext"] else "H", "*" if "o" in u.mode else "", self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - u.accessLevel(cdata.name)]] if u.accessLevel(cdata.name) > 0 else ""), ":0 {}".format(u.realname))
 				self.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 			else:
 				for u in self.ircd.users.itervalues():
 					if "i" not in u.mode and (fnmatch.fnmatch(irc_lower(u.nickname), irc_lower(params[0])) or fnmatch.fnmatch(irc_lower(u.hostname), irc_lower(params[0]))):
-						self.sendMessage(irc.RPL_WHOREPLY, params[0], u.username, u.hostname, self.ircd.server_name, u.nickname, "{}{}".format("G" if "away" in u.metadata else "H", "*" if "o" in u.mode else ""), ":0 {}".format(u.realname))
+						self.sendMessage(irc.RPL_WHOREPLY, params[0], u.username, u.hostname, self.ircd.server_name, u.nickname, "{}{}".format("G" if "away" in u.metadata["ext"] else "H", "*" if "o" in u.mode else ""), ":0 {}".format(u.realname))
 				self.sendMessage(irc.RPL_ENDOFWHO, params[0], ":End of /WHO list.") # params[0] is used here for the target so that the original glob pattern is returned
 	
 	def processParams(self, user, params):

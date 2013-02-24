@@ -56,7 +56,13 @@ class IRCUser(object):
 		self.disconnected = Deferred()
 		self.registered = 2
 		self.cap = {}
-		self.metadata = {}
+		self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
+			"server": {},
+			"user": {},
+			"client": {},
+			"ext": {},
+			"private": {}
+		}
 		self.data_cache = {}
 		self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
 		

@@ -6,7 +6,7 @@ class UserhostCommand(Command):
 		replyList = []
 		for nick in data["targetnick"]:
 			udata = self.ircd.users[data["targetnick"]]
-			replyList.append("{}{}={}{}@{}".format(udata.nickname, "*" if "o" in udata.mode else "", "-" if "away" in udata.metadata else "+", udata.username, udata.hostname))
+			replyList.append("{}{}={}{}@{}".format(udata.nickname, "*" if "o" in udata.mode else "", "-" if "away" in udata.metadata["ext"] else "+", udata.username, udata.hostname))
 		user.sendMessage(irc.RPL_USERHOST, ":{}".format(" ".join(replyList)))
 	
 	def processParams(self, user, params):
