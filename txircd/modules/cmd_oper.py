@@ -7,7 +7,7 @@ class OperCommand(Command):
 		if data["username"] not in self.ircd.oper_logins or self.ircd.oper_logins[data["username"]] != crypt(data["password"], self.ircd.oper_logins[data["username"]]):
 			user.sendMessage(irc.ERR_PASSWDMISMATCH, ":Password incorrect")
 		else:
-			user.mode["o"] = True
+			user.mode["o"] = None
 			user.sendMessage(irc.RPL_YOUREOPER, ":You are now an IRC operator")
 	
 	def processParams(self, user, params):
