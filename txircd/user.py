@@ -746,27 +746,6 @@ class IRCUser(object):
 				banmask = "*@{}".format(banmask)
 			self.add_xline("SHUN", banmask, parse_duration(params[1]), " ".join(params[2:]))
 	
-	def irc_DIE(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		if not self.ircd.oper_allow_die:
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - Server does not allow use of DIE command")
-			return
-		reactor.stop()
-	
-	def irc_RESTART(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		if not self.ircd.oper_allow_die:
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - Server does not allow use of RESTART command")
-			return
-		def restart():
-			os.execl(sys.executable, sys.executable, *sys.argv)
-		reactor.addSystemEventTrigger("after", "shutdown", restart)
-		reactor.stop()
-	
 	def irc_STATS(self, prefix, params):
 		if not params:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "STATS", ":Not enough parameters")
