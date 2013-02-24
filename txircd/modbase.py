@@ -21,7 +21,7 @@ class Mode(object):
 	def onJoin(self, channel, user, params):
 		return "pass"
 	def checkPermission(self, user, cmd, data):
-		return "pass"
+		return data
 	def onMessage(self, sender, target, message):
 		return ["pass"]
 	def onPart(self, channel, user, reason):
