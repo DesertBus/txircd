@@ -512,22 +512,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_KILL(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission Denied - You do not have the required operator privileges")
-			return
-		if not params or len(params) < 2:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "KILL", ":Not enough parameters.")
-		elif params[0] not in self.ircd.users:
-			self.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick")
-		else:
-			udata = self.ircd.users[params[0]]
-			if udata.mode.has("o"):
-				self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You cannot KILL another oper")
-			else:
-				udata.sendMessage("KILL", ":{} ({})".format(self.nickname, params[1]))
-				udata.irc_QUIT(None, ["Killed by {} ({})".format(self.nickname, params[1])])
-	
 	def irc_GLINE(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
