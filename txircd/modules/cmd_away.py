@@ -65,5 +65,5 @@ class Spawner(object):
 		}
 	
 	def cleanup(self):
-		self.ircd.actions["commandextra"].remove(self.awayCmd.privmsgReply)
+		self.ircd.actions["commandextra"].remove(extraFunc) for extraFunc in [self.awayCmd.privmsgReply, self.awayCmd.inviteReply, self.awayCmd.whoisLine]
 		del self.ircd.commands["AWAY"]

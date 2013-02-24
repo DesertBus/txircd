@@ -48,17 +48,19 @@ class InviteCommand(Command):
 class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
+		self.inviteCmd = None
 	
 	def spawn(self):
-		cmd_invite = InviteCommand()
+		self.inviteCmd = InviteCommand()
 		return {
 			"commands": {
-				"INVITE": cmd_invite
+				"INVITE": self.inviteCmd
 			},
 			"actions": {
-				"chandestroy": [cmd_invite.removeChanInvites]
+				"chandestroy": [self.inviteCmd.removeChanInvites]
 			}
 		}
 	
 	def cleanup(self):
 		del self.ircd.commands["INVITE"]
+		self.ircd.actions["chandestroy"].remove(self.inviteCmd.removeChanInvites)
