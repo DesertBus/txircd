@@ -796,16 +796,6 @@ class IRCUser(object):
 				reply_list.append("{}{}={}{}".format(nick, oper, away, host))
 		self.sendMessage(irc.RPL_USERHOST, ":{}".format(" ".join(reply_list)))
 	
-	def irc_ISON(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "ISON", ":Not enough parameters")
-			return
-		reply = []
-		for user in params:
-			if user in self.ircd.users:
-				reply.append(self.ircd.users[user].nickname)
-		self.sendMessage(irc.RPL_ISON, ":{}".format(" ".join(reply)))
-	
 	def irc_STATS(self, prefix, params):
 		if not params:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "STATS", ":Not enough parameters")
