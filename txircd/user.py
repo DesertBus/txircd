@@ -449,19 +449,6 @@ class IRCUser(object):
 		for modfunc in self.ircd.actions["nick"]:
 			modfunc(self, oldNick)
 	
-	def add_to_whowas(self):
-		if self.nickname not in self.ircd.whowas:
-			self.ircd.whowas[self.nickname] = []
-		self.ircd.whowas[self.nickname].append({
-			"nickname": self.nickname,
-			"username": self.username,
-			"realname": self.realname,
-			"hostname": self.hostname,
-			"ip": self.ip,
-			"time": now()
-		})
-		self.ircd.whowas[self.nickname] = self.ircd.whowas[self.nickname][-self.ircd.client_whowas_limit:] # Remove old entries
-	
 	def stats_xline_list(self, xline_type, xline_numeric):
 		for mask, linedata in self.ircd.xlines[xline_type].iteritems():
 			self.sendMessage(xline_numeric, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
@@ -519,22 +506,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_WHOWAS(self, prefix, params):
-		if not params:
-			self.sendMessage(irc.ERR_NONICKNAMEGIVEN, self.nickname, ":No nickname given")
-			return
-		users = params[0].split(",")
-		for uname in users:
-			if uname not in self.ircd.whowas:
-				self.sendMessage(irc.ERR_WASNOSUCHNICK, self.nickname, uname, ":No such nick")
-				self.sendMessage(irc.RPL_ENDOFWHOWAS, self.nickname, "*", ":End of /WHOWAS list.")
-				continue
-			history = self.ircd.whowas[uname]
-			for u in history:
-				self.sendMessage(irc.RPL_WHOISUSER, u["nickname"], u["username"], u["ip"] if self.mode.has("o") else u["hostname"], "*", ":{}".format(u["realname"]))
-				self.sendMessage(irc.RPL_WHOISSERVER, u["nickname"], self.ircd.server_name, ":{}".format(u["time"]))
-			self.sendMessage(irc.RPL_ENDOFWHOWAS, uname, ":End of /WHOWAS list.")
-	
 	def irc_INVITE(self, prefix, params):
 		if len(params) < 2:
 			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "INVITE", ":Not enough parameters")
