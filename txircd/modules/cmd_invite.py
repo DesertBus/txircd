@@ -27,7 +27,7 @@ class InviteCommand(Command):
 		if cdata.name in udata.channels:
 			user.sendMessage(irc.ERR_USERONCHANNEL, udata.nickname, cdata.name, ":is already on channel")
 			return {}
-		if cdata.name not in self.channels:
+		if cdata.name not in user.channels:
 			user.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not on that channel")
 			return {}
 		if "i" in cdata.mode and not user.hasAccess(cdata.name, self.ircd.channel_invite_rank):
