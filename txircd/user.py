@@ -374,6 +374,10 @@ class IRCUser(object):
 			self.sendMessage(irc.ERR_NOMOTD, ":MOTD File is missing")
 	
 	def report_names(self, channel):
+		# TODO: check whether user is in channel
+		# TODO: check for usermode +i
+		# TODO: check for chanmode +ps
+		# TODO: Possibly think of a modular way to do those last two
 		userlist = []
 		"""
 		if self.cap["multi-prefix"]:
