@@ -512,32 +512,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_KNOCK(self, prefix, params):
-		if not params or len(params) < 2:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "KNOCK", ":Not enough parameters")
-			return
-		if params[0] not in self.ircd.channels:
-			self.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
-			return
-		cdata = self.ircd.channels[params[0]]
-		if self.nickname in cdata.users:
-			self.sendMessage(irc.ERR_KNOCKONCHAN, cdata.name, ":You are already on that channel.")
-			return
-		if not cdata.mode.has("i"):
-			self.sendMessage(irc.ERR_CHANOPEN, cdata.name, ":Channel is open.")
-			return
-		if cdata.name in self.knocked:
-			self.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Too many KNOCKs (user).")
-			return
-		if cdata.mode.has("K"):
-			self.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Channel is +K")
-			return
-		self.knocked.append(cdata.name)
-		self.sendMessage(irc.RPL_KNOCKDLVR, cdata.name, ":Your KNOCK has been delivered.")
-		for user in cdata.users.itervalues():
-			if user.hasAccess(cdata.name, "h"):
-				user.sendMessage(irc.RPL_KNOCK, cdata.name, self.prefix(), ":{}".format(" ".join(params[1:])))
-	
 	def irc_KILL(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission Denied - You do not have the required operator privileges")
