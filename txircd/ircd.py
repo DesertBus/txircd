@@ -553,6 +553,40 @@ class IRCD(Factory):
 					log.msg("Module {} registers an action of an invalid type".format(name))
 		return True
 	
+	def removeMode(self, modedesc):
+		# This function is heavily if'd in case we get passed invalid data.
+		if mode[1] == "l":
+			modetype = 0
+		elif mode[1] == "u":
+			modetype = 1
+		elif mode[1] == "p":
+			modetype = 2
+		elif mode[1] == "n":
+			modetype = 3
+		elif mode[1] == "s":
+			modetype = -1
+		else:
+			return
+		"""
+		self.channel_modes = [{}, {}, {}, {}]
+		self.channel_mode_type = {}
+		self.user_modes = [{}, {}, {}, {}]
+		self.user_mode_type = {}
+		self.prefixes = {}
+		self.prefix_symbols = {}
+		self.prefix_order = []
+		"""
+		if mode[0] == "c":
+			del self.channel_modes[modetype][mode[2]] if modetype != -1 and mode[2] in self.channel_modes[modetype]
+			del self.channel_mode_type[mode[2]] if mode[2] in self.channel_mode_type
+			if modetype == -1 and mode[2] in self.prefixes:
+				del self.prefix_symbols[self.prefixes[mode[2]][0]]
+				del self.prefixes[mode[2]] if mode[2] in self.prefixes
+				self.prefix_order.remove(mode[2]) if mode[2] in self.prefix_order
+		else:
+			del self.user_modes[modetype][mode[2]] if mode[2] in self.user_modes[modetype]
+			del self.user_mode_type[mode[2]] if mode[2] in self.user_mode_type
+	
 	def buildProtocol(self, addr):
 		if self.dead:
 			return None

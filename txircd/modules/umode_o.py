@@ -16,4 +16,4 @@ def Spawner(object):
 		}
 	
 	def cleanup(self):
-		del self.ircd.user_modes[3]["o"]
+		self.ircd.removeMode("uno")
