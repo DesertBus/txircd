@@ -4,8 +4,8 @@ from txircd.modbase import command
 class KillCommand(Command):
 	def onUse(self, user, data):
 		target = data["targetuser"]
-		reason = data["reason"]
-		target.sendMessage("KILL", ":{} {}".format(user.nickname, reason))
+		reason = "Killed by {}: {}".format(user.nickname, data["reason"])
+		target.sendMessage("KILL", ":{} {}".format(user.nickname, data["reason"]))
 		quit_to = set()
 		for chan in target.channels.iterkeys():
 			cdata = self.ircd.channels[chan]
