@@ -81,8 +81,15 @@ class IRCUser(object):
 	def register(self):
 		if self.nickname in self.ircd.users:
 			return
+		tryagain = []
 		for action in self.ircd.actions:
-			if not action.onRegister(self):
+			outCode = action.onRegister(self)
+			if outCode == "again":
+				tryagain.append(action.onRegister)
+			elif not outCode:
+				return self.disconnect(None)
+		for action in tryagain:
+			if not action(self):
 				return self.disconnect(None)
 		
 		# Add self to user list
