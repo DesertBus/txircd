@@ -550,7 +550,7 @@ class IRCD(Factory):
 				if actiontype in self.actions:
 					self.actions[actiontype].append(actionfunc)
 				else:
-					log.msg("Module {} registers an action of an invalid type".format(name))
+					self.actions[actiontype] = [actionfunc]
 		return True
 	
 	def removeMode(self, modedesc):
