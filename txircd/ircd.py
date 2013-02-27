@@ -78,7 +78,7 @@ default_options = {
 	"client_peer_exempt": {"127.0.0.1":0},
 	"client_ping_interval": 35,
 	"client_timeout_delay": 90,
-	"client_ban_msg": "You're banned!",
+	"client_ban_msg": "You're banned! Email abuse@xyz.com for help.",
 	"client_whowas_limit": 10,
 	# Oper details
 	"oper_ips": ["127.0.0.1"],
