@@ -67,7 +67,7 @@ class GlineCommand(Command):
 		current_time = epoch(now())
 		expired = []
 		for mask, linedata in self.banList.iteritems():
-			if current_time > linedata["created"] + linedata["duration"]:
+			if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
 				expired.append(mask)
 			else:
 				user.sendMessage(irc.RPL_STATSGLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
@@ -95,7 +95,7 @@ class GlineCommand(Command):
 			match_against = irc_lower("{}@{}".format(user.username, user.hostname))
 			expired_line = []
 			for mask, linedata in self.banList.iteritems():
-				if current_time > linedata["created"] + linedata["duration"]:
+				if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
 					expired_line.append(mask)
 					continue
 				if fnmatch(match_against, mask):
@@ -118,7 +118,7 @@ class GlineCommand(Command):
 			expired_line = []
 			match_against = irc_lower("{}@{}".format(user.username, user.hostname))
 			for mask, linedata in self.banList.iteritems():
-				if current_time > linedata["created"] + linedata["duration"]:
+				if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
 					expired_line.append(mask)
 					continue
 				if fnmatch(match_against, mask):
