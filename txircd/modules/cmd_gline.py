@@ -64,15 +64,9 @@ class GlineCommand(Command):
 	def statsList(self, cmd, data):
 		if data["statstype"] != "G":
 			return
-		current_time = epoch(now())
-		expired = []
+		self.expire_glines()
 		for mask, linedata in self.banList.iteritems():
-			if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
-				expired.append(mask)
-			else:
-				user.sendMessage(irc.RPL_STATSGLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
-		for mask in expired:
-			del self.banList[mask]
+			user.sendMessage(irc.RPL_STATSGLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
 	
 	def register_check(self, user):
 		result = self.match_gline(user)
@@ -91,18 +85,12 @@ class GlineCommand(Command):
 			if "gline_match" in user.cache:
 				return user.cache["gline_match"]
 			# Determine whether the user matches
-			current_time = epoch(now())
+			self.expire_glines()
 			match_against = irc_lower("{}@{}".format(user.username, user.hostname))
-			expired_line = []
 			for mask, linedata in self.banList.iteritems():
-				if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
-					expired_line.append(mask)
-					continue
 				if fnmatch(match_against, mask):
 					user.cache["gline_match"] = linedata["reason"]
 					return ""
-			for mask in expired_line:
-				del self.banList[mask]
 			match_against = irc_lower("{}@{}".format(user.username, user.ip))
 			for mask in self.banList.iterkeys(): # we just removed expired lines
 				if fnmatch(match_against, mask):
@@ -114,22 +102,25 @@ class GlineCommand(Command):
 				return None
 			if "gline_match" in user.cache:
 				return user.cache["gline_match"]
-			current_time = epoch(now())
-			expired_line = []
+			self.expire_glines()
 			match_against = irc_lower("{}@{}".format(user.username, user.hostname))
 			for mask, linedata in self.banList.iteritems():
-				if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
-					expired_line.append(mask)
-					continue
 				if fnmatch(match_against, mask):
 					return linedata["reason"]
-			for mask in expired_line:
-				del self.banList[mask]
 			match_against = irc_lower("{}@{}".format(user.username, user.ip))
 			for mask in self.banList.iterkeys(): # we just removed expired lines
 				if fnmatch(match_against, mask):
 					return linedata["reason"]
 			return None
+	
+	def expire_glines(self):
+		current_time = epoch(now())
+		expired = []
+		for mask, linedata in self.banList.iteritems():
+			if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
+				expired.append(mask)
+		for mask in to_expire:
+			del self.banList[mask]
 
 class Spawner(object):
 	def __init__(self, ircd):
