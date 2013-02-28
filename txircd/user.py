@@ -63,7 +63,7 @@ class IRCUser(object):
 			"ext": {},
 			"private": {}
 		}
-		self.data_cache = {}
+		self.cache = {}
 		self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
 		
 		if not self.matches_xline("E"):
