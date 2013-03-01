@@ -44,7 +44,7 @@ class GlineCommand(Command):
 			banmask = "*@{}".format(banmask)
 		if len(params) < 3:
 			if banmask not in self.banList:
-				user.sendMessage("NOTICE", ":*** g:line for {} does not currently exist; check /stats G for a list of active g:lines".format(banmask))
+				user.sendMessage("NOTICE", ":*** G:line for {} does not currently exist; check /stats G for a list of active g:lines".format(banmask))
 				return {}
 			return {
 				"user": user,
