@@ -67,6 +67,7 @@ class KlineCommand(Command):
 		if data["statstype"] != "K":
 			return
 		self.expire_klines()
+		user = data["user"]
 		for mask, linedata in self.banList.iteritems():
 			user.sendMessage(irc.RPL_STATSKLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
 	
