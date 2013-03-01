@@ -44,7 +44,7 @@ class KlineCommand(Command):
 			banmask = "*@{}".format(banmask)
 		if len(params) < 3:
 			if banmask not in self.banList:
-				user.sendMessage("NOTICE", ":*** k:line for {} does not currently exist; check /stats K for a list of active k:lines".format(banmask))
+				user.sendMessage("NOTICE", ":*** K:line for {} does not currently exist; check /stats K for a list of active k:lines".format(banmask))
 				return {}
 			return {
 				"user": user,
