@@ -12,7 +12,7 @@ class GlineCommand(Command):
 			self.banList[data["mask"]] = {
 				"setter": user.prefix(),
 				"created": epoch(now()),
-				"duration": parse_duration(data["duration"]),
+				"duration": data["duration"],
 				"reason": data["reason"]
 			}
 			now_banned = {}
@@ -57,7 +57,7 @@ class GlineCommand(Command):
 			return {
 				"user": user,
 				"mask": banmask,
-				"duration": params[1],
+				"duration": parse_duration(params[1]),
 				"reason": " ".join(params[2:])
 			}
 	
