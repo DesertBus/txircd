@@ -62,6 +62,8 @@ class KlineCommand(Command):
 			}
 	
 	def statsList(self, cmd, data):
+		if cmd != "STATS":
+			return
 		if data["statstype"] != "K":
 			return
 		self.expire_klines()

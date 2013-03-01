@@ -62,6 +62,8 @@ class GlineCommand(Command):
 			}
 	
 	def statsList(self, cmd, data):
+		if cmd != "STATS":
+			return
 		if data["statstype"] != "G":
 			return
 		self.expire_glines()
