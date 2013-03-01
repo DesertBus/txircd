@@ -40,7 +40,7 @@ class GlineCommand(Command):
 		banmask = params[0]
 		if banmask in self.ircd.users:
 			banmask = "{}@{}".format(user.username, user.hostname)
-		else:
+		elif "@" not in banmask:
 			banmask = "*@{}".format(banmask)
 		if len(params) < 3:
 			if banmask not in self.banList:
