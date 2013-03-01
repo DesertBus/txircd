@@ -66,6 +66,7 @@ class GlineCommand(Command):
 			return
 		if data["statstype"] != "G":
 			return
+		user = data["user"]
 		self.expire_glines()
 		for mask, linedata in self.banList.iteritems():
 			user.sendMessage(irc.RPL_STATSGLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
