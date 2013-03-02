@@ -29,9 +29,6 @@ irc.ERR_TOOMANYKNOCK = "712"
 irc.ERR_CHANOPEN = "713"
 irc.ERR_KNOCKONCHAN = "714"
 irc.ERR_CHANNOTALLOWED = "926" # I had to make this one up, too.
-irc.RPL_BADWORDADDED = "927"
-irc.RPL_BADWORDREMOVED = "928"
-irc.ERR_NOSUCHBADWORD = "929"
 # Fix twisted being silly
 irc.RPL_ADMINLOC1 = "257"
 irc.RPL_ADMINLOC2 = "258"
@@ -254,7 +251,6 @@ class IRCD(Factory):
 			"connections": 0,
 			"total_connections": 0
 		}
-		
 		self.servconfig = {}
 		if not options:
 			options = {}
