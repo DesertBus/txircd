@@ -138,19 +138,6 @@ class IRCProtocol(irc.IRC):
 		self.last_message = now()
 		self.pinger.start(self.factory.client_ping_interval)
 		ip = self.transport.getPeer().host
-		expired = []
-		for mask, linedata in self.factory.xlines["Z"].iteritems():
-			if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
-				expired.append(mask)
-				continue
-			if fnmatch.fnmatch(ip, mask):
-				self.sendMessage("NOTICE", "*", ":{}".format(self.factory.client_ban_msg), prefix=self.factory.server_name)
-				self.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(ip, linedata["reason"]))
-				self.transport.loseConnection()
-		for mask in expired:
-			del self.factory.xlines["Z"][mask]
-		if expired:
-			self.factory.save_options()
 
 	def dataReceived(self, data):
 		if self.dead:
@@ -273,28 +260,11 @@ class IRCD(Factory):
 			"connections": 0,
 			"total_connections": 0
 		}
-		self.xlines = {
-			"G": CaseInsensitiveDictionary(),
-			"K": CaseInsensitiveDictionary(),
-			"Z": CaseInsensitiveDictionary(),
-			"E": CaseInsensitiveDictionary(),
-			"Q": CaseInsensitiveDictionary(),
-			"SHUN": CaseInsensitiveDictionary()
-		}
-		self.xline_match = {
-			"G": ["{ident}@{host}", "{ident}@{ip}"],
-			"K": ["{ident}@{host}", "{ident}@{ip}"],
-			"Z": ["{ip}"],
-			"E": ["{ident}@{host}", "{ident}@{ip}"],
-			"Q": ["{nick}"],
-			"SHUN": ["{ident}@{host}", "{ident}@{ip}"]
-		}
 		
 		self.servconfig = {}
 		if not options:
 			options = {}
 		self.load_options(options)
-		
 		
 		if self.app_ip_log:
 			try:
