@@ -37,29 +37,29 @@ class QlineCommand(Command):
 		if not params:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "QLINE", ":Not enough parameters")
 			return {}
-		if len(params) < 3 and params[2]:
-			self.expire_qlines()
-			if params[0] in self.banList:
-				user.sendMessage("NOTICE", ":*** Q:line already exists for {}; check /stats Q for a list of existing q:lines".format(params[0]))
-				return {}
-			if not params[0].replace("*", ""):
-				user.sendMessage("NOTICE", ":*** That q:line will match all nicks!  Please check your nick mask and try again.")
-				return {}
-			if not VALID_NICKNAME.match(params[0].replace("*", "").replace("?", "a")):
-				user.sendMessage("NOTICE", ":*** That isn't a valid nick mask and won't match any nicks.  Please check your nick mask and try again.")
+		self.expire_qlines()
+		if len(params) < 3 or not params[2]:
+			if params[0] not in self.banList:
+				user.sendMessage("NOTICE", ":*** There is not a q:line set on {}; check /stats Q for a list of existing q:lines".format(params[0]))
 				return {}
 			return {
 				"user": user,
-				"mask": params[0],
-				"duration": parse_duration(params[1]),
-				"reason": " ".join(params[2:])
+				"mask": params[0]
 			}
-		if params[0] not in self.banList:
-			user.sendMessage("NOTICE", ":*** There is not a q:line set on {}; check /stats Q for a list of existing q:lines".format(params[0]))
+		if params[0] in self.banList:
+			user.sendMessage("NOTICE", ":*** Q:line already exists for {}; check /stats Q for a list of existing q:lines".format(params[0]))
+			return {}
+		if not params[0].replace("*", ""):
+			user.sendMessage("NOTICE", ":*** That q:line will match all nicks!  Please check your nick mask and try again.")
+			return {}
+		if not VALID_NICKNAME.match(params[0].replace("*", "").replace("?", "a")):
+			user.sendMessage("NOTICE", ":*** That isn't a valid nick mask and won't match any nicks.  Please check your nick mask and try again.")
 			return {}
 		return {
 			"user": user,
-			"mask": params[0]
+			"mask": params[0],
+			"duration": parse_duration(params[1]),
+			"reason": " ".join(params[2:])
 		}
 	
 	def remove_user(self, user, reason):
