@@ -65,18 +65,6 @@ class IRCUser(object):
 		}
 		self.cache = {}
 		self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
-		
-		if not self.matches_xline("E"):
-			xline_match = self.matches_xline("G")
-			if xline_match != None:
-				self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-				self.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
-				raise ValueError("Banned user")
-			xline_match = self.matches_xline("K") # We're still here, so try the next one
-			if xline_match:
-				self.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-				self.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(self.prefix(), xline_match), to=None, prefix=None)
-				raise ValueError("Banned user")
 	
 	def register(self):
 		if self.nickname in self.ircd.users:
@@ -266,67 +254,6 @@ class IRCUser(object):
 				status += mode
 		return status
 	
-	def add_xline(self, linetype, mask, duration, reason):
-		if mask in self.ircd.xlines[linetype]:
-			self.sendMessage("NOTICE", ":*** Failed to add line for {}: already exists".format(mask))
-		else:
-			self.ircd.xlines[linetype][mask] = {
-				"created": now(),
-				"duration": duration,
-				"setter": self.nickname,
-				"reason": reason
-			}
-			self.sendMessage("NOTICE", ":*** Added line {} on mask {}".format(linetype, mask))
-			match_mask = irc_lower(mask)
-			match_list = []
-			for user in self.ircd.users.itervalues():
-				usermasks = self.ircd.xline_match[linetype]
-				for umask in usermasks:
-					usermask = umask.format(nick=irc_lower(user.nickname), ident=irc_lower(user.username), host=irc_lower(user.hostname), ip=irc_lower(user.ip))
-					if fnmatch.fnmatch(usermask, match_mask):
-						match_list.append(user)
-						break # break the inner loop to only match each user once
-			applymethod = getattr(self, "applyline_{}".format(linetype), None)
-			if applymethod is not None:
-				applymethod(match_list, reason)
-			self.ircd.save_options()
-	
-	def remove_xline(self, linetype, mask):
-		if mask not in self.ircd.xlines[linetype]:
-			self.sendMessage("NOTICE", ":*** Failed to remove line for {}: not found in list".format(mask))
-		else:
-			del self.ircd.xlines[linetype][mask]
-			self.sendMessage("NOTICE", ":*** Removed line {} on mask {}".format(linetype, mask))
-			removemethod = getattr(self, "removeline_{}".format(linetype), None)
-			if removemethod is not None:
-				removemethod()
-			self.ircd.save_options()
-	
-	def matches_xline(self, linetype):
-		usermasks = self.ircd.xline_match[linetype]
-		expired = []
-		matched = None
-		for mask, linedata in self.ircd.xlines[linetype].iteritems():
-			if linedata["duration"] != 0 and epoch(now()) > epoch(linedata["created"]) + linedata["duration"]:
-				expired.append(mask)
-				continue
-			for umask in usermasks:
-				usermask = umask.format(nick=irc_lower(self.nickname), ident=irc_lower(self.username), host=irc_lower(self.hostname), ip=irc_lower(self.ip))
-				if fnmatch.fnmatch(usermask, mask):
-					matched = linedata["reason"]
-					break # User only needs matched once.
-			if matched:
-				break # If there are more expired x:lines, they'll get removed later if necessary
-		for mask in expired:
-			del self.ircd.xlines[linetype][mask]
-		# let expired lines properly clean up
-		if expired:
-			removemethod = getattr(self, "removeline_{}".format(linetype), None)
-			if removemethod is not None:
-				removemethod()
-			self.ircd.save_options()
-		return matched
-	
 	def modeString(self, user):
 		modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
 		params = []
@@ -425,13 +352,6 @@ class IRCUser(object):
 		for modfunc in self.ircd.actions["nick"]:
 			modfunc(self, oldNick)
 	
-	def stats_xline_list(self, xline_type, xline_numeric):
-		for mask, linedata in self.ircd.xlines[xline_type].iteritems():
-			self.sendMessage(xline_numeric, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
-	
-	def stats_S(self):
-		self.stats_xline_list("SHUN", irc.RPL_STATSSHUN)
-	
 	def stats_B(self):
 		if self.ircd.server_badwords:
 			for mask, replacement in self.ircd.server_badwords.iteritems():
@@ -440,27 +360,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_SHUN(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		if not params or (params[0][0] != "-" and len(params) < 3):
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "SHUN", ":Not enough parameters")
-			return
-		if params[0][0] == "-":
-			banmask = irc_lower(params[0][1:])
-			if "@" not in banmask:
-				banmask = "*@{}".format(banmask)
-			self.remove_xline("SHUN", banmask)
-		else:
-			banmask = irc_lower(params[0])
-			if banmask in self.ircd.users:
-				user = self.ircd.users[banmask]
-				banmask = irc_lower("{}@{}".format(user.username, user.hostname))
-			elif "@" not in banmask:
-				banmask = "*@{}".format(banmask)
-			self.add_xline("SHUN", banmask, parse_duration(params[1]), " ".join(params[2:]))
-	
 	def irc_BADWORD(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
