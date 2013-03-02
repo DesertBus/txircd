@@ -17,7 +17,7 @@ class UserCommand(Command):
 		if params and len(params) < 4:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Not enough parameters")
 			return {}
-		ident = filter(lambda x: x in string.ascii_letters + string.digits + "-_", params[0])[:12]
+		ident = filter(lambda x: x in string.ascii_letters + string.digits + "-_", params[0][:12])
 		if not ident:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Your username is not valid")
 			return {}
