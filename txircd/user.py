@@ -302,12 +302,6 @@ class IRCUser(object):
 				removemethod()
 			self.ircd.save_options()
 	
-	def applyline_Z(self, userlist, reason):
-		for user in userlist:
-			if not user.mode.has("o") and not user.matches_xline("E"):
-				user.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-				user.irc_QUIT(None, ["Z:Lined: {}".format(reason)])
-	
 	def applyline_Q(self, userlist, reason):
 		for user in userlist:
 			if not user.mode.has("o"):
@@ -454,9 +448,6 @@ class IRCUser(object):
 		for mask, linedata in self.ircd.xlines[xline_type].iteritems():
 			self.sendMessage(xline_numeric, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
 	
-	def stats_Z(self):
-		self.stats_xline_list("Z", irc.RPL_STATSZLINE)
-	
 	def stats_E(self):
 		self.stats_xline_list("E", irc.RPL_STATSELINE)
 	
@@ -474,21 +465,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_ZLINE(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		if not params or (params[0][0] != "-" and len(params) < 3):
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "ZLINE", ":Not enough parameters")
-			return
-		if params[0][0] == "-":
-			self.remove_xline("Z", params[0][1:])
-		else:
-			banip = params[0]
-			if banip in self.ircd.users:
-				banip = self.ircd.users[banip].ip
-			self.add_xline("Z", banip, parse_duration(params[1]), " ".join(params[2:]))
-	
 	def irc_ELINE(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
