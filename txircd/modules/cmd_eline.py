@@ -21,14 +21,14 @@ class ElineCommand(Command):
 			for u in self.ircd.users.itervalues():
 				if self.match_eline(u):
 					u.cache["except_line"] = True
-			now_banned = []
+			now_banned = {}
 			for uid, udata in self.ircd.users.iteritems():
 				for modfunc in self.ircd.actions["xline_rematch"]:
 					reason = modfunc(udata)
 					if reason:
-						now_banned.append(uid)
+						now_banned[uid] = reason
 						break # If the user is banned, the user is banned. We don't need to gather a consensus or something.
-			for uid in now_banned:
+			for uid, reason in now_banned.iteritems():
 				udata = self.ircd.users[uid]
 				udata.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
 				quit_to = set()
@@ -38,8 +38,8 @@ class ElineCommand(Command):
 					for u in cdata.users:
 						quit_to.add(u)
 				for u in quit_to:
-					u.sendMessage("QUIT", ":Banned: Exception Removed", to=None, prefix=user.prefix())
-				user.sendMessage("ERROR", ":Closing Link {} [Banned: Exception Removed]".format(user.prefix()), to=None, prefix=None)
+					u.sendMessage("QUIT", ":Banned: Exception Removed ({})".format(reason), to=None, prefix=user.prefix())
+				user.sendMessage("ERROR", ":Closing Link {} [Banned: Exception Removed ({})]".format(user.prefix(), reason), to=None, prefix=None)
 				del self.ircd.users[user.nickname]
 				user.socket.transport.loseConnection()
 	
@@ -95,6 +95,11 @@ class ElineCommand(Command):
 	def match_eline(self, user):
 		self.expire_elines()
 		matchMask = irc_lower("{}@{}".format(user.username, user.hostname))
+		for mask, linedata in self.exceptList.iteritems():
+			if fnmatch(matchMask, mask):
+				user.cache["except_line"] = True
+				return linedata["reason"]
+		matchMask = irc_lower("{}@{}".format(user.username, user.ip))
 		for mask, linedata in self.exceptList.iteritems():
 			if fnmatch(matchMask, mask):
 				user.cache["except_line"] = True
