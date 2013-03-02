@@ -30,8 +30,8 @@ class KlineCommand(Command):
 					for u in cdata.users:
 						quit_to.add(u)
 				for u in quit_to:
-					u.sendMessage("QUIT", ":K-Lined: {}".format(reason), to=None, prefix=user.prefix())
-				user.sendMessage("ERROR", ":Closing Link {} [K-Lined: {}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
+					u.sendMessage("QUIT", ":K:Lined: {}".format(reason), to=None, prefix=user.prefix())
+				user.sendMessage("ERROR", ":Closing Link {} [K:Lined: {}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
 				del self.ircd.users[user.nickname]
 				user.socket.transport.loseConnection()
 		else:
@@ -88,7 +88,7 @@ class KlineCommand(Command):
 				return True
 			return "again"
 		user.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-		user.sendMessage("ERROR", ":Closing Link: {} [K-Lined: {}]".format(user.hostname, result), to=None, prefix=None)
+		user.sendMessage("ERROR", ":Closing Link: {} [K:Lined: {}]".format(user.hostname, result), to=None, prefix=None)
 		return False
 	
 	def match_kline(self, user):

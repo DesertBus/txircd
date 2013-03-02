@@ -30,8 +30,8 @@ class ZlineCommand(Command):
 					for u in cdata.users:
 						quit_to.add(u)
 				for u in quit_to:
-					u.sendMessage("QUIT", ":Z-Lined: {}".format(reason), to=None, prefix=user.prefix())
-				user.sendMessage("ERROR", ":Closing Link {} [Z-Lined: {}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
+					u.sendMessage("QUIT", ":Z:Lined: {}".format(reason), to=None, prefix=user.prefix())
+				user.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
 				del self.ircd.users[user.nickname]
 				user.socket.transport.loseConnection()
 		else:
@@ -83,7 +83,7 @@ class ZlineCommand(Command):
 		if not reason:
 			return True
 		user.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-		user.sendMessage("ERROR", ":Closing Link: {} [Z-Lined: {}]".format(user.ip, result), to=None, prefix=None)
+		user.sendMessage("ERROR", ":Closing Link: {} [Z:Lined: {}]".format(user.ip, result), to=None, prefix=None)
 		return False
 	
 	def match_zline(self, user):
