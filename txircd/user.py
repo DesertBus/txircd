@@ -302,19 +302,6 @@ class IRCUser(object):
 				removemethod()
 			self.ircd.save_options()
 	
-	def removeline_E(self):
-		matching_users = { "G": [], "K": [] }
-		for user in self.ircd.users.itervalues():
-			if user.matches_xline("E"):
-				continue # user still matches different e:lines
-			for linetype in matching_users.iterkeys():
-				if user.matches_xline(linetype):
-					matching_users[linetype].append(user)
-		if matching_users["G"]:
-			self.applyline_G(matching_users["G"], "Exception removed")
-		if matching_users["K"]:
-			self.applyline_K(matching_users["K"], "Exception removed")
-	
 	def matches_xline(self, linetype):
 		usermasks = self.ircd.xline_match[linetype]
 		expired = []
@@ -442,9 +429,6 @@ class IRCUser(object):
 		for mask, linedata in self.ircd.xlines[xline_type].iteritems():
 			self.sendMessage(xline_numeric, ":{} {} {} {} :{}".format(mask, epoch(linedata["created"]), linedata["duration"], linedata["setter"], linedata["reason"]))
 	
-	def stats_E(self):
-		self.stats_xline_list("E", irc.RPL_STATSELINE)
-	
 	def stats_S(self):
 		self.stats_xline_list("SHUN", irc.RPL_STATSSHUN)
 	
@@ -456,27 +440,6 @@ class IRCUser(object):
 	#======================
 	#== Protocol Methods ==
 	#======================
-	def irc_ELINE(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		if not params or (params[0][0] != "-" and len(params) < 3):
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "ELINE", ":Not enough parameters")
-			return
-		if params[0][0] == "-":
-			banmask = irc_lower(params[0][1:])
-			if "@" not in banmask:
-				banmask = "*@{}".format(banmask)
-			self.remove_xline("E", params[0][1:])
-		else:
-			banmask = irc_lower(params[0])
-			if banmask in self.ircd.users:
-				user = self.ircd.users[banmask]
-				banmask = irc_lower("{}@{}".format(user.username, user.hostname))
-			elif "@" not in banmask:
-				banmask = "*@{}".format(banmask)
-			self.add_xline("E", banmask, parse_duration(params[1]), " ".join(params[2:]))
-	
 	def irc_SHUN(self, prefix, params):
 		if not self.mode.has("o"):
 			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
