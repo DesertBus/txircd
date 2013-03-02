@@ -66,7 +66,7 @@ class ZlineCommand(Command):
 			"user": user,
 			"mask": banmask,
 			"duration": parse_duration(params[1]),
-			"reason": params[2]
+			"reason": " ".join(params[2:])
 		}
 	
 	def stats_list(self, cmd, data):
