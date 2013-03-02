@@ -2,6 +2,10 @@ from twisted.words.protocols import irc
 from txircd.modbase import Command
 import re
 
+irc.RPL_BADWORDADDED = "927"
+irc.RPL_BADWORDREMOVED = "928"
+irc.ERR_NOSUCHBADWORD = "929"
+
 class BadwordCommand(Command):
 	def __init__(self):
 		self.badwords = {}
