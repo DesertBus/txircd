@@ -351,33 +351,3 @@ class IRCUser(object):
 			u.sendMessage("NICK", to=params[0], prefix=oldprefix)
 		for modfunc in self.ircd.actions["nick"]:
 			modfunc(self, oldNick)
-	
-	def stats_B(self):
-		if self.ircd.server_badwords:
-			for mask, replacement in self.ircd.server_badwords.iteritems():
-				self.sendMessage(irc.RPL_STATS, "B", ":{} {}".format(mask, replacement))
-	
-	#======================
-	#== Protocol Methods ==
-	#======================
-	def irc_BADWORD(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		if not params:
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "BADWORD", ":Not enough parameters")
-			return
-		if params[0][0] == "-":
-			mask = params[0][1:]
-			if mask in self.ircd.server_badwords:
-				del self.ircd.server_badwords[mask]
-				self.sendMessage(irc.RPL_BADWORDREMOVED, mask, ":Badword removed")
-				self.ircd.save_options()
-			else:
-				self.sendMessage(irc.ERR_NOSUCHBADWORD, mask, ":No such badword")
-		else:
-			mask = params[0]
-			replacement = params[1] if len(params) > 1 else ""
-			self.ircd.server_badwords[mask] = replacement
-			self.sendMessage(irc.RPL_BADWORDADDED, mask, ":{}".format(replacement))
-			self.ircd.save_options()
