@@ -42,5 +42,5 @@ class Spawner(object):
 		}
 	
 	def cleanup(self):
-		del self.ircd.user_modes[3]["w"]
+		self.ircd.removeMode("unw")
 		del self.ircd.commands["WALLOPS"]
