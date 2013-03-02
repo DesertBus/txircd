@@ -58,6 +58,7 @@ class ZlineCommand(Command):
 				"user": user,
 				"mask": banmask
 			}
+		self.expire_zlines()
 		if banmask in self.banList:
 			user.sendMessage("NOTICE", ":*** There is already a z:line set on {}!".format(banmask))
 			return {}

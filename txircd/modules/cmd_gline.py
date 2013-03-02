@@ -61,6 +61,7 @@ class GlineCommand(Command):
 				"mask": banmask
 			}
 		else:
+			self.expire_glines()
 			if banmask in self.banList:
 				user.sendMessage("NOTICE", ":*** There's already a g:line set on {}!".format(banmask))
 				return {}
