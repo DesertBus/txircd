@@ -23,7 +23,17 @@ class GlineCommand(Command):
 			for uid, reason in now_banned.iteritems():
 				udata = self.ircd.users[uid]
 				udata.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-				udata.handleCommand("QUIT", None, [reason]) # The rest of this is equivalent to that, so...
+				quit_to = set()
+				for chan in user.channels.iterkeys():
+					cdata = self.ircd.channels[chan]
+					self.leave(chan)
+					for u in cdata.users:
+						quit_to.add(u)
+				for u in quit_to:
+					u.sendMessage("QUIT", ":G-Lined: {}".format(reason), to=None, prefix=user.prefix())
+				user.sendMessage("ERROR", ":Closing Link {} [G-Lined: {}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
+				del self.ircd.users[user.nickname]
+				user.socket.transport.loseConnection()
 		else:
 			del self.banList[data["mask"]]
 	

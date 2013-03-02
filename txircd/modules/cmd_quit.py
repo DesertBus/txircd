@@ -11,7 +11,7 @@ class QuitCommand(Command):
 				for u in cdata.users:
 					quit_to.add(u)
 			for u in quit_to:
-				u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=user.prefix())
+				u.sendMessage("QUIT", ":Quit: {}".format(reason), to=None, prefix=user.prefix())
 			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
 			del self.ircd.users[user.nickname]
 		else:
