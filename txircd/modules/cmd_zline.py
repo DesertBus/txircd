@@ -50,6 +50,7 @@ class ZlineCommand(Command):
 		banmask = params[0]
 		if banmask in self.ircd.users:
 			banmask = self.ircd.users[banmask].ip
+		self.expire_zlines()
 		if len(params) < 3 or not params[2]:
 			if banmask not in self.banList:
 				user.sendMessage("NOTICE", ":*** Z:line on {} not found!  Check /stats Z for a list of active z:lines.".format(banmask))
@@ -58,7 +59,6 @@ class ZlineCommand(Command):
 				"user": user,
 				"mask": banmask
 			}
-		self.expire_zlines()
 		if banmask in self.banList:
 			user.sendMessage("NOTICE", ":*** There is already a z:line set on {}!".format(banmask))
 			return {}
