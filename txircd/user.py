@@ -302,12 +302,6 @@ class IRCUser(object):
 				removemethod()
 			self.ircd.save_options()
 	
-	def applyline_Q(self, userlist, reason):
-		for user in userlist:
-			if not user.mode.has("o"):
-				user.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
-				user.irc_QUIT(None, ["Q:Lined: {}".format(reason)])
-	
 	def removeline_E(self):
 		matching_users = { "G": [], "K": [] }
 		for user in self.ircd.users.itervalues():
@@ -451,9 +445,6 @@ class IRCUser(object):
 	def stats_E(self):
 		self.stats_xline_list("E", irc.RPL_STATSELINE)
 	
-	def stats_Q(self):
-		self.stats_xline_list("Q", irc.RPL_STATSQLINE)
-	
 	def stats_S(self):
 		self.stats_xline_list("SHUN", irc.RPL_STATSSHUN)
 	
@@ -485,22 +476,6 @@ class IRCUser(object):
 			elif "@" not in banmask:
 				banmask = "*@{}".format(banmask)
 			self.add_xline("E", banmask, parse_duration(params[1]), " ".join(params[2:]))
-	
-	def irc_QLINE(self, prefix, params):
-		if not self.mode.has("o"):
-			self.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the required operator privileges")
-			return
-		if not params or (params[0][0] != "-" and len(params) < 3):
-			self.sendMessage(irc.ERR_NEEDMOREPARAMS, "QLINE", ":Not enough parameters")
-			return
-		if params[0][0] == "-":
-			self.remove_xline("Q", params[0][1:])
-		else:
-			nickmask = irc_lower(params[0])
-			if VALID_USERNAME.match(nickmask.replace("*","").replace("?","a")):
-				self.add_xline("Q", nickmask, parse_duration(params[1]), " ".join(params[2:]))
-			else:
-				self.sendMessage("NOTICE", ":*** Could not set Q:Line: invalid nickmask")
 	
 	def irc_SHUN(self, prefix, params):
 		if not self.mode.has("o"):
