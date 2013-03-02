@@ -61,6 +61,7 @@ class KlineCommand(Command):
 				"mask": banmask
 			}
 		else:
+			self.expire_klines()
 			if banmask in self.banList:
 				user.sendMessage("NOTICE", ":*** There's already a k:line set on {}!".format(banmask))
 				return {}
