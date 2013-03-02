@@ -1,6 +1,9 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.utils import epoch, now, irc_lower, parse_duration, CaseInsensitiveDictionary, VALID_NICKNAME
+from fnmatch import fnmatch
+
+irc.RPL_STATSQLINE = "217"
 
 class QlineCommand(Command):
 	def __init__(self):

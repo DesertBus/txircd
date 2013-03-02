@@ -17,12 +17,6 @@ import uuid, socket, collections, yaml, os, fnmatch, datetime, pygeoip, json, im
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_STATS = "210"
-irc.RPL_STATSQLINE = "217"
-irc.RPL_STATSGLINE = "223"
-irc.RPL_STATSKLINE = "223"
-irc.RPL_STATSZLINE = "223"
-irc.RPL_STATSELINE = "223"
-irc.RPL_STATSSHUN = "223" # I don't think this use of the numeric has a name, so I made one. //EA
 irc.RPL_STATSOPERS = "249" # Same here.
 irc.RPL_STATSPORTS = "249" # And here.
 irc.RPL_CREATIONTIME = "329"

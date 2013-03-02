@@ -3,6 +3,8 @@ from txircd.modbase import Command
 from txircd.utils import epoch, now, irc_lower, parse_duration, CaseInsensitiveDictionary
 from fnmatch import fnmatch
 
+irc.RPL_STATSKLINE = "223"
+
 class KlineCommand(Command):
 	def __init__(self):
 		self.banList = CaseInsensitiveDictionary()
