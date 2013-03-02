@@ -3,6 +3,8 @@ from txircd.modbase import Command
 from txircd.utils import epoch, now, irc_lower, parse_duration, CaseInsensitiveDictionary
 from fnmatch import fnmatch
 
+irc.RPL_STATSELINE = "223"
+
 class ElineCommand(Command):
 	def __init__(self):
 		self.exceptList = CaseInsensitiveDictionary()

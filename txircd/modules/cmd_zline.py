@@ -3,6 +3,8 @@ from txircd.modbase import Command
 from txircd.utils import epoch, now, parse_duration, CaseInsensitiveDictionary
 from fnmatch import fnmatch
 
+irc.RPL_STATSZLINE = "223"
+
 class ZlineCommand(Command):
 	def __init__(self):
 		self.banList = CaseInsensitiveDictionary()
