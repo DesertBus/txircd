@@ -20,7 +20,7 @@ class ListCommand(Command):
 				"modes": channel.mode,
 				"topic": channel.topic if topic else ""
 			}
-			user.commandExtraHook("LIST", cdata)
+			user.commandExtraHook("LIST", {"user": user, "cdata": cdata})
 			if not cdata:
 				continue
 			modeStr = "+"
