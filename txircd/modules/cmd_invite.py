@@ -7,7 +7,10 @@ class InviteCommand(Command):
 		targetChan = data["targetchan"]
 		user.sendMessage(irc.RPL_INVITING, targetUser.nickname, targetChan.name)
 		targetUser.sendMessage("INVITE", targetChan.name, prefix=user.prefix())
-		targetUser.cache["invites"].append(targetChan.name)
+		if "invites" not in targetUser.cache:
+			targetUser.cache["invites"] = [targetChan.name]
+		else:
+			targetUser.cache["invites"].append(targetChan.name)
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
@@ -41,9 +44,8 @@ class InviteCommand(Command):
 	
 	def removeChanInvites(self, channel):
 		for user in self.ircd.users.itervalues():
-			if "invites" not in user.cache:
-				continue
-			user.cache["invites"].remove(channel.name) if channel.name in user.cache["invites"]
+			if "invites" in user.cache and channel.name in user.cache["invites"]:
+				user.cache["invites"].remove(channel.name) if channel.name in user.cache["invites"]
 
 class Spawner(object):
 	def __init__(self, ircd):
