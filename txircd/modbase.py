@@ -28,6 +28,8 @@ class Mode(object):
 		pass
 	def onTopicChange(self, channel, user, topic):
 		pass
+	def namesListEntry(self, recipient, channel, user, representation):
+		return representation
 	def commandData(self, command, *args):
 		pass
 

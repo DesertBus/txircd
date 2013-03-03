@@ -295,10 +295,10 @@ class IRCUser(object):
 		"""
 		for user in channel.users.itervalues():
 			ranks = user.status(channel.name)
-			if ranks:
-				userlist.append(self.ircd.prefix_symbols[ranks[0]] + user.nickname)
-			else:
-				userlist.append(user.nickname)
+			representation = (self.ircd.prefix_symbols[ranks[0]] + user.nickname) if ranks else user.nickname
+			newRepresentation = self.listname(channel, user, representation)
+			if newRepresentation:
+				userlist.append(newRepresentation)
 		# Copy of irc.IRC.names
 		prefixLength = len(self.ircd.server_name) + len(irc.RPL_NAMREPLY) + len(cdata.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
 		namesLength = 512 - prefixLength # May get messed up with unicode
@@ -306,6 +306,21 @@ class IRCUser(object):
 		for l in lines:
 			self.sendMessage(irc.RPL_NAMREPLY, "=", cdata.name, ":{}".format(l))
 		self.sendMessage(irc.RPL_ENDOFNAMES, cdata.name, ":End of /NAMES list")
+	
+	def listname(self, channel, listingUser, representation):
+		for mode in channel.mode.iterkeys():
+			representation = self.ircd.channel_modes[self.ircd.channel_mode_type[mode]].namesListEntry(self, channel, listingUser, representation)
+			if not representation:
+				return representation
+		for mode in listingUser.mode.iterkeys():
+			representation = self.ircd.user_modes[self.ircd.user_mode_type[mode]].namesListEntry(self, channel, listingUser, representation)
+			if not representation:
+				return representation
+		for modfunc in self.ircd.actions["nameslistentry"]:
+			representation = modfunc(self, channel, listingUser, representation)
+			if not representation:
+				return representation
+		return representation
 	
 	def join(self, channel):
 		channel = channel[:64] # Limit channel names to 64 characters
