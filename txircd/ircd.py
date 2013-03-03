@@ -219,6 +219,7 @@ class IRCD(Factory):
 			"register": [],
 			"nick": [],
 			"quit": [],
+			"nameslistentry": [],
 			"chancreate": [],
 			"chandestroy": [],
 			"commandextra": [],
