@@ -1,3 +1,6 @@
+# TODO: use checkSet/checkUnset to determine whether a mode can be set/unset
+# TODO: check user privileges to set channel modes (e.g. user.hasAccess(self.ircd.channel_mode_level, channel.name))
+
 from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.utils import irc_lower
