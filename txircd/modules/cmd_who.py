@@ -21,6 +21,9 @@ class WhoCommand(Command):
 			if data["target"] in self.ircd.channels:
 				cdata = self.ircd.channels[data["target"]]
 				in_channel = cdata.name in user.channels # cache this value instead of searching self.channels every iteration
+				if not in_channel and ("p" in cdata.mode or "s" in cdata.mode):
+					irc.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
+					return
 				for u in cdata.users.itervalues():
 					if (in_channel or "i" not in u.mode) and ("o" not in filters or "o" in u.mode):
 						self.sendMessage(irc.RPL_WHOREPLY, cdata.name, u.username, u.hostname, self.ircd.server_name, u.nickname, "{}{}{}".format("G" if "away" in u.metadata["ext"] else "H", "*" if "o" in u.mode else "", self.ircd.prefix_symbols[self.ircd.prefix_order[len(self.ircd.prefix_order) - u.accessLevel(cdata.name)]] if u.accessLevel(cdata.name) > 0 else ""), ":0 {}".format(u.realname))
