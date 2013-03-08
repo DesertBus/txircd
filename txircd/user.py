@@ -222,6 +222,8 @@ class IRCUser(object):
 	def prefix(self):
 		return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
 	
+	# TODO: consider making these take channel objects instead of names; would be more efficient in many cases where we don't have
+	# to look up the channel again
 	def accessLevel(self, channel):
 		if channel not in self.channels or channel not in self.ircd.channels or self.nickname not in self.ircd.channels[channel].users:
 			return 0
