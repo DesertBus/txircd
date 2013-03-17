@@ -15,6 +15,7 @@ class ListCommand(Command):
 				if not filterMatch:
 					continue
 			cdata = {
+				"chandata": channel,
 				"name": channel.name,
 				"users": len(channel.users),
 				"modes": channel.mode,
@@ -23,8 +24,6 @@ class ListCommand(Command):
 			user.commandExtraHook("LIST", {"user": user, "cdata": cdata})
 			if not cdata:
 				continue
-			if cdata["name"] == "*":
-				user.sendMessage(irc.RPL_LIST, cdata.name, cdata.users, ":")
 			else:
 				modeStr = "+"
 				params = []
