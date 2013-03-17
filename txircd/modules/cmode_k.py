@@ -2,6 +2,11 @@ from twisted.words.protocols import irc
 from txircd.modbase import Mode
 
 class PasswordMode(Mode):
+	def checkSet(self, user, target, param):
+		if " " in param:
+			param = param[:param.index(" ")]
+		return True
+	
 	def checkUnset(self, user, target, param):
 		if param == target.mode["k"]:
 			return True
