@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+import string
 
 class UserCommand(Command):
 	def onUse(self, user, data):
