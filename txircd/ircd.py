@@ -300,14 +300,14 @@ class IRCD(Factory):
 			check = self.load_module(module)
 			if not check:
 				log.msg("An RFC-required capability could not be loaded!")
-				reactor.stop()
+				raise RuntimeError("A module required for RFC compatibility could not be loaded.")
 				return
 		if self.servconfig["irc_spec"] == "ircv3":
 			for module in ircv3_spec:
 				check = self.load_module(module)
 				if not check:
 					log.msg("IRCv3 compatibility was specified, but a required IRCv3 module could not be loaded!")
-					reactor.stop()
+					raise RuntimeError("A module required for IRCv3 compatibility could not be loaded.")
 					return
 		for module in self.servconfig["server_modules"]:
 			self.load_module(module)
