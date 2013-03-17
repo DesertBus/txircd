@@ -2,7 +2,7 @@ from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.utils import VALID_USERNAME, irc_lower
 
-class NickCommand(command):
+class NickCommand(Command):
 	def onUse(self, user, data):
 		if user.registered == 0:
 			user.nick(data["nick"])
