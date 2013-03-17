@@ -367,7 +367,7 @@ class IRCD(Factory):
 		log.msg("Closing logs...")
 		for c in self.channels.itervalues():
 			c.log.close()
-		self.stats_log.close()
+		#self.stats_log.close()
 		# Finally, save the config. Just in case.
 		log.msg("Saving options...")
 		self.save_options()
