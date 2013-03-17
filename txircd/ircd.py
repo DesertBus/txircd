@@ -291,7 +291,7 @@ class IRCD(Factory):
 		            "cmode_b", "cmode_i", "cmode_k", "cmode_l", "cmode_m", "cmode_n", "cmode_o", "cmode_p", "cmode_s", "cmode_t", "cmode_v",
 		            
 		            # user modes
-		            "umode_i", "umode_o", "umode_s"
+		            "umode_i", "umode_s"
 		            ]
 		ircv3_spec = [
 		              # will be populated when I write the IRCv3 modules
