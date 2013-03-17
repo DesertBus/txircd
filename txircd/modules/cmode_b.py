@@ -37,7 +37,8 @@ class BanMode(Mode):
 		for banmask in target.mode["b"]:
 			if param == banmask[0]:
 				param = banmask
-				del self.banMetadata[target.name][param] if param in self.banMetadata[target.name]
+				if param in self.banMetadata[target.name]:
+					del self.banMetadata[target.name][param]
 				return True
 		return False
 	
