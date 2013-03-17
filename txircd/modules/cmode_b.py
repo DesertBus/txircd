@@ -10,6 +10,8 @@ class BanMode(Mode):
 		self.banMetadata = CaseInsensitiveDictionary()
 	
 	def checkSet(self, user, target, param):
+		if " " in param:
+			param = param[:param.index(" ")]
 		if "b" in target.mode and len(target.mode["b"]) >= self.ircd.channel_ban_list_size:
 			return False
 		if "!" not in param and "@" not in param:
@@ -24,6 +26,8 @@ class BanMode(Mode):
 		return True
 	
 	def checkUnset(self, user, target, param):
+		if " " in param:
+			param = param[:param.index(" ")]
 		if "!" not in param and "@" not in param:
 			param = "{}!*@*".format(param)
 		elif "@" not in param:
