@@ -45,7 +45,7 @@ class InviteCommand(Command):
 	def removeChanInvites(self, channel):
 		for user in self.ircd.users.itervalues():
 			if "invites" in user.cache and channel.name in user.cache["invites"]:
-				user.cache["invites"].remove(channel.name) if channel.name in user.cache["invites"]
+				user.cache["invites"].remove(channel.name)
 
 class Spawner(object):
 	def __init__(self, ircd):
