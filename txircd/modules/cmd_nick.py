@@ -33,7 +33,7 @@ class NickCommand(command):
 			"nick": params[0]
 		}
 
-def Spawner(object):
+class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	

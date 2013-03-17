@@ -4,7 +4,7 @@ class OperMode(Mode):
 	def checkSet(self, target, param):
 		return False # Should only be set by the OPER command; hence, reject any normal setting of the mode
 
-def Spawner(object):
+class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	

@@ -45,7 +45,7 @@ class JoinCommand(Command):
 			"moreparams": params[2:]
 		}
 
-def Spawner(object):
+class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	

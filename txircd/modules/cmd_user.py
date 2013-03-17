@@ -27,7 +27,7 @@ class UserCommand(Command):
 			"gecos": params[3]
 		}
 
-def Spawner(object):
+class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	
