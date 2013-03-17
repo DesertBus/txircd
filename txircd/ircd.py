@@ -103,7 +103,7 @@ default_options = {
 class IRCProtocol(irc.IRC):
 	def __init__(self, *args, **kwargs):
 		self.dead = False
-		self.type = self.factory.types["user"](self)
+		self.type = IRCUser(self)
 		self.secure = False
 		self.data = 0
 		self.data_checker = LoopingCall(self.checkData)
@@ -177,11 +177,6 @@ class IRCProtocol(irc.IRC):
 class IRCD(Factory):
 	protocol = IRCProtocol
 	channel_prefixes = "#"
-	types = {
-		"user": IRCUser,
-		#"server": IRCServer,
-		#"service": IRCService,
-	}
 
 	def __init__(self, config, options = None):
 		reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
