@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.utils import VALID_NICKNAME
 
 class SanickCommand(Command):
 	def onUse(self, user, data):
@@ -21,6 +22,11 @@ class SanickCommand(Command):
 		target = self.ircd.users[params[0]]
 		if "o" in target.mode:
 			user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You cannot SANICK another oper")
+			return {}
+		if not VALID_NICKNAME.match(params[1]):
+			user.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[1], ":Erroneous nickname")
+			return {}
+		if params[0] == params[1]:
 			return {}
 		return {
 			"user": user,
