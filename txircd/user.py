@@ -74,7 +74,7 @@ class IRCUser(object):
 		if self.nickname in self.ircd.users:
 			return
 		tryagain = []
-		for action in self.ircd.actions:
+		for action in self.ircd.actions["register"]:
 			outCode = action.onRegister(self)
 			if outCode == "again":
 				tryagain.append(action.onRegister)
