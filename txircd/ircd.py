@@ -138,7 +138,7 @@ class IRCProtocol(irc.IRC):
 			self.transport.loseConnection()
 			self.connectionLost(None)
 		else:
-			self.sendMessage("PING",":{}".format(self.factory.server_name))
+			self.sendMessage("PING",":{}".format(self.factory.servconfig["server_name"]))
 	
 	def handleCommand(self, command, prefix, params):
 		self.factory.stats_data["lines_in"] += 1
