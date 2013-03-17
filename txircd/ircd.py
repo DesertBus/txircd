@@ -473,11 +473,12 @@ class IRCD(Factory):
 					self.user_modes[modetype][mode[2]] = implementation.hook(self)
 					self.user_mode_type[mode[2]] = modetype
 		if "actions" in mod_contains:
-			for actiontype, actionfunc in mod_contains["actions"].iteritems():
+			for actiontype, actionfuncs in mod_contains["actions"].iteritems():
 				if actiontype in self.actions:
-					self.actions[actiontype].append(actionfunc)
+					for func in actionfuncs:
+						self.actions[actiontype].append(func)
 				else:
-					self.actions[actiontype] = [actionfunc]
+					self.actions[actiontype] = actionfuncs
 		return True
 	
 	def removeMode(self, modedesc):
