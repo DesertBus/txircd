@@ -1,5 +1,6 @@
 # TODO: use checkSet/checkUnset to determine whether a mode can be set/unset
 # TODO: check user privileges to set channel modes (e.g. user.hasAccess(self.ircd.channel_mode_level, channel.name))
+# TODO: Fix user modes
 
 from twisted.words.protocols import irc
 from txircd.modbase import Command
@@ -14,7 +15,7 @@ class ModeCommand(Command):
 			if irc_lower(user) == irc_lower(data["targetuser"]):
 				self.userUse(user, data["modes"])
 			else:
-				self.sendMessage(irc.ERR_NEEDMOREPARAMS, ":Can't operate on modes for other users")
+				self.sendMessage(irc.ERR_USERSDONTMATCH, ":Can't operate on modes for other users")
 	
 	def chanUse(self, user, channel, modes):
 		if not modes:
@@ -45,10 +46,7 @@ class ModeCommand(Command):
 						modeDisplay.append(modedata)
 			elif modetype == 0:
 				if not param:
-					if mode in channels.mode:
-						self.ircd.channel_modes[modetype][mode].showParam(user, channels.mode[mode])
-					else:
-						self.ircd.channel_modes[modetype][mode].showParam(user, [])
+					self.ircd.channel_modes[modetype][mode].showParam(user, channel)
 				elif adding:
 					if mode not in channel.mode:
 						channel.mode[mode] = []
@@ -103,10 +101,7 @@ class ModeCommand(Command):
 			modetype, adding, mode, param = modedata
 			if modetype == 0:
 				if not param:
-					if mode in channels.mode:
-						self.ircd.channel_modes[modetype][mode].showParam(user, channels.mode[mode])
-					else:
-						self.ircd.channel_modes[modetype][mode].showParam(user, [])
+					self.ircd.user_modes[modetype][mode].showParam(user, user)
 				elif adding:
 					if mode not in user.mode:
 						user.mode[mode] = []
