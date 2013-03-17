@@ -33,7 +33,7 @@ class Mode(object):
 	def commandData(self, command, *args):
 		pass
 
-def Command(object):
+class Command(object):
 	def hook(self, base):
 		self.ircd = base
 		return self
