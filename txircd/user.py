@@ -31,9 +31,11 @@ class IRCUser(object):
 					hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
 			except IOError:
 				hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
+		"""
 		geo_data = parent.factory.geo_db.record_by_addr(ip) if parent.factory.geo_db else None
 		if not geo_data:
 			geo_data = {"latitude":None,"longitude":None,"country_name":None}
+		"""
 		
 		# Set attributes
 		self.ircd = parent.factory
