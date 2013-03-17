@@ -5,10 +5,10 @@ class PrivateMode(Mode):
 		if command != "LIST":
 			return data
 		cdata = data["cdata"]
-		if "p" in cdata["modes"] and cdata["name"] not in data["user"].channels:
+		if "p" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
 			cdata["name"] = "*"
 			cdata["topic"] = ""
-			# preserve modes for processing by other modules; the LIST command will see the * and eat the mode output
+			cdata["modes"] = {}
 	# other +p stuff is in other modules
 
 class Spawner(object):

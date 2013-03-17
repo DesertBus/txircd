@@ -5,7 +5,7 @@ class SecretMode(Mode):
 		if command != "LIST":
 			return data
 		cdata = data["cdata"]
-		if "s" in cdata["modes"] and cdata["name"] not in data["user"].channels:
+		if "s" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
 			data["cdata"] = {}
 	# other +s stuff is hiding in other modules.
 
