@@ -325,7 +325,7 @@ class IRCD(Factory):
 		return True
 	
 	def load_options(self, options):
-		for var, value in options.itervalues():
+		for var, value in options.iteritems():
 			self.servconfig[var] = value
 		for var, value in default_options.iteritems():
 			if var not in self.servconfig:
