@@ -8,7 +8,7 @@ from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, VALID_USERNAME, epoch, now, irc_lower, parse_duration, build_duration
+from txircd.utils import CaseInsensitiveDictionary, VALID_NICKNAME, epoch, now, irc_lower, parse_duration, build_duration
 from txircd.user import IRCUser
 from txircd.stats import StatFactory
 from txircd import __version__
