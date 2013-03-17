@@ -521,15 +521,21 @@ class IRCD(Factory):
 		self.prefix_order = []
 		"""
 		if mode[0] == "c":
-			del self.channel_modes[modetype][mode[2]] if modetype != -1 and mode[2] in self.channel_modes[modetype]
-			del self.channel_mode_type[mode[2]] if mode[2] in self.channel_mode_type
+			if modetype != -1 and mode[2] in self.channel_modes[modetype]:
+				del self.channel_modes[modetype][mode[2]]
+			if mode[2] in self.channel_mode_type:
+				del self.channel_mode_type[mode[2]]
 			if modetype == -1 and mode[2] in self.prefixes:
 				del self.prefix_symbols[self.prefixes[mode[2]][0]]
-				del self.prefixes[mode[2]] if mode[2] in self.prefixes
-				self.prefix_order.remove(mode[2]) if mode[2] in self.prefix_order
+				if mode[2] in self.prefixes:
+					del self.prefixes[mode[2]]
+				if mode[2] in self.prefix_order:
+					self.prefix_order.remove(mode[2])
 		else:
-			del self.user_modes[modetype][mode[2]] if mode[2] in self.user_modes[modetype]
-			del self.user_mode_type[mode[2]] if mode[2] in self.user_mode_type
+			if mode[2] in self.user_modes[modetype]:
+				del self.user_modes[modetype][mode[2]]
+			if mode[2] in self.user_mode_type:
+				del self.user_mode_type[mode[2]]
 	
 	def buildProtocol(self, addr):
 		if self.dead:
