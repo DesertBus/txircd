@@ -46,9 +46,11 @@ class IRCUser(object):
 		self.realname = None
 		self.hostname = hostname
 		self.ip = ip
+		"""
 		self.latitude = geo_data["latitude"]
 		self.longitude = geo_data["longitude"]
 		self.country = geo_data["country_name"]
+		"""
 		self.server = parent.factory.servconfig["server_name"]
 		self.signon = now()
 		self.lastactivity = now()
