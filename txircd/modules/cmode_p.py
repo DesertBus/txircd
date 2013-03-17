@@ -1,7 +1,7 @@
 from txircd.modbase import Mode
 
 class PrivateMode(Mode):
-	class listOutput(self, command, data):
+	def listOutput(self, command, data):
 		if command != "LIST":
 			return data
 		cdata = data["cdata"]
