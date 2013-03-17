@@ -540,11 +540,14 @@ class IRCD(Factory):
 		return Factory.buildProtocol(self, addr)
 
 	def unregisterProtocol(self, p):
+		"""
 		self.stats_data["connections"] -= 1
 		peerHost = p.transport.getPeer().host
 		self.peerConnections[peerHost] -= 1
 		if self.peerConnections[peerHost] == 0:
 			del self.peerConnections[peerHost]
+		"""
+		pass
 	
 	def flush_stats(self):
 		users = {}
