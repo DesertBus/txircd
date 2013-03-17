@@ -16,7 +16,7 @@ class UserhostCommand(Command):
 		if not params:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "USERHOST", ":Not enough parameters")
 			return {}
-		nickList = [nick if nick in self.ircd.users for nick in params[:5]]
+		nickList = [nick for nick in params[:5] if nick in self.ircd.users]
 		return {
 			"user": user,
 			"targetnick": nickList
