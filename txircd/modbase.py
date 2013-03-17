@@ -3,6 +3,8 @@
 # during function calls are a problem with the module and not just that the
 # particular function isn't defined.
 
+from txircd.utils import now
+
 class Module(object):
 	def hook(self, base):
 		self.ircd = base

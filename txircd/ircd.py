@@ -55,8 +55,8 @@ default_options = {
 	"client_max_data": 5000, # Bytes per 5 seconds
 	"client_peer_connections": 3,
 	"client_peer_exempt": {"127.0.0.1":0},
-	"client_ping_interval": 35,
-	"client_timeout_delay": 90,
+	"client_ping_interval": 60,
+	"client_timeout_delay": 120,
 	"client_ban_msg": "You're banned! Email abuse@xyz.com for help.",
 	"client_whowas_limit": 10,
 	# Oper details
@@ -103,7 +103,7 @@ default_options = {
 class IRCProtocol(irc.IRC):
 	def __init__(self, *args, **kwargs):
 		self.dead = False
-		self.type = IRCUser(self)
+		self.type = None
 		self.secure = False
 		self.data = 0
 		self.data_checker = LoopingCall(self.checkData)
@@ -111,11 +111,11 @@ class IRCProtocol(irc.IRC):
 		self.last_message = None
 	
 	def connectionMade(self):
+		self.type = IRCUser(self)
 		self.secure = ISSLTransport(self.transport, None) is not None
 		self.data_checker.start(5)
 		self.last_message = now()
-		self.pinger.start(self.factory.client_ping_interval)
-		ip = self.transport.getPeer().host
+		self.pinger.start(self.factory.servconfig["client_ping_interval"])
 
 	def dataReceived(self, data):
 		if self.dead:
