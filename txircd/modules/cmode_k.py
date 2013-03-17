@@ -2,6 +2,11 @@ from twisted.words.protocols import irc
 from txircd.modbase import Mode
 
 class PasswordMode(Mode):
+	def checkUnset(self, user, target, param):
+		if param == target.mode["k"]:
+			return True
+		return False
+	
 	def commandPermission(self, user, cmd, data):
 		if cmd != "JOIN":
 			return data
