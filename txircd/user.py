@@ -140,7 +140,6 @@ class IRCUser(object):
 			self.handleCommand("QUIT", None, ["Killed for flooding"])
 	
 	def connectionLost(self, reason):
-		self.handleCommand("QUIT", None, ["Client connection lost"])
 		self.disconnected.callback(None)
 	
 	def handleCommand(self, command, prefix, params):
