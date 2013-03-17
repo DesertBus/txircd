@@ -15,7 +15,7 @@ class StatsCommand(Command):
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "STATS", ":Not enough parameters")
 			return {}
 		statschar = params[0][0]
-		if "o" not in user.mode and statschar not in self.ircd.server_stats_public:
+		if "o" not in user.mode and statschar not in self.ircd.servconfig["server_stats_public"]:
 			user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - Stats {} requires operator privileges".format(statschar))
 			return {}
 		return {
@@ -33,21 +33,21 @@ class StatsCommand(Command):
 				if "o" in user.mode:
 					caller.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
 		elif statschar == "p":
-			if isinstance(self.ircd.server_port_tcp, collections.Sequence):
-				for port in self.ircd.server_port_tcp:
+			if isinstance(self.ircd.servconfig["server_port_tcp"], collections.Sequence):
+				for port in self.ircd.servconfig["server_port_tcp"]:
 					caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(port))
 			else:
-				caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.server_port_tcp))
-			if isinstance(self.ircd.server_port_ssl, collections.Sequence):
-				for port in self.ircd.server_port_ssl:
+				caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.servconfig["server_port_tcp"]))
+			if isinstance(self.ircd.servconfig["server_port_ssl"], collections.Sequence):
+				for port in self.ircd.servconfig["server_port_ssl"]:
 					caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(port))
 			else:
-				caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.server_port_ssl))
-			if isinstance(self.ircd.server_port_web, collections.Sequence):
-				for port in self.ircd.server_port_web:
+				caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.servconfig["server_port_ssl"]))
+			if isinstance(self.ircd.servconfig["server_port_web"], collections.Sequence):
+				for port in self.ircd.servconfig["server_port_web"]:
 					caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
 			else:
-				caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.server_port_web))
+				caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.servconfig["server_port_web"]))
 			# Add server ports here when we get s2s
 		elif statschar == "u":
 			uptime = now() - self.ircd.created

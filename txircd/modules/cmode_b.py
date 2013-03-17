@@ -12,7 +12,7 @@ class BanMode(Mode):
 	def checkSet(self, user, target, param):
 		if " " in param:
 			param = param[:param.index(" ")]
-		if "b" in target.mode and len(target.mode["b"]) >= self.ircd.channel_ban_list_size:
+		if "b" in target.mode and len(target.mode["b"]) >= self.ircd.servconfig["channel_ban_list_size"]:
 			return False
 		if "!" not in param and "@" not in param:
 			param = "{}!*@*".format(param)
@@ -70,7 +70,7 @@ class BanMode(Mode):
 	def showParam(self, user, target):
 		if "b" in target.mode:
 			for entry in target.mode["b"]:
-				metadata = self.banMetadata[target.name][entry] if target.name in self.banMetadata and entry in self.banMetadata[target.name] else [ self.ircd.server_name, epoch(now()) ]
+				metadata = self.banMetadata[target.name][entry] if target.name in self.banMetadata and entry in self.banMetadata[target.name] else [ self.ircd.servconfig["server_name"], epoch(now()) ]
 				user.sendMessage(irc.RPL_BANLIST, target.name, entry, metadata[0], metadata[1])
 			if target.name in self.banMetadata:
 				removeMask = []

@@ -4,7 +4,7 @@ from txircd.utils import crypt
 
 class OperCommand(Command):
 	def onUse(self, user, data):
-		if data["username"] not in self.ircd.oper_logins or self.ircd.oper_logins[data["username"]] != crypt(data["password"], self.ircd.oper_logins[data["username"]]):
+		if data["username"] not in self.ircd.servconfig["oper_logins"] or self.ircd.servconfig["oper_logins"][data["username"]] != crypt(data["password"], self.ircd.servconfig["oper_logins"][data["username"]]):
 			user.sendMessage(irc.ERR_PASSWDMISMATCH, ":Password incorrect")
 		else:
 			user.mode["o"] = None
@@ -17,7 +17,7 @@ class OperCommand(Command):
 		if len(params) < 2:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters")
 			return {}
-		if user.ip not in self.ircd.oper_ips:
+		if user.ip not in self.ircd.servconfig["oper_ips"]:
 			user.sendMessage(irc.ERR_NOOPERHOST, ":No O-lines for your host")
 			return {}
 		return {

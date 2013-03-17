@@ -93,7 +93,7 @@ class QlineCommand(Command):
 		reason = self.match_qline(user)
 		if not reason:
 			return True
-		user.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
+		user.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 		user.sendMessage("ERROR", ":Closing Link: {} [Q:Lined: {}]".format(
 	
 	def match_qline(self, user):

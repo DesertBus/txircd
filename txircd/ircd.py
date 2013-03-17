@@ -277,20 +277,42 @@ class IRCD(Factory):
 	
 	def all_module_load(self):
 		# load RFC-required modules
-		rfc_spec = ["cmd_user", "cmd_nick", "cmd_pass", # registration
+		rfc_spec = [
+		            # commands
+		            "cmd_user", "cmd_nick", "cmd_pass", # registration
 		            "cmd_ping", "cmd_pong", # connection keep-alive
-		            "cmd_join", "cmd_part", "cmd_kick", "cmd_topic", "cmd_mode", "cmd_names", # channels
+		            "cmd_join", "cmd_part", "cmd_kick", "cmd_topic", "cmd_mode", "cmd_invite", # channels
 		            "cmd_quit", # connection end
-		            "cmd_oper", "umode_o", # oper
-		            "cmd_motd" # miscellaneous
+		            "cmd_privmsg_notice", # messages
+		            "cmd_oper", "umode_o", "cmd_rehash", "cmd_wallops", # oper
+		            "cmd_admin", "cmd_info", "cmd_motd", "cmd_stats", "cmd_time", "cmd_version", # server info
+		            "cmd_away", "cmd_ison", "cmd_userhost", "cmd_who", "cmd_whois", "cmd_whowas", # user info
+		            "cmd_names", "cmd_list", # channel info
+		            "cmd_kill", "cmd_eline", "cmd_gline", "cmd_kline", "cmd_qline", "cmd_zline", # user management
+		            
+		            # channel modes
+		            "cmode_b", "cmode_i", "cmode_k", "cmode_l", "cmode_m", "cmode_n", "cmode_o", "cmode_p", "cmode_s", "cmode_t", "cmode_v",
+		            
+		            # user modes
+		            "umode_i", "umode_o", "umode_s"
 		            ]
+		ircv3_spec = [
+		              # will be populated when I write the IRCv3 modules
+		             ]
 		for module in rfc_spec:
 			check = self.load_module(module)
 			if not check:
 				log.msg("An RFC-required capability could not be loaded!")
 				reactor.stop()
 				return
-		for module in self.server_modules:
+		if self.servconfig["irc_spec"] == "ircv3":
+			for module in ircv3_spec:
+				check = self.load_module(module)
+				if not check:
+					log.msg("IRCv3 compatibility was specified, but a required IRCv3 module could not be loaded!")
+					reactor.stop()
+					return
+		for module in self.servconfig["server_modules"]:
 			self.load_module(module)
 	
 	def rehash(self):
@@ -303,51 +325,12 @@ class IRCD(Factory):
 		return True
 	
 	def load_options(self, options):
-		# Populate attributes with options
-		for var in default_options.iterkeys():
-			setattr(self, var, options[var] if var in options else default_options[var])
 		for var, value in options.itervalues():
-			if var not in default_options:
+			self.servconfig[var] = value
+		for var, value in default_options.iteritems():
+			if var not in self.servconfig:
 				self.servconfig[var] = value
-		# Unserialize xlines
-		for key in self.xlines.iterkeys():
-			self.xlines[key] = CaseInsensitiveDictionary()
-			xlines = getattr(self, "server_xlines_{}".format(key.lower()), None)
-			if not xlines:
-				continue
-			for user, data in xlines.iteritems():
-				self.xlines[key][user] = {
-					"created": datetime.datetime.strptime(data["created"],"%Y-%m-%d %H:%M:%S"),
-					"duration": parse_duration(data["duration"]),
-					"setter": data["setter"],
-					"reason": data["reason"]
-				}
-		# Create database connection
-		if self.db:
-			self.db.close()
-		if self.db_library:
-			self.db = adbapi.ConnectionPool(self.db_library, host=self.db_host, port=self.db_port, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
-		# Turn on stats factory if needed, or shut it down if needed
-		if self.stats_enabled and not self.stats:
-			self.stats = StatFactory()
-			if self.stats_port_tcp:
-				try:
-					reactor.listenTCP(int(self.stats_port_tcp), self.stats)
-				except:
-					pass # Wasn't a number
-			if self.stats_port_web:
-				try:
-					reactor.listenTCP(int(self.stats_port_web), SockJSFactory(self.stats))
-				except:
-					pass # Wasn't a number
-		elif not self.stats_enabled and self.stats:
-			self.stats.shutdown()
-			self.stats = None
-		# Load geoip data
-		self.geo_db = pygeoip.GeoIP(self.app_geoip_database, pygeoip.MEMORY_CACHE) if self.app_geoip_database else None
-		if self.server_modules:
-			for mod in server_modules:
-				self.load_module(mod)
+		self.all_module_load()
 	
 	def save_options(self):
 		# Serialize xlines
