@@ -135,13 +135,12 @@ class IRCUser(object):
 		self.socket.transport.loseConnection()
 	
 	def checkData(self, data):
-		if data > self.ircd.servconfig["client_max_data"] and not self.mode.has("o"):
+		if data > self.ircd.servconfig["client_max_data"] and "o" not in self.mode:
 			log.msg("Killing user '{}' for flooding".format(self.nickname))
-			self.irc_QUIT(None,["Killed for flooding"])
+			self.handleCommand("QUIT", None, ["Killed for flooding"])
 	
 	def connectionLost(self, reason):
-		# TODO: use the proper quit mechanism
-		self.irc_QUIT(None,["Client connection lost"])
+		self.handleCommand("QUIT", None, ["Client connection lost"])
 		self.disconnected.callback(None)
 	
 	def handleCommand(self, command, prefix, params):
