@@ -75,9 +75,9 @@ class IRCUser(object):
 			return
 		tryagain = []
 		for action in self.ircd.actions["register"]:
-			outCode = action.onRegister(self)
+			outCode = action(self)
 			if outCode == "again":
-				tryagain.append(action.onRegister)
+				tryagain.append(action)
 			elif not outCode:
 				return self.disconnect(None)
 		for action in tryagain:
