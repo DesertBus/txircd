@@ -1,5 +1,3 @@
-# TODO: use checkSet/checkUnset to determine whether a mode can be set/unset
-
 from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.utils import irc_lower
@@ -23,6 +21,10 @@ class ModeCommand(Command):
 		modeDisplay = []
 		for modedata in modes:
 			modetype, adding, mode, param = modedata
+			if adding and not self.ircd.channel_modes[modetype][mode].checkSet(user, channel, param):
+				continue
+			if not adding and not self.ircd.channel_modes[modetype][mode].checkUnset(user, channel, param):
+				continue
 			if modetype == -1:
 				if param not in self.ircd.users:
 					continue
@@ -97,6 +99,10 @@ class ModeCommand(Command):
 		modeDisplay = []
 		for modedata in modes:
 			modetype, adding, mode, param = modedata
+			if adding and not self.ircd.user_modes[modetype][mode].checkSet(user, user, param):
+				continue
+			if not adding and not self.ircd.user_modes[modetype][mode].checkUnset(user, user, param):
+				continue
 			if modetype == 0:
 				if not param:
 					self.ircd.user_modes[modetype][mode].showParam(user, user)
