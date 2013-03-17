@@ -201,7 +201,7 @@ class IRCD(Factory):
 		self.dead = False
 		
 		self.config = config
-		self.version = "txircd.{}".format(__version__)
+		self.version = "txircd-{}".format(__version__)
 		self.created = now()
 		self.token = uuid.uuid1()
 		self.servers = CaseInsensitiveDictionary()
