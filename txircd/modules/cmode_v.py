@@ -28,7 +28,7 @@ class Spawner(object):
 	def spawn(self):
 		return {
 			"modes": {
-				"csv": VoiceMode()
+				"csv+10": VoiceMode()
 			}
 		}
 	

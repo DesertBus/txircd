@@ -34,7 +34,7 @@ class Spawner(object):
 	def spawn(self):
 		return {
 			"modes": {
-				"cso": OpMode()
+				"cso@100": OpMode()
 			}
 		}
 	
