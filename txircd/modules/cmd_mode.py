@@ -1,5 +1,4 @@
 # TODO: use checkSet/checkUnset to determine whether a mode can be set/unset
-# TODO: Fix user modes
 
 from twisted.words.protocols import irc
 from txircd.modbase import Command
@@ -93,7 +92,7 @@ class ModeCommand(Command):
 	
 	def userUse(self, user, modes):
 		if not modes:
-			self.sendMessage(irc.RPL_CHANNELMODEIS, user.modeString())
+			self.sendMessage(irc.RPL_UMODEIS, user.modeString())
 			return
 		modeDisplay = []
 		for modedata in modes:
