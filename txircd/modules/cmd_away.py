@@ -62,6 +62,7 @@ class Spawner(object):
 			},
 			"actions": {
 				"commandextra": [self.awayCmd.privmsgReply, self.awayCmd.inviteReply, self.awayCmd.whoisLine]
+			}
 		}
 	
 	def cleanup(self):
