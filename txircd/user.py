@@ -13,8 +13,8 @@ class IRCUser(object):
 	def __init__(self, parent):
 		# Mask the IP
 		ip = parent.transport.getPeer().host
-		if ip in parent.factory.client_vhosts:
-			hostname = parent.factory.client_vhosts[ip]
+		if ip in parent.factory.servconfig["client_vhosts"]:
+			hostname = parent.factory.servconfig["client_vhosts"][ip]
 		else:
 			try:
 				hostname = socket.gethostbyaddr(ip)[0]
