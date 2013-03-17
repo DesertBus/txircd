@@ -66,6 +66,7 @@ class Spawner(object):
 			},
 			"actions": {
 				"commandextra": [self.statsCmd.statsChars]
+			}
 		}
 	
 	def cleanup(self):
