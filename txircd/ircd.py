@@ -530,6 +530,7 @@ class IRCD(Factory):
 		if self.dead:
 			return None
 		ip = addr.host
+		"""
 		self.unique_ips.add(ip)
 		self.stats_data["total_connections"] = len(self.unique_ips)
 		if self.app_ip_log:
@@ -541,6 +542,7 @@ class IRCD(Factory):
 			return None
 		self.stats_data["connections"] += 1
 		self.peerConnections[ip] = conn + 1
+		"""
 		return Factory.buildProtocol(self, addr)
 
 	def unregisterProtocol(self, p):
