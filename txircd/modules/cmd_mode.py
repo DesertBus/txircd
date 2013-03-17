@@ -21,6 +21,8 @@ class ModeCommand(Command):
 		modeDisplay = []
 		for modedata in modes:
 			modetype, adding, mode, param = modedata
+			if not adding and mode not in channel.mode:
+				continue # channel does not have mode set; cannot remove
 			if adding and not self.ircd.channel_modes[modetype][mode].checkSet(user, channel, param):
 				continue
 			if not adding and not self.ircd.channel_modes[modetype][mode].checkUnset(user, channel, param):
@@ -99,6 +101,8 @@ class ModeCommand(Command):
 		modeDisplay = []
 		for modedata in modes:
 			modetype, adding, mode, param = modedata
+			if not adding and mode not in user.mode:
+				continue # Cannot unset mode that's not set
 			if adding and not self.ircd.user_modes[modetype][mode].checkSet(user, user, param):
 				continue
 			if not adding and not self.ircd.user_modes[modetype][mode].checkUnset(user, user, param):
