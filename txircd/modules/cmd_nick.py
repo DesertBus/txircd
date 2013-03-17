@@ -1,6 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
-from txircd.utils import VALID_USERNAME, irc_lower
+from txircd.utils import VALID_NICKNAME, irc_lower
 
 class NickCommand(Command):
 	def onUse(self, user, data):
@@ -20,7 +20,7 @@ class NickCommand(Command):
 		if not params[0]:
 			user.sendMessage(irc.ERR_ERRONEUSNICKNAME, "*", ":Erroneous nickname")
 			return {}
-		if not VALID_USERNAME.match(params[0]):
+		if not VALID_NICKNAME.match(params[0]):
 			user.sendMessage(irc.ERR_ERRONEUSNICKNAME, params[0], ":Erroneous nickname")
 			return {}
 		if params[0] == user.nickname:
