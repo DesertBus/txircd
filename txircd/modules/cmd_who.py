@@ -51,7 +51,7 @@ class WhoCommand(Command):
 			"filters": filters
 		}
 
-def Spawner(object):
+class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	

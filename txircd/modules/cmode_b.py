@@ -83,7 +83,7 @@ class BanMode(Mode):
 			del self.banMetadata[target.name] # clear all saved ban data if no bans are set on channel
 		user.sendMessage(irc.RPL_ENDOFBANLIST, target.name, ":End of channel ban list")
 
-def Spawner(object):
+class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
 	
