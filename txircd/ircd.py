@@ -134,7 +134,7 @@ class IRCProtocol(irc.IRC):
 		self.data = 0
 	
 	def ping(self):
-		if (now() - self.last_message).total_seconds() > self.factory.client_timeout_delay:
+		if (now() - self.last_message).total_seconds() > self.factory.servconfig["client_timeout_delay"]:
 			self.transport.loseConnection()
 			self.connectionLost(None)
 		else:
