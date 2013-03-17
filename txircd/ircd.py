@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
 from twisted.internet.protocol import Factory
@@ -8,12 +7,10 @@ from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, VALID_NICKNAME, epoch, now, irc_lower, parse_duration, build_duration
+from txircd.utils import CaseInsensitiveDictionary, now
 from txircd.user import IRCUser
-from txircd.stats import StatFactory
 from txircd import __version__
-from txsockjs.factory import SockJSFactory
-import uuid, socket, collections, yaml, os, fnmatch, datetime, pygeoip, json, imp
+import uuid, socket, yaml, os, json, imp
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_STATS = "210"
@@ -334,6 +331,7 @@ class IRCD(Factory):
 	
 	def save_options(self):
 		# Serialize xlines
+		"""
 		for key, lines in self.xlines.iteritems():
 			xlines = {}
 			for user, data in lines.iteritems():
@@ -351,6 +349,7 @@ class IRCD(Factory):
 				options = yaml.safe_load(f)
 		except:
 			return False
+		"""
 		# Overwrite with the new stuff
 		for var in default_options.iterkeys():
 			options[var] = getattr(self, var, None)

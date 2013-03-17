@@ -1,4 +1,4 @@
-from txircd.utils import CaseInsensitiveDictionary, now
+from txircd.utils import now
 
 class IRCChannel(object):
 	def __init__(self, ircd, name):
