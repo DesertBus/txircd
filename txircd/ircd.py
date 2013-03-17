@@ -336,10 +336,9 @@ class IRCD(Factory):
 			return False
 		"""
 		# Overwrite with the new stuff
-		for var in default_options.iterkeys():
-			options[var] = getattr(self, var, None)
-		for var, value in self.servconfig.iteritems():
-			if var not in default_options: # Stop anything that may have tried to overwrite a default_option through servconfig
+		options = self.servconfig
+		for var, value in default_options.iteritems():
+			if var not in options:
 				options[var] = value
 		# Save em
 		try:
