@@ -1,4 +1,4 @@
-from twisted.words.protocol import irc
+from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.utils import epoch, now
 
