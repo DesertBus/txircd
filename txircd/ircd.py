@@ -33,11 +33,9 @@ irc.RPL_ADMINLOC2 = "258"
 default_options = {
 	# App details
 	"app_verbose": False,
-	"app_log_dir": "logs",
-	"app_ip_log": "ips.json",
-	"app_geoip_database": None,
 	"app_ssl_key": "test.key",
 	"app_ssl_pem": "test.pem",
+	"app_irc_spec": "rfc1459",
 	# Network details
 	"network_name": "txircd",
 	# Server details
@@ -50,15 +48,8 @@ default_options = {
 	"server_stats_public": "ou",
 	"server_denychans": [],
 	"server_allowchans": [],
-	"server_badwords": {},
 	"server_modules": [],
 	"server_password": None,
-	"server_xlines_k": {},
-	"server_xlines_g": {},
-	"server_xlines_q": {},
-	"server_xlines_z": {},
-	"server_xlines_e": {},
-	"server_xlines_shun": {},
 	# Client details
 	"client_vhosts": {"127.0.0.1":"localhost"},
 	"client_max_data": 5000, # Bytes per 5 seconds
@@ -71,7 +62,6 @@ default_options = {
 	# Oper details
 	"oper_ips": ["127.0.0.1"],
 	"oper_logins": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
-	"oper_allow_die": True,
 	# Database details
 	"db_host": "localhost",
 	"db_port": 3306,
@@ -253,7 +243,7 @@ class IRCD(Factory):
 		if not options:
 			options = {}
 		self.load_options(options)
-		
+		"""
 		if self.app_ip_log:
 			try:
 				with open(self.app_ip_log) as f:
@@ -269,7 +259,7 @@ class IRCD(Factory):
 			os.makedirs(logfile)
 		self.stats_log = DailyLogFile("log",logfile)
 		self.stats_timer.start(1)
-		
+		"""
 		self.all_module_load()
 	
 	def all_module_load(self):
@@ -302,7 +292,7 @@ class IRCD(Factory):
 				log.msg("An RFC-required capability could not be loaded!")
 				raise RuntimeError("A module required for RFC compatibility could not be loaded.")
 				return
-		if self.servconfig["irc_spec"] == "ircv3":
+		if self.servconfig["app_irc_spec"] == "ircv3":
 			for module in ircv3_spec:
 				check = self.load_module(module)
 				if not check:
