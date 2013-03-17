@@ -163,7 +163,7 @@ class IRCUser(object):
 		tryagain = set()
 		for modfunc in self.ircd.actions["commandpermission"]:
 			permData = modfunc(self, command, data)
-			if perm == "again":
+			if permData == "again":
 				tryagain.add(modfunc)
 			else:
 				data = permData
