@@ -1,5 +1,5 @@
 from twisted.words.protocols import irc
-from txircd.modbase import command
+from txircd.modbase import Command
 
 class KillCommand(Command):
 	def onUse(self, user, data):
