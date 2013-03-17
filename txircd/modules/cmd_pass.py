@@ -3,7 +3,7 @@ from txircd.modbase import Command, Module
 
 class PassCommand(Command, Module):
 	def onUse(self, user, data):
-		if self.ircd.server_password and not user.password:
+		if "server_password" in self.ircd.servconfig and self.ircd.servconfig["server_password"] and not user.password:
 			user.registered -= 1
 		user.password = data["password"]
 		if user.registered == 0:
@@ -22,11 +22,11 @@ class PassCommand(Command, Module):
 		}
 	
 	def onConnect(self, user):
-		if self.ircd.server_password:
+		if "server_password" in self.ircd.servconfig and self.ircd.servconfig["server_password"]:
 			user.registered += 1 # Make password a required step in registration
 	
 	def onRegister(self, user):
-		if self.ircd.server_password and self.ircd.server_password != user.password:
+		if "server_password" in self.ircd.servconfig and self.ircd.servconfig["server_password"] and self.ircd.servconfig["server_password"] != user.password:
 			user.sendMessage("ERROR", ":Closing link: ({}@{}) [Access denied]".format(user.username, user.hostname), to=None, prefix=None)
 			return False
 

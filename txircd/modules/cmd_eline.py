@@ -32,7 +32,7 @@ class ElineCommand(Command):
 						break # If the user is banned, the user is banned. We don't need to gather a consensus or something.
 			for uid, reason in now_banned.iteritems():
 				udata = self.ircd.users[uid]
-				udata.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
+				udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 				quit_to = set()
 				for chan in user.channels.iterkeys():
 					cdata = self.ircd.channels[chan]

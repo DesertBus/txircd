@@ -3,7 +3,7 @@ from txircd.modbase import Command
 
 class VersionCommand(Command):
 	def onUse(self, user, data):
-		user.sendMessage(irc.RPL_VERSION, ":{} {}".format(self.ircd.version, self.ircd.server_name))
+		user.sendMessage(irc.RPL_VERSION, ":{} {}".format(self.ircd.version, self.ircd.servconfig["server_name"]))
 		user.send_isupport()
 
 class Spawner(object):

@@ -3,7 +3,7 @@ from txircd.modbase import Command
 
 class TimeCommand(Command):
 	def onUse(self, user, data):
-		user.sendMessage(irc.RPL_TIME, self.ircd.server_name, ":{}".format(now()))
+		user.sendMessage(irc.RPL_TIME, self.ircd.servconfig["server_name"], ":{}".format(now()))
 	
 	def processParams(self, user, params):
 		if user.registered > 0:

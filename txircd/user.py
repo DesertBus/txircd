@@ -47,7 +47,7 @@ class IRCUser(object):
 		self.latitude = geo_data["latitude"]
 		self.longitude = geo_data["longitude"]
 		self.country = geo_data["country_name"]
-		self.server = parent.factory.server_name
+		self.server = parent.factory.servconfig["server_name"]
 		self.signon = now()
 		self.lastactivity = now()
 		self.lastpong = now()
@@ -86,9 +86,9 @@ class IRCUser(object):
 		# Send all those lovely join messages
 		chanmodelist = "".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes] + "".join(self.ircd.prefixes.keys()))
 		self.sendMessage(irc.RPL_WELCOME, ":Welcome to the Internet Relay Network {}".format(self.prefix()))
-		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.network_name, self.ircd.version))
+		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.servconfig["network_name"], self.ircd.version))
 		self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
-		self.sendMessage(irc.RPL_MYINFO, self.ircd.network_name, self.ircd.version, self.mode.allowed(), chanmodelist) # usermodes & channel modes
+		self.sendMessage(irc.RPL_MYINFO, self.ircd.servconfig["network_name"], self.ircd.version, self.mode.allowed(), chanmodelist) # usermodes & channel modes
 		self.send_isupport()
 		self.send_motd()
 	
@@ -99,13 +99,13 @@ class IRCUser(object):
 			"CHANNELLEN=64",
 			"CHANTYPES={}".format(self.ircd.channel_prefixes),
 			"MODES=20",
-			"NETWORK={}".format(self.ircd.network_name),
+			"NETWORK={}".format(self.ircd.servconfig["network_name"]),
 			"NICKLEN=32",
 			"PREFIX=({}){}".format(self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])),
 			"STATUSMSG={}".format("".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])),
 			"TOPICLEN=316"
 		]
-		prevar_len = len(" ".join([self.ircd.server_name, irc.RPL_ISUPPORT, self.nickname])) + 31 # including ":are supported by this server"
+		prevar_len = len(" ".join([self.ircd.servconfig["server_name"], irc.RPL_ISUPPORT, self.nickname])) + 31 # including ":are supported by this server"
 		thisline = []
 		while isupport:
 			if len(" ".join(thisline)) + len(isupport[0]) + prevar_len > 509:
@@ -131,11 +131,12 @@ class IRCUser(object):
 		self.socket.transport.loseConnection()
 	
 	def checkData(self, data):
-		if data > self.ircd.client_max_data and not self.mode.has("o"):
+		if data > self.ircd.servconfig["client_max_data"] and not self.mode.has("o"):
 			log.msg("Killing user '{}' for flooding".format(self.nickname))
 			self.irc_QUIT(None,["Killed for flooding"])
 	
 	def connectionLost(self, reason):
+		# TODO: use the proper quit mechanism
 		self.irc_QUIT(None,["Client connection lost"])
 		self.disconnected.callback(None)
 	
@@ -205,7 +206,7 @@ class IRCUser(object):
 	
 	def sendMessage(self, command, *parameter_list, **kw):
 		if "prefix" not in kw:
-			kw["prefix"] = self.ircd.server_name
+			kw["prefix"] = self.ircd.servconfig["server_name"]
 		if not kw["prefix"]:
 			del kw["prefix"]
 		if "to" not in kw:
@@ -268,11 +269,11 @@ class IRCUser(object):
 		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "".join(modes))
 	
 	def send_motd(self):
-		if self.ircd.server_motd:
-			chunks = chunk_message(self.ircd.server_motd, self.ircd.server_motd_line_length)
-			self.sendMessage(irc.RPL_MOTDSTART, ":- {} Message of the day - ".format(self.ircd.network_name))
+		if "server_motd" in self.ircd.servconfig and self.ircd.servconfig["server_motd"]:
+			chunks = chunk_message(self.ircd.servconfig["server_motd"], self.ircd.servconfig["server_motd_line_length"])
+			self.sendMessage(irc.RPL_MOTDSTART, ":- {} Message of the day - ".format(self.ircd.servconfig["network_name"]))
 			for chunk in chunks:
-				line = ":- {{:{!s}}} -".format(self.ircd.server_motd_line_length).format(chunk) # Dynamically inject the line length as a width argument for the line
+				line = ":- {{:{!s}}} -".format(self.ircd.servconfig["server_motd_line_length"]).format(chunk) # Dynamically inject the line length as a width argument for the line
 				self.sendMessage(irc.RPL_MOTD, line)
 			self.sendMessage(irc.RPL_ENDOFMOTD, ":End of MOTD command")
 		else:
@@ -302,7 +303,7 @@ class IRCUser(object):
 			if newRepresentation:
 				userlist.append(newRepresentation)
 		# Copy of irc.IRC.names
-		prefixLength = len(self.ircd.server_name) + len(irc.RPL_NAMREPLY) + len(cdata.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
+		prefixLength = len(self.ircd.servconfig["server_name"]) + len(irc.RPL_NAMREPLY) + len(cdata.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
 		namesLength = 512 - prefixLength # May get messed up with unicode
 		lines = chunk_message(" ".join(userlist), namesLength)
 		for l in lines:

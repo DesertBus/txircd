@@ -24,7 +24,7 @@ class GlineCommand(Command):
 					now_banned[nick] = result
 			for uid, reason in now_banned.iteritems():
 				udata = self.ircd.users[uid]
-				udata.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
+				udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 				quit_to = set()
 				for chan in user.channels.iterkeys():
 					cdata = self.ircd.channels[chan]
@@ -90,7 +90,7 @@ class GlineCommand(Command):
 			if result == None:
 				return True
 			return "again"
-		user.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
+		user.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 		user.sendMessage("ERROR", ":Closing Link: {} [G:Lined: {}]".format(user.hostname, result), to=None, prefix=None)
 		return False
 	

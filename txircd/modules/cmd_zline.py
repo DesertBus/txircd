@@ -24,7 +24,7 @@ class ZlineCommand(Command):
 					now_banned[uid] = reason
 			for uid, reason in now_banned:
 				udata = self.ircd.users[uid]
-				udata.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
+				udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 				quit_to = set()
 				for chan in user.channels.iterkeys():
 					cdata = self.ircd.channels[chan]
@@ -85,7 +85,7 @@ class ZlineCommand(Command):
 		reason = self.match_zline(user)
 		if not reason:
 			return True
-		user.sendMessage("NOTICE", ":{}".format(self.ircd.client_ban_msg))
+		user.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 		user.sendMessage("ERROR", ":Closing Link: {} [Z:Lined: {}]".format(user.ip, result), to=None, prefix=None)
 		return False
 	
