@@ -1,5 +1,4 @@
 # TODO: use checkSet/checkUnset to determine whether a mode can be set/unset
-# TODO: check user privileges to set channel modes (e.g. user.hasAccess(self.ircd.channel_mode_level, channel.name))
 # TODO: Fix user modes
 
 from twisted.words.protocols import irc
@@ -181,9 +180,10 @@ class ModeCommand(Command):
 				"modes": []
 			}
 		if params[0] in self.ircd.channels:
+			cdata = self.ircd.channels[params[0]]
 			if len(params) > 1 and params[1]:
-				if params[0] not in user.channels:
-					user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[0], ":You must have channel halfop access or above to set channel modes")
+				if params[0] not in user.channels or not user.hasAccess(cdata.name, self.ircd.channel_mode_level):
+					user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[0], ":You must have channel operator access to set channel modes")
 					return {}
 				modeChanges = []
 				adding = True
@@ -207,7 +207,7 @@ class ModeCommand(Command):
 							modeChanges.append([mode_type, adding, mode, None])
 			return {
 				"user": user,
-				"targetchan": self.ircd.channels[params[0]],
+				"targetchan": cdata,
 				"modes": []
 			}
 		user.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick/channel")
