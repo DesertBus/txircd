@@ -7,9 +7,7 @@ class JoinCommand(Command):
 		if "targetchan" not in data or not data["targetchan"]:
 			return
 		for chan in data["targetchan"]:
-			if chan.name not in self.ircd.channels: # creating a channel
-				self.ircd.channels[chan.name] = chan
-			user.join(chan.name)
+			user.join(chan)
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
