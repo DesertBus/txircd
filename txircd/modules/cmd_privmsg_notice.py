@@ -19,11 +19,12 @@ class MessageCommand(object):
 			if channelModifiers[index]:
 				prefixLevel = self.prefixes[self.prefix_symbols[channelModifiers[index]]][0]
 				for u in channels.users:
-					if u.channels[channel.name]["status"] and self.prefixes[u.channels[channel.name]["status"][0]][0] >= prefixLevel:
+					if u != user and u.channels[channel.name]["status"] and self.prefixes[u.channels[channel.name]["status"][0]][0] >= prefixLevel:
 						u.sendMessage(cmd, ":{}".format(message), to="{}{}".format(channelModifiers[index], channel.name), prefix=user.prefix())
 			else:
 				for u in channel.users:
-					u.sendMessage(cmd, message, to=channel.name, prefix=user.prefix())
+					if u != user:
+						u.sendMessage(cmd, message, to=channel.name, prefix=user.prefix())
 	
 	def processParams(self, cmd, user, params):
 		if user.registered > 0:
