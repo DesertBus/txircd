@@ -338,12 +338,12 @@ class IRCUser(object):
 			if newRepresentation:
 				userlist.append(newRepresentation)
 		# Copy of irc.IRC.names
-		prefixLength = len(self.ircd.servconfig["server_name"]) + len(irc.RPL_NAMREPLY) + len(cdata.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
+		prefixLength = len(self.ircd.servconfig["server_name"]) + len(irc.RPL_NAMREPLY) + len(channel.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
 		namesLength = 512 - prefixLength # May get messed up with unicode
 		lines = chunk_message(" ".join(userlist), namesLength)
 		for l in lines:
-			self.sendMessage(irc.RPL_NAMREPLY, "=", cdata.name, ":{}".format(l))
-		self.sendMessage(irc.RPL_ENDOFNAMES, cdata.name, ":End of /NAMES list")
+			self.sendMessage(irc.RPL_NAMREPLY, "=", channel.name, ":{}".format(l))
+		self.sendMessage(irc.RPL_ENDOFNAMES, channel.name, ":End of /NAMES list")
 	
 	def listname(self, channel, listingUser, representation):
 		for mode in channel.mode.iterkeys():
