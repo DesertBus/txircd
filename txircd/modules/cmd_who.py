@@ -63,4 +63,4 @@ class Spawner(object):
 		}
 	
 	def cleanup(self):
-		del self.ircd.command["WHO"]
+		del self.ircd.commands["WHO"]
