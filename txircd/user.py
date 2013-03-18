@@ -108,8 +108,8 @@ class IRCUser(object):
 			"MODES=20",
 			"NETWORK={}".format(self.ircd.servconfig["network_name"]),
 			"NICKLEN=32",
-			"PREFIX=({}){}".format(self.ircd.prefix_order, "".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])),
-			"STATUSMSG={}".format("".join([self.ircd.prefix_symbols[mode] for mode in self.ircd.prefix_order])),
+			"PREFIX=({}){}".format(self.ircd.prefix_order, "".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order])),
+			"STATUSMSG={}".format("".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order])),
 			"TOPICLEN=316"
 		]
 		prevar_len = len(" ".join([self.ircd.servconfig["server_name"], irc.RPL_ISUPPORT, self.nickname])) + 31 # including ":are supported by this server"
