@@ -1,4 +1,5 @@
 from txircd.modbase import Command
+from txircd.utils import now
 
 class PongCommand(Command):
 	def onUse(self, user, data):
