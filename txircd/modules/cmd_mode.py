@@ -5,8 +5,7 @@ from txircd.utils import irc_lower
 class ModeCommand(Command):
 	def onUse(self, user, data):
 		if "targetchan" in data:
-			cdata = self.ircd.channels[data["targetchan"]]
-			self.chanUse(user, cdata, data["modes"])
+			self.chanUse(user, data["targetchan"], data["modes"])
 		elif "targetuser" in data:
 			if user == data["targetuser"]:
 				self.userUse(user, data["modes"])
