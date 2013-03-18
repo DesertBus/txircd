@@ -158,20 +158,21 @@ class IRCUser(object):
 			self.socket.transport.loseConnection()
 	
 	def connectionLost(self, reason):
-		if self.registered == 0:
-			quit_to = set()
-			leavingChans = self.channels.keys()
-			for chan in leavingChans:
-				cdata = self.ircd.channels[chan]
-				self.leave(chan)
-				for u in cdata.users:
-					quit_to.add(u)
-			for u in quit_to:
-				u.sendMessage("QUIT", ":Quit: Connection lost", to=None, prefix=self.prefix())
-			self.sendMessage("ERROR", ":Closing Link {} [Connection lost]".format(self.prefix()), to=None, prefix=None)
-			del self.ircd.users[self.nickname]
-		else:
-			self.sendMessage("ERROR", ":Closing Link {} [Connection lost]".format(self.hostname), to=None, prefix=None)
+		if self.nickname in self.ircd.users:
+			if self.registered == 0:
+				quit_to = set()
+				leavingChans = self.channels.keys()
+				for chan in leavingChans:
+					cdata = self.ircd.channels[chan]
+					self.leave(chan)
+					for u in cdata.users:
+						quit_to.add(u)
+				for u in quit_to:
+					u.sendMessage("QUIT", ":Quit: Connection lost", to=None, prefix=self.prefix())
+				self.sendMessage("ERROR", ":Closing Link {} [Connection lost]".format(self.prefix()), to=None, prefix=None)
+				del self.ircd.users[self.nickname]
+			else:
+				self.sendMessage("ERROR", ":Closing Link {} [Connection lost]".format(self.hostname), to=None, prefix=None)
 		self.socket.transport.loseConnection()
 		self.disconnected.callback(None)
 	
