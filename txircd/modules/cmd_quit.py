@@ -5,7 +5,8 @@ class QuitCommand(Command):
 	def onUse(self, user, data):
 		if user.registered == 0:
 			quit_to = set()
-			for chan in user.channels.iterkeys():
+			leavingChans = user.channels.keys()
+			for chan in leavingChans:
 				cdata = self.ircd.channels[chan]
 				user.leave(chan)
 				for u in cdata.users:
