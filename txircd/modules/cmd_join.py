@@ -20,11 +20,9 @@ class JoinCommand(Command):
 			return {}
 		channels = params[0].split(",")
 		keys = params[1].split(",") if len(params) > 1 else []
-		while len(keys) < len(channels):
-			keys.append(None)
 		joining = []
 		for i in range(0, len(channels)):
-			joining.append({"channel": channels[i][:64], "key": keys[i] if len(keys) >= i else ""})
+			joining.append({"channel": channels[i][:64], "key": keys[i] if i < len(keys) else None})
 		remove = []
 		for chan in joining:
 			if chan["channel"] in user.channels:
@@ -34,7 +32,8 @@ class JoinCommand(Command):
 				remove.append(chan)
 		for chan in remove:
 			joining.remove(chan)
-		channels = keys = []
+		channels = []
+		keys = []
 		for chan in joining:
 			channels.append(self.ircd.channels[chan["channel"]] if chan["channel"] in self.ircd.channels else IRCChannel(self.ircd, chan["channel"]))
 			keys.append(chan["key"])
