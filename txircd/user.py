@@ -331,7 +331,7 @@ class IRCUser(object):
 				userlist.append(name)
 		else:
 		"""
-		for user in channel.users.itervalues():
+		for user in channel.users:
 			ranks = user.status(channel.name)
 			representation = (self.ircd.prefix_symbols[ranks[0]] + user.nickname) if ranks else user.nickname
 			newRepresentation = self.listname(channel, user, representation)
