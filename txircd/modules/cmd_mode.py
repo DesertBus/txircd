@@ -8,7 +8,7 @@ class ModeCommand(Command):
 			cdata = self.ircd.channels[data["targetchan"]]
 			self.chanUse(user, cdata, data["modes"])
 		elif "targetuser" in data:
-			if irc_lower(user) == irc_lower(data["targetuser"]):
+			if user == data["targetuser"]:
 				self.userUse(user, data["modes"])
 			else:
 				self.sendMessage(irc.ERR_USERSDONTMATCH, ":Can't operate on modes for other users")
