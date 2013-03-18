@@ -359,9 +359,11 @@ class IRCD(Factory):
 			deferreds.append(u.disconnected)
 		# Without any clients, all channels should be gone
 		# But make sure the logs are closed, just in case
+		"""
 		log.msg("Closing logs...")
 		for c in self.channels.itervalues():
 			c.log.close()
+		"""
 		#self.stats_log.close()
 		# Finally, save the config. Just in case.
 		log.msg("Saving options...")
