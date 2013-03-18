@@ -22,8 +22,8 @@ class WhoCommand(Command):
 				if not in_channel and ("p" in cdata.mode or "s" in cdata.mode):
 					irc.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 					return
-				for u in cdata.users.itervalues():
-					if (in_channel or "i" not in u.mode) and ("o" not in filters or "o" in u.mode):
+				for u in cdata.users:
+					if (in_channel or "i" not in u.mode) and ("o" not in data["filters"] or "o" in u.mode):
 						user.sendMessage(irc.RPL_WHOREPLY, cdata.name, u.username, u.hostname, u.server, u.nickname, "{}{}{}".format("G" if "away" in u.metadata["ext"] else "H", "*" if "o" in u.mode else "", self.ircd.prefix_symbols[u.status(cdata.name)[0]] if u.status(cdata.name) else ""), ":0 {}".format(u.realname))
 				user.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 			else:
