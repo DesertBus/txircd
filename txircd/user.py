@@ -258,39 +258,18 @@ class IRCUser(object):
 	def prefix(self):
 		return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
 	
-	# TODO: consider making these take channel objects instead of names; would be more efficient in many cases where we don't have
-	# to look up the channel again
-	def accessLevel(self, channel):
-		if channel not in self.channels or channel not in self.ircd.channels or self.nickname not in self.ircd.channels[channel].users:
-			return 0
-		modes = self.ircd.channels[channel].mode
-		max = len(self.ircd.prefix_order)
-		for level, mode in enumerate(self.ircd.prefix_order):
-			if not modes.has(mode):
-				continue
-			if self.nickname in modes.get(mode):
-				return max - level
-		return 0
-	
 	def hasAccess(self, channel, level):
-		if channel not in self.channels or channel not in self.ircd.channels or level not in self.ircd.prefix_order:
+		if channel not in self.channels or level not in self.ircd.prefixes:
 			return None
-		if self.nickname not in self.ircd.channels[channel].users:
+		status = self.status(channel)
+		if not status:
 			return False
-		access = len(self.ircd.prefix_order) - self.ircd.prefix_order.index(level)
-		return self.accessLevel(channel) >= access
+		return self.ircd.prefixes[status[0]][1] >= self.ircd.prefixes[level][1]
 	
 	def status(self, channel):
-		if channel not in self.channels or channel not in self.ircd.channels or self.nickname not in self.ircd.channels[channel].users:
+		if channel not in self.channels:
 			return ""
-		status = ""
-		modes = self.ircd.channels[channel].mode
-		for mode in self.ircd.prefix_order:
-			if not modes.has(mode):
-				continue
-			if self.nickname in modes.get(mode):
-				status += mode
-		return status
+		return self.channels[channel]["status"]
 	
 	def modeString(self, user):
 		modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
