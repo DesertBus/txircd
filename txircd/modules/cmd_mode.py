@@ -226,6 +226,8 @@ class Spawner(object):
 		self.ircd = ircd
 	
 	def spawn(self):
+		if "channel_mode_level" not in self.ircd.servconfig:
+			self.ircd.servconfig["channel_mode_level"] = "o"
 		return {
 			"commands": {
 				"MODE": ModeCommand()
