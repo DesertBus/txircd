@@ -359,7 +359,8 @@ class IRCD(Factory):
 		# Cleanly disconnect all clients
 		log.msg("Disconnecting clients...")
 		for u in self.users.values():
-			u.irc_QUIT(None,["Server shutting down"])
+			u.sendMessage("ERROR", ":Closing Link: {} [Server shutting down]".format(u.hostname))
+			u.socket.transport.loseConnection()
 			deferreds.append(u.disconnected)
 		# Without any clients, all channels should be gone
 		# But make sure the logs are closed, just in case
