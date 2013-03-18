@@ -442,19 +442,19 @@ class IRCD(Factory):
 						closestModeChar = None
 						orderFail = False
 						for levelMode, levelData in self.prefixes.iteritems():
-							if level == levelData[0]:
+							if level == levelData[1]:
 								log.msg("Module {} tries to register a prefix with the same rank level as an existing prefix")
 								orderFail = True
 								break
-							if levelData[0] < level and levelData > closestLevel:
-								closestLevel = levelData[0]
+							if levelData[1] < level and levelData[1] > closestLevel:
+								closestLevel = levelData[1]
 								closestModeChar = levelMode
 						if orderFail:
 							continue
 						if closestModeChar:
-							self.prefix_order.insert(self.prefix_order.find(closestModeChar), mode[2])
+							self.prefix_order.insert(self.prefix_order.index(closestModeChar), mode[2])
 						else:
-							self.prefix_order.insert(0, mode[2])
+							self.prefix_order.append(mode[2])
 						self.prefixes[mode[2]] = [mode[3], level, implementation]
 						self.prefix_symbols[mode[3]] = mode[2]
 					self.channel_mode_type[mode[2]] = modetype
