@@ -292,7 +292,7 @@ class IRCUser(object):
 				status += mode
 		return status
 	
-	def modeString(self):
+	def modeString(self, user):
 		modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
 		params = []
 		for mode, param in self.mode.iteritems():
@@ -300,7 +300,7 @@ class IRCUser(object):
 			if modetype > 0:
 				modes.append(mode)
 				if param:
-					params.append(param)
+					params.append(self.ircd.user_modes[modetype][mode].showParam(user, self, param))
 		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "".join(modes))
 	
 	def send_motd(self):
