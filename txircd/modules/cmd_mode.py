@@ -1,6 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
-from txircd.utils import irc_lower
+from txircd.utils import irc_lower, epoch
 
 class ModeCommand(Command):
 	def onUse(self, user, data):
