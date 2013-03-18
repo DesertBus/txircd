@@ -29,6 +29,7 @@ class PassCommand(Command, Module):
 		if "server_password" in self.ircd.servconfig and self.ircd.servconfig["server_password"] and self.ircd.servconfig["server_password"] != user.password:
 			user.sendMessage("ERROR", ":Closing link: ({}@{}) [Access denied]".format(user.username, user.hostname), to=None, prefix=None)
 			return False
+		return True
 
 class Spawner(object):
 	def __init__(self, ircd):
