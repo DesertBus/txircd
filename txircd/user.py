@@ -79,16 +79,18 @@ class IRCUser(object):
 			if outCode == "again":
 				tryagain.append(action)
 			elif not outCode:
+				log.msg("The new user {} was prevented from connecting by a module.".format(self.nickname))
 				return self.disconnect(None)
 		for action in tryagain:
 			if not action(self):
+				log.msg("The new user {} was prevented from connecting by a module.".format(self.nickname))
 				return self.disconnect(None)
 		
 		# Add self to user list
 		self.ircd.users[self.nickname] = self
 		
 		# Send all those lovely join messages
-		chanmodelist = "".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes] + "".join(self.ircd.prefixes.keys()))
+		chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
 		self.sendMessage(irc.RPL_WELCOME, ":Welcome to the Internet Relay Network {}".format(self.prefix()))
 		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.servconfig["network_name"], self.ircd.version))
 		self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
