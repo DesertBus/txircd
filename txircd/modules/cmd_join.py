@@ -36,7 +36,7 @@ class JoinCommand(Command):
 			joining.remove(chan)
 		channels = keys = []
 		for chan in joining:
-			channels.append(self.ircd.channels[chan["channel"]] if chan["channel"] in self.ircd.channels else IRCChannel(chan["channel"]))
+			channels.append(self.ircd.channels[chan["channel"]] if chan["channel"] in self.ircd.channels else IRCChannel(self.ircd, chan["channel"]))
 			keys.append(chan["key"])
 		return {
 			"user": user,
