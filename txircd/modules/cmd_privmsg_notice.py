@@ -15,7 +15,7 @@ class MessageCommand(object):
 		targetUsers = data["targetuser"]
 		channelModifiers = data["chanmod"]
 		message = data["message"]
-		for index, channel in data["targetchan"].enumerate():
+		for index, channel in enumerate(data["targetchan"]):
 			if channelModifiers[index]:
 				prefixLevel = self.prefixes[self.prefix_symbols[channelModifiers[index]]][0]
 				for u in channels.users:
