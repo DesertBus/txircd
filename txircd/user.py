@@ -361,27 +361,25 @@ class IRCUser(object):
 		return representation
 	
 	def join(self, channel):
-		channel = channel[:64] # Limit channel names to 64 characters
-		if channel in self.channels:
+		if channel.name in self.channels:
 			return
 		status = ""
-		if channel not in self.ircd.channels:
-			self.ircd.channels[channel] = IRCChannel(self.ircd, channel)
+		if channel.name not in self.ircd.channels:
+			self.ircd.channels[channel.name] = channel
 			status = self.ircd.servconfig["channel_default_status"]
-		cdata = self.ircd.channels[channel]
 		hostmask = irc_lower(self.prefix())
-		self.channels[cdata.name] = {"status":status}
-		cdata.users.add(self)
-		for u in cdata.users:
-			u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix())
-		if cdata.topic is None:
-			self.sendMessage(irc.RPL_NOTOPIC, cdata.name, ":No topic is set")
+		self.channels[channel.name] = {"status":status}
+		channel.users.add(self)
+		for u in channel.users:
+			u.sendMessage("JOIN", to=channel.name, prefix=self.prefix())
+		if channel.topic:
+			self.sendMessage(irc.RPL_TOPIC, channel.name, ":{}".format(cdata.topic))
+			self.sendMessage(irc.RPL_TOPICWHOTIME, channel.name, channel.topicSetter, str(epoch(channel.topicTime)))
 		else:
-			self.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
-			self.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topicSetter, str(epoch(cdata.topicTime)))
-		self.report_names(cdata)
+			self.sendMessage(irc.RPL_NOTOPIC, channel.name, ":No topic is set")
+		self.report_names(channel)
 		for modfunc in self.ircd.actions["join"]:
-			modfunc(cdata, self)
+			modfunc(channel, self)
 	
 	def leave(self, channel):
 		cdata = self.ircd.channels[channel]
