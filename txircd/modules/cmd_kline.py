@@ -135,7 +135,7 @@ class KlineCommand(Command):
 		for mask, linedata in self.banList.iteritems():
 			if linedata["duration"] and current_time > linedata["created"] + linedata["duration"]:
 				expired.append(mask)
-		for mask in to_expire:
+		for mask in expired:
 			del self.banList[mask]
 
 class Spawner(object):
