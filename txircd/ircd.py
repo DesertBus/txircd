@@ -155,12 +155,6 @@ class IRCProtocol(irc.IRC):
 		self.factory.stats_data["total_bytes_out"] += len(line)+2
 		log.msg("sendLine: {!r}".format(line))
 		return irc.IRC.sendLine(self, line)
-	
-	def irc_CAP(self, prefix, params):
-		pass
-	
-	def irc_QUIT(self, prefix, params):
-		self.transport.loseConnection()
 		
 	def connectionLost(self, reason):
 		if self.dead:
