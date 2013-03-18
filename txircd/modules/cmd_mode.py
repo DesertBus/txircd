@@ -11,12 +11,12 @@ class ModeCommand(Command):
 			if user == data["targetuser"]:
 				self.userUse(user, data["modes"])
 			else:
-				self.sendMessage(irc.ERR_USERSDONTMATCH, ":Can't operate on modes for other users")
+				user.sendMessage(irc.ERR_USERSDONTMATCH, ":Can't operate on modes for other users")
 	
 	def chanUse(self, user, channel, modes):
 		if not modes:
-			self.sendMessage(irc.RPL_CHANNELMODEIS, channel.name, channel.modeString())
-			self.sendMessage(irc.RPL_CREATIONTIME, channel.name, str(epoch(channel.created)))
+			user.sendMessage(irc.RPL_CHANNELMODEIS, channel.name, channel.modeString())
+			user.sendMessage(irc.RPL_CREATIONTIME, channel.name, str(epoch(channel.created)))
 			return
 		modeDisplay = []
 		for modedata in modes:
@@ -96,7 +96,7 @@ class ModeCommand(Command):
 	
 	def userUse(self, user, modes):
 		if not modes:
-			self.sendMessage(irc.RPL_UMODEIS, user.modeString())
+			user.sendMessage(irc.RPL_UMODEIS, user.modeString())
 			return
 		modeDisplay = []
 		for modedata in modes:
