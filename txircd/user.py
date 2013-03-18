@@ -91,10 +91,11 @@ class IRCUser(object):
 		
 		# Send all those lovely join messages
 		chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
+		usermodelist = "".join(["".join(modedict.keys()) for modedict in self.ircd.user_modes])
 		self.sendMessage(irc.RPL_WELCOME, ":Welcome to the Internet Relay Network {}".format(self.prefix()))
 		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.servconfig["network_name"], self.ircd.version))
 		self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
-		self.sendMessage(irc.RPL_MYINFO, self.ircd.servconfig["network_name"], self.ircd.version, self.mode.allowed(), chanmodelist) # usermodes & channel modes
+		self.sendMessage(irc.RPL_MYINFO, self.ircd.servconfig["network_name"], self.ircd.version, usermodelist, chanmodelist) # usermodes & channel modes
 		self.send_isupport()
 		self.send_motd()
 	
