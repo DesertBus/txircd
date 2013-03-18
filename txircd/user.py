@@ -364,11 +364,13 @@ class IRCUser(object):
 		channel = channel[:64] # Limit channel names to 64 characters
 		if channel in self.channels:
 			return
+		status = ""
 		if channel not in self.ircd.channels:
 			self.ircd.channels[channel] = IRCChannel(self.ircd, channel)
+			status = self.ircd.servconfig["channel_default_status"]
 		cdata = self.ircd.channels[channel]
 		hostmask = irc_lower(self.prefix())
-		self.channels[cdata.name] = {"status":""}
+		self.channels[cdata.name] = {"status":status}
 		cdata.users.add(self)
 		for u in cdata.users:
 			u.sendMessage("JOIN", to=cdata.name, prefix=self.prefix())

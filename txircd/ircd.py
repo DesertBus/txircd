@@ -87,6 +87,7 @@ default_options = {
 	"bidserv_space_bid": "SPACE BID",
 	"bidserv_kill_reason": "Being a dick",
 	# Chanserv?? details
+	"channel_default_status": "o",
 	"channel_exempt_chanops": "", # list of modes from which channel operators are exempt
 	"channel_auto_ops": {1:"q"},
 	"channel_founder_mode": "q",
