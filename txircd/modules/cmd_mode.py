@@ -14,7 +14,7 @@ class ModeCommand(Command):
 	
 	def chanUse(self, user, channel, modes):
 		if not modes:
-			user.sendMessage(irc.RPL_CHANNELMODEIS, channel.name, channel.modeString())
+			user.sendMessage(irc.RPL_CHANNELMODEIS, channel.name, channel.modeString(user))
 			user.sendMessage(irc.RPL_CREATIONTIME, channel.name, str(epoch(channel.created)))
 			return
 		modeDisplay = []
@@ -95,7 +95,7 @@ class ModeCommand(Command):
 	
 	def userUse(self, user, modes):
 		if not modes:
-			user.sendMessage(irc.RPL_UMODEIS, user.modeString())
+			user.sendMessage(irc.RPL_UMODEIS, user.modeString(user))
 			return
 		modeDisplay = []
 		for modedata in modes:
