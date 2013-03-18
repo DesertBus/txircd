@@ -24,7 +24,7 @@ class MessageCommand(object):
 			else:
 				for u in channel.users:
 					if u != user:
-						u.sendMessage(cmd, message, to=channel.name, prefix=user.prefix())
+						u.sendMessage(cmd, ":{}".format(message), to=channel.name, prefix=user.prefix())
 	
 	def processParams(self, cmd, user, params):
 		if user.registered > 0:
