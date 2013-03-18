@@ -21,7 +21,7 @@ class IRCChannel(object):
 			if modetype > 0:
 				modes.append(mode)
 				if param:
-					params.append(self.ircd.channel_modes[modetype][mode].showParam(user, param))
+					params.append(self.ircd.channel_modes[modetype][mode].showParam(user, self, param))
 		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "".join(modes))
 	
 	def setTopic(self, topic, setter):
