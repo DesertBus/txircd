@@ -146,7 +146,7 @@ class IRCUser(object):
 				leavingChans = self.channels.keys()
 				for chan in leavingChans:
 					cdata = self.ircd.channels[chan]
-					self.leave(chan)
+					self.leave(cdata)
 					for u in cdata.users:
 						quit_to.add(u)
 				for u in quit_to:
@@ -164,7 +164,7 @@ class IRCUser(object):
 				leavingChans = self.channels.keys()
 				for chan in leavingChans:
 					cdata = self.ircd.channels[chan]
-					self.leave(chan)
+					self.leave(cdata)
 					for u in cdata.users:
 						quit_to.add(u)
 				for u in quit_to:
