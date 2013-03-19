@@ -131,7 +131,7 @@ class ShunCommand(Command):
 	def check_command(self, user, command, data):
 		if "shunned" not in user.cache or not user.cache["shunned"]:
 			return data
-		if command not in self.ircd.shun_command_list:
+		if command not in self.ircd.servconfig["shun_command_list"]:
 			return {}
 		return data
 
@@ -141,6 +141,8 @@ class Spawner(object):
 		self.shunCmd = None
 	
 	def spawn(self):
+		if "shun_command_list" not in self.ircd.servconfig:
+			self.ircd.servconfig["shun_command_list"] = ["JOIN", "PART", "QUIT", "PING", "PONG"]
 		self.shunCmd = ShunCommand()
 		return {
 			"command": {
