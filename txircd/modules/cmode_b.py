@@ -72,7 +72,7 @@ class BanMode(Mode):
 		if "b" in target.mode:
 			for entry in target.mode["b"]:
 				metadata = self.banMetadata[target.name][entry] if target.name in self.banMetadata and entry in self.banMetadata[target.name] else [ self.ircd.servconfig["server_name"], epoch(now()) ]
-				user.sendMessage(irc.RPL_BANLIST, target.name, entry, metadata[0], metadata[1])
+				user.sendMessage(irc.RPL_BANLIST, target.name, entry, metadata[0], str(metadata[1]))
 			if target.name in self.banMetadata:
 				removeMask = []
 				for mask in self.banMetadata[target.name]:
