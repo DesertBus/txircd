@@ -5,12 +5,12 @@ class PasswordMode(Mode):
 	def checkSet(self, user, target, param):
 		if " " in param:
 			param = param[:param.index(" ")]
-		return True
+		return [True, param]
 	
 	def checkUnset(self, user, target, param):
 		if param == target.mode["k"]:
-			return True
-		return False
+			return [True, param]
+		return [False, param]
 	
 	def commandPermission(self, user, cmd, data):
 		if cmd != "JOIN":

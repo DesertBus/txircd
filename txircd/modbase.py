@@ -15,9 +15,9 @@ class Mode(object):
 		self.ircd = base
 		return self
 	def checkSet(self, user, target, param):
-		return True
+		return [True, param]
 	def checkUnset(self, user, target, param):
-		return True
+		return [True, param]
 	def showParam(self, user, target, param):
 		return param
 	def onJoin(self, channel, user, params):
