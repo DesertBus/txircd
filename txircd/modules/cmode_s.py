@@ -6,7 +6,7 @@ class SecretMode(Mode):
 			return data
 		cdata = data["cdata"]
 		if "s" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
-			data["cdata"] = {}
+			data["cdata"].clear()
 	# other +s stuff is hiding in other modules.
 
 class Spawner(object):
