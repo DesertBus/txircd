@@ -2,7 +2,7 @@ from txircd.modbase import Mode
 
 class InvisibleMode(Mode):
 	def namesListEntry(self, recipient, channel, user, representation):
-		if channel not in recipient.channels and "i" in user.mode:
+		if channel.name not in recipient.channels and "i" in user.mode:
 			return ""
 		return representation
 
