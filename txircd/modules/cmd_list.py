@@ -18,23 +18,13 @@ class ListCommand(Command):
 				"chandata": channel,
 				"name": channel.name,
 				"users": len(channel.users),
-				"modes": channel.mode,
 				"topic": channel.topic if topic else ""
 			}
 			user.commandExtraHook("LIST", {"user": user, "cdata": cdata})
 			if not cdata:
 				continue
 			else:
-				modeStr = "+"
-				params = []
-				for mode, param in cdata.mode.iteritems():
-					if self.ircd.channel_mode_type[mode] != 0:
-						modeStr.append(mode)
-						if param:
-							params.append(param)
-				if params:
-					modeStr += " {}".format(" ".join(params))
-				user.sendMessage(irc.RPL_LIST, cdata.name, cdata.users, ":[{}] {}".format(modeStr, cdata.topic))
+				user.sendMessage(irc.RPL_LIST, cdata.name, cdata.users, ":[{}] {}".format(cdata.modeString(user), cdata.topic))
 		user.sendMessage(irc.RPL_LISTEND, ":End of channel list")
 	
 	def processParams(self, user, params):
