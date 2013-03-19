@@ -35,8 +35,7 @@ class BanMode(Mode):
 		elif "!" not in param:
 			param = "*!{}".format(param)
 		for banmask in target.mode["b"]:
-			if param == banmask[0]:
-				param = banmask
+			if param == banmask:
 				if param in self.banMetadata[target.name]:
 					del self.banMetadata[target.name][param]
 				return [True, param]
