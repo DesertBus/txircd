@@ -281,7 +281,7 @@ class IRCUser(object):
 				modes.append(mode)
 				if param:
 					params.append(self.ircd.user_modes[modetype][mode].showParam(user, self, param))
-		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "".join(modes))
+		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
 	
 	def send_motd(self):
 		if "server_motd" in self.ircd.servconfig and self.ircd.servconfig["server_motd"]:
