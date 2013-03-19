@@ -53,13 +53,13 @@ class ModeCommand(Command):
 						channel.mode[mode] = []
 					if param not in channel.mode[mode]:
 						channel.mode[mode].append(param)
-						modeDisplay.append(modeData)
+						modeDisplay.append(modedata)
 				else:
 					if mode not in channel.mode:
 						continue
 					if param in channel.mode[mode]:
 						channel.mode[mode].remove(param)
-						modeDisplay.append(modeData)
+						modeDisplay.append(modedata)
 						if not channel.mode[mode]:
 							del channel.mode[mode]
 			else:
@@ -67,14 +67,14 @@ class ModeCommand(Command):
 					if mode in channel.mode and param == channel.mode[mode]:
 						continue
 					channel.mode[mode] = param
-					modeDisplay.append(modeData)
+					modeDisplay.append(modedata)
 				else:
 					if mode not in channel.mode:
 						continue
 					if modetype == 1 and param != channel.mode[mode]:
 						continue
 					del channel.mode[mode]
-					modeDisplay.append(modeData)
+					modeDisplay.append(modedata)
 		if modeDisplay:
 			adding = None
 			modestring = [] # use an array of characters since we're repeatedly adding to this; join at the end
@@ -114,13 +114,13 @@ class ModeCommand(Command):
 						user.mode[mode] = []
 					if param not in user.mode[mode]:
 						user.mode[mode].append(param)
-						modeDisplay.append(modeData)
+						modeDisplay.append(modedata)
 				else:
 					if mode not in user.mode:
 						continue
 					if param in user.mode[mode]:
 						user.mode[mode].remove(param)
-						modeDisplay.append(modeData)
+						modeDisplay.append(modedata)
 						if not user.mode[mode]:
 							del user.mode[mode]
 			else:
@@ -128,14 +128,14 @@ class ModeCommand(Command):
 					if mode in user.mode and param == user.mode[mode]:
 						continue
 					user.mode[mode] = param
-					modeDisplay.append(modeData)
+					modeDisplay.append(modedata)
 				else:
 					if mode not in user.mode:
 						continue
 					if modetype == 1 and param != user.mode[mode]:
 						continue
 					del user.mode[mode]
-					modeDisplay.append(modeData)
+					modeDisplay.append(modedata)
 		if modeDisplay:
 			adding = None
 			modestring = [] # use an array of characters since we're repeatedly adding to this; join at the end
