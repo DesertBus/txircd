@@ -175,7 +175,7 @@ class ModeCommand(Command):
 							user.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, mode, ":is unknown mode char to me")
 							continue
 						mode_type = self.ircd.user_mode_type[mode]
-						if mode_type == 0 or mode_type == 1 or (adding and mode_type == 2):
+						if mode_type == 1 or (adding and mode_type == 2) or (mode_type == 0 and len(params) > current_param):
 							if len(params) <= current_param:
 								continue # Mode must have param that wasn't provided
 							modeChanges.append([mode_type, adding, mode, params[current_param]])
@@ -206,7 +206,7 @@ class ModeCommand(Command):
 							user.sendMessage(irc.ERR_UNKNOWNMODE, mode, ":is unknown mode char to me")
 							continue
 						mode_type = self.ircd.channel_mode_type[mode]
-						if mode_type == -1 or mode_type == 0 or mode_type == 1 or (adding and mode_type == 2):
+						if mode_type == -1 or (mode_type == 0 and len(params) > current_param) or mode_type == 1 or (adding and mode_type == 2):
 							if len(params) <= current_param:
 								continue # Mode must have param that wasn't provided
 							modeChanges.append([mode_type, adding, mode, params[current_param]])
