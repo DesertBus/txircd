@@ -204,8 +204,16 @@ class ModeCommand(Command):
 			modeChanges = []
 			if len(params) > 1 and params[1]:
 				if params[0] not in user.channels or not user.hasAccess(cdata.name, self.ircd.servconfig["channel_mode_level"]):
-					user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[0], ":You must have channel operator access to set channel modes")
-					return {}
+					if len(params) > 2:
+						user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[0], ":You must have channel operator access to set channel modes")
+						return {}
+					for mode in params[1]:
+						if mode == "+" or mode == "-":
+							continue
+						if self.ircd.channel_mode_type[mode] != 0:
+							user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[0], ":You must have channel operator access to set channel modes")
+							return {} # user is trying to change modes; abort
+					# User isn't trying to change modes; go ahead and continue
 				adding = True
 				current_param = 2
 				for mode in params[1]:
