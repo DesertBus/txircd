@@ -3,6 +3,7 @@ from txircd.modbase import Command
 
 class QuitCommand(Command):
 	def onUse(self, user, data):
+		reason = "Quit: {}".format(data["reason"]) if "reason" in data and data["reason"] else "Client Quit"
 		if user.registered == 0:
 			quit_to = set()
 			leavingChans = user.channels.keys()
@@ -12,11 +13,11 @@ class QuitCommand(Command):
 				for u in cdata.users:
 					quit_to.add(u)
 			for u in quit_to:
-				u.sendMessage("QUIT", ":Quit: {}".format(reason), to=None, prefix=user.prefix())
-			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
+				u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=user.prefix())
+			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.prefix(), reason), to=None, prefix=None)
 			del self.ircd.users[user.nickname]
 		else:
-			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.hostname, data["reason"]), to=None, prefix=None)
+			user.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.hostname, reason), to=None, prefix=None)
 		user.socket.transport.loseConnection()
 	
 	def processParams(self, user, params):
