@@ -8,7 +8,6 @@ class PrivateMode(Mode):
 		if "p" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
 			cdata["name"] = "*"
 			cdata["topic"] = ""
-			cdata["modes"] = {}
 	# other +p stuff is in other modules
 
 class Spawner(object):
