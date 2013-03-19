@@ -31,6 +31,7 @@ class ModeCommand(Command):
 					allowed, param = self.ircd.channel_modes[modetype][mode].checkUnset(user, channel, param)
 					if not allowed:
 						continue
+			modedata[3] = param # update the param in modedata so that the displayed mode change is shown correctly
 			if modetype == -1:
 				if param not in self.ircd.users:
 					continue
@@ -116,6 +117,7 @@ class ModeCommand(Command):
 					allowed, param = self.ircd.user_modes[modetype][mode].checkUnset(user, user, param)
 					if not allowed:
 						continue
+			modedata[3] = param # update the param in modedata so that the displayed mode change is shown correctly
 			if modetype == 0:
 				if not param:
 					self.ircd.user_modes[modetype][mode].showParam(user, user)
