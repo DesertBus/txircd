@@ -12,6 +12,11 @@ class PasswordMode(Mode):
 			return [True, param]
 		return [False, param]
 	
+	def showParam(self, user, target, param):
+		if target.name not in user.channels:
+			return "*"
+		return param
+	
 	def commandPermission(self, user, cmd, data):
 		if cmd != "JOIN":
 			return data
