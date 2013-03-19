@@ -362,11 +362,10 @@ class IRCUser(object):
 			modfunc(channel, self)
 	
 	def leave(self, channel):
-		cdata = self.ircd.channels[channel]
-		del self.channels[cdata.name]
-		cdata.users.remove(self) # remove channel user entry
-		if not cdata.users:
-			del self.ircd.channels[cdata.name] # destroy the empty channel
+		del self.channels[channel.name]
+		channel.users.remove(self) # remove channel user entry
+		if not channel.users:
+			del self.ircd.channels[channel.name] # destroy the empty channel
 	
 	def nick(self, newNick):
 		oldNick = self.nickname

@@ -6,9 +6,8 @@ class PartCommand(Command):
 		if "targetchan" not in data:
 			return
 		for channel in data["targetchan"]:
-			cdata = self.ircd.channels[channel]
-			for u in cdata.users.itervalues():
-				u.sendMessage("PART", ":{}".format(data["reason"]), to=cdata.name, prefix=user.prefix())
+			for u in channel.users:
+				u.sendMessage("PART", ":{}".format(data["reason"]), to=channel.name, prefix=user.prefix())
 			user.leave(channel)
 	
 	def processParams(self, user, params):
