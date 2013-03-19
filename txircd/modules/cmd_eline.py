@@ -34,16 +34,17 @@ class ElineCommand(Command):
 				udata = self.ircd.users[uid]
 				udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 				quit_to = set()
-				for chan in user.channels.iterkeys():
+				leavingChans = udata.channels.keys()
+				for chan in leavingChans:
 					cdata = self.ircd.channels[chan]
-					self.leave(chan)
+					udata.leave(cdata)
 					for u in cdata.users:
 						quit_to.add(u)
 				for u in quit_to:
-					u.sendMessage("QUIT", ":Banned: Exception Removed ({})".format(reason), to=None, prefix=user.prefix())
-				user.sendMessage("ERROR", ":Closing Link {} [Banned: Exception Removed ({})]".format(user.prefix(), reason), to=None, prefix=None)
-				del self.ircd.users[user.nickname]
-				user.socket.transport.loseConnection()
+					u.sendMessage("QUIT", ":Banned: Exception Removed ({})".format(reason), to=None, prefix=udata.prefix())
+				udata.sendMessage("ERROR", ":Closing Link {} [Banned: Exception Removed ({})]".format(udata.prefix(), reason), to=None, prefix=None)
+				del self.ircd.users[udata.nickname]
+				udata.socket.transport.loseConnection()
 	
 	def processParams(self, user, params):
 		if user.registered > 0:

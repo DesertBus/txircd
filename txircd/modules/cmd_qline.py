@@ -67,9 +67,10 @@ class QlineCommand(Command):
 	
 	def remove_user(self, user, reason):
 		quit_to = set()
-		for chan in user.channels.iterkeys():
+		leavingChans = user.channels.keys()
+		for chan in leavingChans:
 			cdata = self.ircd.channels[chan]
-			self.leave(chan)
+			user.leave(cdata)
 			for u in cdata.users:
 				quit_to.add(u)
 		for u in quit_to:
