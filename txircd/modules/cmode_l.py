@@ -5,8 +5,8 @@ class LimitMode(Mode):
 	def checkSet(self, user, target, param):
 		intParam = int(param)
 		if str(intParam) != param:
-			return False
-		return (intParam >= 0)
+			return [False, param]
+		return [(intParam >= 0), param]
 	
 	def commandPermission(self, user, cmd, data):
 		if cmd != "JOIN":

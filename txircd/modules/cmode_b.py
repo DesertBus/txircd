@@ -13,7 +13,7 @@ class BanMode(Mode):
 		if " " in param:
 			param = param[:param.index(" ")]
 		if "b" in target.mode and len(target.mode["b"]) >= self.ircd.servconfig["channel_ban_list_size"]:
-			return False
+			return [False, param]
 		if "!" not in param and "@" not in param:
 			param = "{}!*@*".format(param)
 		elif "@" not in param:
@@ -23,7 +23,7 @@ class BanMode(Mode):
 		if target.name not in self.banMetadata:
 			self.banMetadata[target.name] = {}
 		self.banMetadata[target.name][param] = [user.nickname, epoch(now())]
-		return True
+		return [True, param]
 	
 	def checkUnset(self, user, target, param):
 		if " " in param:
@@ -39,8 +39,8 @@ class BanMode(Mode):
 				param = banmask
 				if param in self.banMetadata[target.name]:
 					del self.banMetadata[target.name][param]
-				return True
-		return False
+				return [True, param]
+		return [False, param]
 	
 	def commandPermission(self, user, cmd, data):
 		if cmd != "JOIN":
