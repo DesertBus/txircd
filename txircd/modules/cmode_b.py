@@ -89,6 +89,8 @@ class Spawner(object):
 		self.ircd = ircd
 	
 	def spawn(self):
+		if "channel_ban_list_size" not in self.ircd.servconfig:
+			self.ircd.servconfig["channel_ban_list_size"] = 60
 		return {
 			"modes": {
 				"clb": BanMode()
