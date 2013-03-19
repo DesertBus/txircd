@@ -161,8 +161,8 @@ class ModeCommand(Command):
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "MODE", ":Not enough parameters")
 			return {}
 		if params[0] in self.ircd.users:
+			modeChanges = []
 			if len(params) > 1 and params[1]:
-				modeChanges = []
 				adding = True
 				current_param = 2
 				for mode in params[1]:
@@ -185,15 +185,15 @@ class ModeCommand(Command):
 			return {
 				"user": user,
 				"targetuser": self.ircd.users[params[0]],
-				"modes": []
+				"modes": modeChanges
 			}
 		if params[0] in self.ircd.channels:
 			cdata = self.ircd.channels[params[0]]
+			modeChanges = []
 			if len(params) > 1 and params[1]:
 				if params[0] not in user.channels or not user.hasAccess(cdata.name, self.ircd.servconfig["channel_mode_level"]):
 					user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[0], ":You must have channel operator access to set channel modes")
 					return {}
-				modeChanges = []
 				adding = True
 				current_param = 2
 				for mode in params[1]:
@@ -216,7 +216,7 @@ class ModeCommand(Command):
 			return {
 				"user": user,
 				"targetchan": cdata,
-				"modes": []
+				"modes": modeChanges
 			}
 		user.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick/channel")
 		return {}
