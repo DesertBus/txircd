@@ -382,25 +382,25 @@ class IRCD(Factory):
 			del self.modules[name]
 		try:
 			mod_find = imp.find_module("txircd/modules/{}".format(name))
-		except ImportError:
-			log.msg("Module not found: {}".format(name))
+		except ImportError as e:
+			log.msg("Module not found: {} {}".format(name, e))
 			return False
 		try:
 			mod_load = imp.load_module(name, mod_find[0], mod_find[1], mod_find[2])
-		except ImportError:
-			log.msg("Could not load module: {}".format(name))
+		except ImportError as e:
+			log.msg("Could not load module: {} ({})".format(name, e))
 			mod_find[0].close()
 			return False
 		mod_find[0].close()
 		try:
 			mod_spawner = mod_load.Spawner(self)
-		except:
-			log.msg("Module is not a valid txircd module: {}".format(name))
+		except Exception as e:
+			log.msg("Module is not a valid txircd module: {} ({})".format(name, e))
 			return False
 		try:
 			mod_contains = mod_spawner.spawn()
-		except:
-			log.msg("Module is not a valid txircd module: {}".format(name))
+		except Exception as e:
+			log.msg("Module is not a valid txircd module: {} ({})".format(name, e))
 			return False
 		self.modules[name] = mod_spawner
 		if "commands" in mod_contains:
