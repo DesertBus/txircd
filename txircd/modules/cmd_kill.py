@@ -7,9 +7,10 @@ class KillCommand(Command):
 		reason = "Killed by {}: {}".format(user.nickname, data["reason"])
 		target.sendMessage("KILL", ":{} {}".format(user.nickname, data["reason"]))
 		quit_to = set()
-		for chan in target.channels.iterkeys():
+		leavingChans = target.channels.keys()
+		for chan in leavingChans:
 			cdata = self.ircd.channels[chan]
-			target.leave(chan)
+			target.leave(cdata)
 			for u in cdata.users:
 				quit_to.add(u)
 		for u in quit_to:

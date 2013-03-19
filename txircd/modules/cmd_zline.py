@@ -26,16 +26,17 @@ class ZlineCommand(Command):
 				udata = self.ircd.users[uid]
 				udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 				quit_to = set()
-				for chan in user.channels.iterkeys():
+				leavingChans = user.channels.keys()
+				for chan in leavingChans:
 					cdata = self.ircd.channels[chan]
-					self.leave(chan)
+					udata.leave(cdata)
 					for u in cdata.users:
 						quit_to.add(u)
 				for u in quit_to:
-					u.sendMessage("QUIT", ":Z:Lined: {}".format(reason), to=None, prefix=user.prefix())
-				user.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
-				del self.ircd.users[user.nickname]
-				user.socket.transport.loseConnection()
+					u.sendMessage("QUIT", ":Z:Lined: {}".format(reason), to=None, prefix=udata.prefix())
+				udata.sendMessage("ERROR", ":Closing Link {} [Z:Lined: {}]".format(udata.prefix(), data["reason"]), to=None, prefix=None)
+				del self.ircd.users[udata.nickname]
+				udata.socket.transport.loseConnection()
 		else:
 			del self.banList[data["mask"]]
 	
