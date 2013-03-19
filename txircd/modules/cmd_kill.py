@@ -5,7 +5,7 @@ class KillCommand(Command):
 	def onUse(self, user, data):
 		target = data["targetuser"]
 		reason = "Killed by {}: {}".format(user.nickname, data["reason"])
-		target.sendMessage("KILL", ":{} {}".format(user.nickname, data["reason"]))
+		target.sendMessage("KILL", ":{} {}".format(user.nickname, data["reason"]), prefix=user.prefix())
 		quit_to = set()
 		leavingChans = target.channels.keys()
 		for chan in leavingChans:
@@ -15,7 +15,7 @@ class KillCommand(Command):
 				quit_to.add(u)
 		for u in quit_to:
 			u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=target.prefix())
-		target.sendMessage("ERROR", ":Closing Link {} [{}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
+		target.sendMessage("ERROR", ":Closing Link: {} [{}]".format(target.prefix(), reason), to=None, prefix=None)
 		del self.ircd.users[target.nickname]
 		target.socket.transport.loseConnection()
 	
