@@ -8,7 +8,7 @@ class LimitMode(Mode):
 			return [False, param]
 		return [(intParam >= 0), param]
 	
-	def commandPermission(self, user, cmd, data):
+	def checkPermission(self, user, cmd, data):
 		if cmd != "JOIN":
 			return data
 		targetChannels = data["targetchan"]

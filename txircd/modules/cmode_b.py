@@ -41,7 +41,7 @@ class BanMode(Mode):
 				return [True, param]
 		return [False, param]
 	
-	def commandPermission(self, user, cmd, data):
+	def checkPermission(self, user, cmd, data):
 		if cmd != "JOIN":
 			return data
 		channels = data["targetchan"]

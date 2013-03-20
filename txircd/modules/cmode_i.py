@@ -2,7 +2,7 @@ from twisted.words.protocols import irc
 from txircd.modbase import Mode
 
 class InviteOnlyMode(Mode):
-	def commandPermission(self, user, cmd, data):
+	def checkPermission(self, user, cmd, data):
 		if cmd != "JOIN":
 			return data
 		targetChannels = data["targetchan"]
