@@ -17,7 +17,7 @@ class PasswordMode(Mode):
 			return "*"
 		return param
 	
-	def commandPermission(self, user, cmd, data):
+	def checkPermission(self, user, cmd, data):
 		if cmd != "JOIN":
 			return data
 		channels = data["targetchan"]
