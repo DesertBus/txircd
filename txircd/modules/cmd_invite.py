@@ -53,6 +53,8 @@ class Spawner(object):
 		self.inviteCmd = None
 	
 	def spawn(self):
+		if "channel_invite_rank" not in self.ircd.servconfig:
+			self.ircd.servconfig["channel_invite_rank"] = "o"
 		self.inviteCmd = InviteCommand()
 		return {
 			"commands": {
