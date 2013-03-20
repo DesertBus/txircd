@@ -9,7 +9,7 @@ class InviteOnlyMode(Mode):
 		keys = data["keys"]
 		removeChannels = []
 		for channel in targetChannels:
-			if "i" in channel.mode and "invites" in user.cache and channel.name not in user.cache["invites"]:
+			if "i" in channel.mode and ("invites" not in user.cache or ("invites" in user.cache and channel.name not in user.cache["invites"])):
 				if "invite_except" not in user.cache:
 					user.cache["invite_except"] = { channel.name: False }
 					return "again"
