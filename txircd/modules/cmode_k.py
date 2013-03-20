@@ -23,7 +23,7 @@ class PasswordMode(Mode):
 		channels = data["targetchan"]
 		keys = data["keys"]
 		removeChannels = []
-		for index, chan in channels.enumerate():
+		for index, chan in enumerate(channels):
 			if "k" in chan.mode and chan.mode["k"] != keys[index]:
 				removeChannels.append(chan)
 				user.sendMessage(irc.ERR_BADCHANNELKEY, chan.name, ":Cannot join channel (Incorrect channel key)")
