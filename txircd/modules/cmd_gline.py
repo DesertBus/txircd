@@ -17,6 +17,7 @@ class GlineCommand(Command):
 				"duration": data["duration"],
 				"reason": data["reason"]
 			}
+			user.sendMessage("NOTICE", ":*** G:Line set on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
 			now_banned = {}
 			for nick, u in self.ircd.users.iteritems():
 				result = self.match_gline(u)
@@ -39,6 +40,7 @@ class GlineCommand(Command):
 				udata.socket.transport.loseConnection()
 		else:
 			del self.banList[data["mask"]]
+			user.sendMessage("NOTICE", ":*** G:Line removed on {}".format(data["mask"]))
 	
 	def processParams(self, user, params):
 		if user.registered > 0:

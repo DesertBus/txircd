@@ -17,8 +17,10 @@ class ShunCommand(Command):
 				"duration": data["duration"],
 				"reason": data["reason"]
 			}
+			user.sendMessage("NOTICE", ":*** Shun set on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
 		else:
 			del self.shunList[data["mask"]]
+			user.sendMessage("NOTICE", ":*** Shun removed on {}".format(data["mask"]))
 		for udata in self.ircd.users.itervalues():
 			if self.match_shun(udata):
 				udata.cache["shunned"] = True

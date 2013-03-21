@@ -17,9 +17,11 @@ class ElineCommand(Command):
 				"duration": data["duration"],
 				"reason": data["reason"]
 			}
+			user.sendMessage("NOTICE", ":*** E:Line set on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
 		else:
 			mask = data["mask"]
 			del self.exceptList[mask]
+			user.sendMessage("NOTICE", ":*** E:Line removed on {}".format(mask))
 			for u in self.ircd.users.itervalues():
 				if self.match_eline(u):
 					u.cache["except_line"] = True
@@ -87,6 +89,7 @@ class ElineCommand(Command):
 		if data["statstype"] != "E":
 			return
 		self.expire_elines()
+		user = data["user"]
 		for mask, linedata in self.exceptList.iteritems():
 			user.sendMessage(irc.RPL_STATSELINES, "{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
 	

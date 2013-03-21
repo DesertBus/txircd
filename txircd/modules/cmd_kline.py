@@ -17,6 +17,7 @@ class KlineCommand(Command):
 				"duration": data["duration"],
 				"reason": data["reason"]
 			}
+			user.sendMessage("NOTICE", ":*** K:Line added on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
 			now_banned = {}
 			for nick, u in self.ircd.users.iteritems():
 				result = self.match_kline(u)
@@ -39,6 +40,7 @@ class KlineCommand(Command):
 				udata.socket.transport.loseConnection()
 		else:
 			del self.banList[data["mask"]]
+			user.sendMessage("NOTICE", ":*** K:Line removed on {}".format(data["mask"]))
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
