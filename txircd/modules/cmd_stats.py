@@ -1,6 +1,7 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.utils import epoch, now
+import collections
 
 class StatsCommand(Command):
 	def onUse(self, user, data):
@@ -51,7 +52,7 @@ class StatsCommand(Command):
 			# Add server ports here when we get s2s
 		elif statschar == "u":
 			uptime = now() - self.ircd.created
-			user.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
+			caller.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
 
 class Spawner(object):
 	def __init__(self, ircd):
