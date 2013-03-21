@@ -259,7 +259,6 @@ class IRCD(Factory):
 		self.stats_log = DailyLogFile("log",logfile)
 		self.stats_timer.start(1)
 		"""
-		self.all_module_load()
 	
 	def all_module_load(self):
 		# load RFC-required modules
