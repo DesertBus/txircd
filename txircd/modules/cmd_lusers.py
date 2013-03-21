@@ -36,7 +36,7 @@ class LusersCommand(Command):
 	
 	def checkMax(self, user):
 		globalUserCount = len(self.ircd.users) + 1 # Register hook is called BEFORE the user is added to the dictionary
-		localUserCount = 0
+		localUserCount = 1
 		for u in self.ircd.users.itervalues():
 			if u.server == self.ircd.servconfig["server_name"]:
 				localUserCount += 1
