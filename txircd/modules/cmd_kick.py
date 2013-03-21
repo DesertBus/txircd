@@ -10,7 +10,7 @@ class KickCommand(Command):
 		reason = data["reason"]
 		for u in data["targetchan"].users:
 			u.sendMessage("KICK", udata.nickname, ":{}".format(reason), to=cdata.name, prefix=user.prefix())
-		udata.leave(cdata.name)
+		udata.leave(cdata)
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
