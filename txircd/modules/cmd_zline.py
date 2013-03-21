@@ -128,4 +128,4 @@ class Spawner(object):
 	def cleanup(self):
 		del self.ircd.commands["ZLINE"]
 		self.ircd.actions["commandextra"].remove(self.zlineCmd.stats_list)
-		self.ircd.actions["register"].remove(self.zlineCmd.check_register)
+		self.ircd.actions["connect"].remove(self.zlineCmd.check_connect)
