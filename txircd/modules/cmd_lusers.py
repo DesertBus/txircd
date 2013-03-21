@@ -5,25 +5,6 @@ irc.RPL_LOCALUSERS = "265"
 irc.RPL_GLOBALUSERS = "266"
 
 class LusersCommand(Command):
-	"""
-	:NickServ!NickServ@services.chatspike.net NOTICE Alchy|Test :Welcome to ChatSpike, Alchy|Test! Here on ChatSpike, we provide services to enable the registration of nicknames and channels! For details, type /msg NickServ help and /msg ChanServ help.
-LUSERS
-:stitch.chatspike.net 251 Alchy|Test :There are 1 users and 491 invisible on 3 servers
-:stitch.chatspike.net 252 Alchy|Test 13 :operator(s) online
-:stitch.chatspike.net 254 Alchy|Test 227 :channels formed
-:stitch.chatspike.net 255 Alchy|Test :I have 236 clients and 1 servers
-:stitch.chatspike.net 265 Alchy|Test :Current Local Users: 236  Max: 734
-:stitch.chatspike.net 266 Alchy|Test :Current Global Users: 492  Max: 1466
-LUSERS
-:stitch.chatspike.net 251 Alchy|Test :There are 1 users and 491 invisible on 3 servers
-:stitch.chatspike.net 252 Alchy|Test 13 :operator(s) online
-:stitch.chatspike.net 254 Alchy|Test 227 :channels formed
-:stitch.chatspike.net 255 Alchy|Test :I have 236 clients and 1 servers
-:stitch.chatspike.net 265 Alchy|Test :Current Local Users: 236  Max: 734
-:stitch.chatspike.net 266 Alchy|Test :Current Global Users: 492  Max: 1466
-QUIT
-ERROR :Closing link: (Alchy@fq2-wireless-pittnet-47-222.wireless.pitt.edu) [Client exited]
-"""
 	def __init__(self):
 		self.maxLocal = 0
 		self.maxGlobal = 0
