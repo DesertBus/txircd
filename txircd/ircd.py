@@ -113,16 +113,32 @@ class IRCProtocol(irc.IRC):
 	
 	def connectionMade(self):
 		self.type = IRCUser(self)
-		self.secure = ISSLTransport(self.transport, None) is not None
-		self.data_checker.start(5)
-		self.last_message = now()
-		self.pinger.start(self.factory.servconfig["client_ping_interval"])
+		tryagain = []
+		for function in self.factory.actions["connect"]:
+			result = function(self.type)
+			if result == "again":
+				tryagain.append(function)
+			elif not result:
+				self.transport.loseConnection()
+				self.type = None
+				break
+		if self.type:
+			for function in tryagain:
+				if not function(self.type):
+					self.transport.loseConnection()
+					self.type = None
+					break
+		if self.type:
+			self.secure = ISSLTransport(self.transport, None) is not None
+			self.data_checker.start(5)
+			self.last_message = now()
+			self.pinger.start(self.factory.servconfig["client_ping_interval"])
 
 	def dataReceived(self, data):
 		if self.dead:
 			return
-		self.factory.stats_data["bytes_in"] += len(data)
-		self.factory.stats_data["total_bytes_in"] += len(data)
+		for modfunc in self.factory.actions["recvdata"]:
+			modfunc(self.type, data)
 		self.data += len(data)
 		self.last_message = now()
 		if self.pinger.running:
@@ -150,10 +166,8 @@ class IRCProtocol(irc.IRC):
 	def sendLine(self, line):
 		if self.dead:
 			return
-		self.factory.stats_data["lines_out"] += 1
-		self.factory.stats_data["total_lines_out"] += 1
-		self.factory.stats_data["bytes_out"] += len(line)+2
-		self.factory.stats_data["total_bytes_out"] += len(line)+2
+		for modfunc in self.factory.actions["senddata"]:
+			modfunc(self.type, line)
 		log.msg("sendLine: {!r}".format(line))
 		return irc.IRC.sendLine(self, line)
 		
@@ -188,13 +202,8 @@ class IRCD(Factory):
 		self.peerConnections = {}
 		self.modules = {}
 		self.actions = {
-			"join": [],
-			"message": [],
-			"part": [],
-			"topicchange": [],
 			"connect": [],
 			"register": [],
-			"nick": [],
 			"quit": [],
 			"nameslistentry": [],
 			"chancreate": [],

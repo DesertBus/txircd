@@ -4,11 +4,11 @@ from txircd.modbase import Command
 class AwayCommand(Command):
 	def onUse(self, user, data):
 		if "reason" in data:
-			user.metadata["ext"]["away"] = data["reason"]
+			user.setMetadata("ext", "away", data["reason"])
 			user.sendMessage(irc.RPL_NOWAWAY, ":You have been marked as being away")
 		else:
 			if "away" in user.metadata["ext"]:
-				del user.metadata["ext"]["away"]
+				user.delMetadata("ext", "away")
 			user.sendMessage(irc.RPL_UNAWAY, ":You are no longer marked as being away")
 	
 	def processParams(self, user, params):
