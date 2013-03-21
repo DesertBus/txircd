@@ -46,7 +46,7 @@ ERROR :Closing link: (Alchy@fq2-wireless-pittnet-47-222.wireless.pitt.edu) [Clie
 		user.sendMessage(irc.RPL_LUSERCLIENT, ":There are {} users and {} invisible on {} server{}.".format(userCount, invisibleCount, netServerCount, "" if netServerCount == 1 else "s"))
 		user.sendMessage(irc.RPL_LUSEROP, str(operCount), ":operator(s) online")
 		user.sendMessage(irc.RPL_LUSERCHANNELS, str(len(self.ircd.channels)), ":channels formed")
-		user.sendMessage(irc.RPL_LUSERME, ":I have {} clients and {} servers".format(localCount, serverCount)
+		user.sendMessage(irc.RPL_LUSERME, ":I have {} clients and {} servers".format(localCount, serverCount))
 		user.sendMessage(irc.RPL_LOCALUSERS, ":Current Local Users: {}  Max: {}".format(localCount, self.maxLocal))
 		user.sendMessage(irc.RPL_GLOBALUSERS, ":Current Global Users: {}  Max: {}".format(globalCount, self.maxGlobal))
 	
