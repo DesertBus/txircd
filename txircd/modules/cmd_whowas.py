@@ -60,7 +60,7 @@ class Spawner(object):
 		if "client_whowas_limit" not in self.ircd.servconfig:
 			self.ircd.servconfig["client_whowas_limit"] = 10
 		if "client_whowas_expire" not in self.ircd.servconfig:
-			self.ircd.servconfig["client_whowas_expire"] = 1d
+			self.ircd.servconfig["client_whowas_expire"] = "1d"
 		self.whowasCmd = WhowasCommand()
 		return {
 			"commands": {
