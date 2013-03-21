@@ -45,7 +45,7 @@ class WhowasCommand(Command):
 		if user.nickname in self.history:
 			self.history[user.nickname].append(newEntry)
 			self.history[user.nickname] = self.history[user.nickname][-self.ircd.servconfig["client_whowas_limit"]:]
-			expiryTime = epoch(now()) - parse_duration(self.ircd.client_whowas_expire)
+			expiryTime = epoch(now()) - parse_duration(self.ircd.servconfig["client_whowas_expire"])
 			while epoch(self.history[user.nickname]["time"]) < expiryTime:
 				self.history[user.nickname].pop(0)
 		else:
@@ -57,6 +57,10 @@ class Spawner(object):
 		self.whowasCmd = None
 	
 	def spawn(self):
+		if "client_whowas_limit" not in self.ircd.servconfig:
+			self.ircd.servconfig["client_whowas_limit"] = 10
+		if "client_whowas_expire" not in self.ircd.servconfig:
+			self.ircd.servconfig["client_whowas_expire"] = 1d
 		self.whowasCmd = WhowasCommand()
 		return {
 			"commands": {
