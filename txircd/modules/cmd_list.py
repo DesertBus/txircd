@@ -32,12 +32,12 @@ class ListCommand(Command):
 			user.sendMessage(irc.ERR_NOTYETREGISTERED, "LIST", ":You have not registered")
 			return {}
 		if params:
-			chanFilter = params[0]
+			chanFilter = irc_lower(params[0]).split(",")
 		else:
 			chanFilter = None
 		return {
 			"user": user,
-			"chanfilter": irc_lower(chanFilter).split(",")
+			"chanfilter": chanFilter
 		}
 
 class Spawner(object):
