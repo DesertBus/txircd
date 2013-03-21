@@ -270,7 +270,7 @@ class IRCD(Factory):
 		            "cmd_quit", # connection end
 		            "cmd_privmsg_notice", # messages
 		            "cmd_oper", "umode_o", "cmd_rehash", "cmd_wallops", # oper
-		            "cmd_admin", "cmd_info", "cmd_motd", "cmd_stats", "cmd_time", "cmd_version", # server info
+		            "cmd_admin", "cmd_info", "cmd_lusers", "cmd_motd", "cmd_stats", "cmd_time", "cmd_version", # server info
 		            "cmd_away", "cmd_ison", "cmd_userhost", "cmd_who", "cmd_whois", "cmd_whowas", # user info
 		            "cmd_names", "cmd_list", # channel info
 		            "cmd_kill", "cmd_eline", "cmd_gline", "cmd_kline", "cmd_qline", "cmd_zline", # user management
