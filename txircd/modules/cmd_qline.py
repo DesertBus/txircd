@@ -29,6 +29,8 @@ class QlineCommand(Command):
 						now_banned[uid] = reason
 				for uid, reason in now_banned.iteritems():
 					self.remove_user(self.ircd.users[uid], reason)
+		else:
+			del self.banList[mask]
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
