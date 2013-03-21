@@ -158,7 +158,7 @@ class IRCUser(object):
 			self.socket.transport.loseConnection()
 	
 	def connectionLost(self, reason):
-		if self.nickname in self.ircd.users:
+		if self.nickname and self.nickname in self.ircd.users:
 			if self.registered == 0:
 				quit_to = set()
 				leavingChans = self.channels.keys()
