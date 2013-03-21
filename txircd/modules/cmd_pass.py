@@ -24,6 +24,7 @@ class PassCommand(Command, Module):
 	def onConnect(self, user):
 		if "server_password" in self.ircd.servconfig and self.ircd.servconfig["server_password"]:
 			user.registered += 1 # Make password a required step in registration
+		return True
 	
 	def onRegister(self, user):
 		if "server_password" in self.ircd.servconfig and self.ircd.servconfig["server_password"] and self.ircd.servconfig["server_password"] != user.password:
