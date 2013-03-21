@@ -378,8 +378,6 @@ class IRCUser(object):
 		else:
 			self.sendMessage(irc.RPL_NOTOPIC, channel.name, ":No topic is set")
 		self.report_names(channel)
-		for modfunc in self.ircd.actions["join"]:
-			modfunc(channel, self)
 	
 	def leave(self, channel):
 		del self.channels[channel.name]
@@ -390,18 +388,15 @@ class IRCUser(object):
 			del self.ircd.channels[channel.name] # destroy the empty channel
 	
 	def nick(self, newNick):
-		oldNick = self.nickname
 		del self.ircd.users[self.nickname]
-		self.ircd.users[newNick] = user
+		self.ircd.users[newNick] = self
 		notify = set()
-		notify.add(user)
+		notify.add(self)
 		for chan in self.channels.iterkeys():
 			cdata = self.ircd.channels[chan]
 			for cuser in cdata.users:
 				notify.add(cuser)
-		oldprefix = user.prefix()
-		user.nickname = newNick
+		prefix = self.prefix()
 		for u in notify:
-			u.sendMessage("NICK", to=params[0], prefix=oldprefix)
-		for modfunc in self.ircd.actions["nick"]:
-			modfunc(self, oldNick)
+			u.sendMessage("NICK", to=newNick, prefix=prefix)
+		self.nickname = newNick
