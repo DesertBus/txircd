@@ -10,7 +10,13 @@ class IRCChannel(object):
 		self.topicTime = now()
 		self.mode = {}
 		self.users = set()
-		self.metadata = {}
+		self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
+			"server": {},
+			"user": {},
+			"client": {},
+			"ext": {},
+			"private": {}
+		}
 		self.cache = {}
 	
 	def modeString(self, user):
@@ -29,7 +35,13 @@ class IRCChannel(object):
 		self.topicSetter = setter
 		self.topicTime = now()
 	
-	def getMetadata(self, key):
-		if key in self.metadata:
-			return self.metadata[key]
-		return ""
+	def setMetadata(self, namespace, key, value):
+		oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
+		self.metadata[namespace][key] = value
+		for modfunc in self.ircd.actions["metadataupdate"]:
+			modfunc(self, namespace, key, oldValue, value)
+	
+	def delMetadata(self, namespace, key):
+		for modfunc in self.ircd.actions["metadataupdate"]:
+			modfunc(self, namespace, key, self.metadata[namespace][key], "")
+		del self.metadata[namespace][key]

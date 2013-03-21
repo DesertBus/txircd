@@ -174,6 +174,8 @@ class IRCUser(object):
 			else:
 				self.sendMessage("ERROR", ":Closing Link {} [Connection lost]".format(self.hostname), to=None, prefix=None)
 		self.socket.transport.loseConnection()
+		for modfunc in self.ircd.actions["quit"]:
+			modfunc(self, reason)
 		self.disconnected.callback(None)
 	
 	def handleCommand(self, command, prefix, params):
@@ -190,7 +192,12 @@ class IRCUser(object):
 					self.commandExtraHook(command, permData)
 				self.cmd_extra = False
 		else:
-			self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
+			present_error = True
+			for modfunc in self.ircd.actions["commandunknown"]:
+				if modfunc(self, command, params):
+					present_error = False
+			if present_error:
+				self.sendMessage(irc.ERR_UNKNOWNCOMMAND, command, ":Unknown command")
 	
 	def commandPermission(self, command, data):
 		tryagain = set()
@@ -252,6 +259,17 @@ class IRCUser(object):
 		else:
 			arglist = [command] + list(parameter_list)
 		self.socket.sendMessage(*arglist, **kw)
+	
+	def setMetadata(self, namespace, key, value):
+		oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
+		self.metadata[namespace][key] = value
+		for modfunc in self.ircd.actions["metadataupdate"]:
+			modfunc(self, namespace, key, oldValue, value)
+	
+	def delMetadata(self, namespace, key):
+		for modfunc in self.ircd.actions["metadataupdate"]:
+			modfunc(self, namespace, key, self.metadata[namespace][key], "")
+		del self.metadata[namespace][key]
 	
 	#=====================
 	#== Utility Methods ==
@@ -346,6 +364,8 @@ class IRCUser(object):
 		status = ""
 		if channel.name not in self.ircd.channels:
 			self.ircd.channels[channel.name] = channel
+			for modfunc in self.ircd.actions["chancreate"]:
+				modfunc(channel)
 			status = self.ircd.servconfig["channel_default_status"]
 		hostmask = irc_lower(self.prefix())
 		self.channels[channel.name] = {"status":status}
@@ -365,6 +385,8 @@ class IRCUser(object):
 		del self.channels[channel.name]
 		channel.users.remove(self) # remove channel user entry
 		if not channel.users:
+			for modfunc in self.ircd.actions["chandestroy"]:
+				modfunc(channel)
 			del self.ircd.channels[channel.name] # destroy the empty channel
 	
 	def nick(self, newNick):
