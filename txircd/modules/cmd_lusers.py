@@ -60,6 +60,7 @@ ERROR :Closing link: (Alchy@fq2-wireless-pittnet-47-222.wireless.pitt.edu) [Clie
 			self.maxLocal = localUserCount
 		if globalUserCount > self.maxGlobal:
 			self.maxGlobal = globalUserCount
+		return True
 
 class Spawner(object):
 	def __init__(self, ircd):
