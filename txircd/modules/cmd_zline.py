@@ -26,7 +26,7 @@ class ZlineCommand(Command):
 				udata = self.ircd.users[uid]
 				udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
 				quit_to = set()
-				leavingChans = user.channels.keys()
+				leavingChans = udata.channels.keys()
 				for chan in leavingChans:
 					cdata = self.ircd.channels[chan]
 					udata.leave(cdata)
