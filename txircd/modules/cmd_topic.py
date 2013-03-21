@@ -4,7 +4,7 @@ from txircd.utils import epoch, now
 
 class TopicCommand(Command):
 	def onUse(self, user, data):
-		cdata = self.ircd.channels[data["targetchan"]]
+		cdata = data["targetchan"]
 		if "topic" not in data:
 			if cdata.topic:
 				user.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
