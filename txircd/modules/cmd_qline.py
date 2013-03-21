@@ -18,6 +18,7 @@ class QlineCommand(Command):
 				"duration": data["duration"],
 				"reason": data["reason"]
 			}
+			user.sendMessage("NOTICE", ":*** Q:Line set on {}, to expire in {} seconds".format(mask, data["duration"]))
 			if "*" not in mask and "?" not in mask:
 				if mask in self.ircd.users:
 					self.remove_user(self.ircd.users[mask], data["reason"])
@@ -31,6 +32,7 @@ class QlineCommand(Command):
 					self.remove_user(self.ircd.users[uid], reason)
 		else:
 			del self.banList[mask]
+			user.sendMessage("NOTICE", ":*** Q:Line removed on {}".format(mask))
 	
 	def processParams(self, user, params):
 		if user.registered > 0:

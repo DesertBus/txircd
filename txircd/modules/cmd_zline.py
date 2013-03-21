@@ -17,6 +17,7 @@ class ZlineCommand(Command):
 				"duration": data["duration"],
 				"reason": data["reason"]
 			}
+			user.sendMessage("NOTICE", ":*** Z:Line set on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
 			now_banned = {}
 			for uid, udata in self.ircd.users.iteritems():
 				reason = self.match_zline(udata)
@@ -39,6 +40,7 @@ class ZlineCommand(Command):
 				udata.socket.transport.loseConnection()
 		else:
 			del self.banList[data["mask"]]
+			user.sendMessage("NOTICE", ":*** Z:Line removed on {}".format(data["mask"]))
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
