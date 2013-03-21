@@ -203,7 +203,7 @@ class ModeCommand(Command):
 			cdata = self.ircd.channels[params[0]]
 			modeChanges = []
 			if len(params) > 1 and params[1]:
-				if params[0] not in user.channels or not user.hasAccess(cdata.name, self.ircd.servconfig["channel_mode_level"]):
+				if params[0] not in user.channels or not user.hasAccess(cdata.name, self.ircd.servconfig["channel_minimum_level"]["MODE"]):
 					if len(params) > 2:
 						user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, params[0], ":You must have channel operator access to set channel modes")
 						return {}
@@ -246,8 +246,10 @@ class Spawner(object):
 		self.ircd = ircd
 	
 	def spawn(self):
-		if "channel_mode_level" not in self.ircd.servconfig:
-			self.ircd.servconfig["channel_mode_level"] = "o"
+		if "channel_minimum_level" not in self.ircd.servconfig:
+			self.ircd.servconfig["channel_minimum_level"] = {}
+		if "MODE" not in self.ircd.servconfig["channel_minimum_level"]:
+			self.ircd.servconfig["channel_minimum_level"]["MODE"] = "o"
 		return {
 			"commands": {
 				"MODE": ModeCommand()
