@@ -8,7 +8,7 @@ class TopiclockMode(Mode):
 		if "topic" not in data:
 			return data
 		targetChannel = data["targetchan"]
-		if "t" in targetChannel.mode and not user.hasAccess(self.ircd.channel_minimum_level["TOPIC"], targetChannel.name):
+		if "t" in targetChannel.mode and not user.hasAccess(self.ircd.servconfig["channel_minimum_level"]["TOPIC"], targetChannel.name):
 			user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, targetChannel.name, ":You do not have access to change the topic on this channel")
 			return {}
 		return data
@@ -18,6 +18,10 @@ class Spawner(object):
 		self.ircd = ircd
 	
 	def spawn(self):
+		if "channel_minimum_level" not in self.ircd.servconfig:
+			self.ircd.servconfig["channel_minimum_level"] = {}
+		if "TOPIC" not in self.ircd.servconfig["channel_minimum_level"]:
+			self.ircd.servconfig["channel_minimum_level"]["TOPIC"] = "o"
 		return {
 			"modes": {
 				"cnt": TopiclockMode()
