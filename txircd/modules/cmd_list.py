@@ -24,7 +24,7 @@ class ListCommand(Command):
 			if not cdata:
 				continue
 			else:
-				user.sendMessage(irc.RPL_LIST, cdata.name, cdata.users, ":[{}] {}".format(cdata.modeString(user), cdata.topic))
+				user.sendMessage(irc.RPL_LIST, cdata["name"], cdata["users"], ":[{}] {}".format(cdata["channel"].modeString(user), cdata["topic"]))
 		user.sendMessage(irc.RPL_LISTEND, ":End of channel list")
 	
 	def processParams(self, user, params):
