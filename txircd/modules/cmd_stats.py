@@ -3,8 +3,6 @@ from txircd.modbase import Command
 from txircd.utils import epoch, now
 import collections
 
-from twisted.python import log
-
 class StatsCommand(Command):
 	def onUse(self, user, data):
 		user.commandExtraHook("STATS", data)
@@ -32,7 +30,6 @@ class StatsCommand(Command):
 		caller = data["user"]
 		statschar = data["statstype"]
 		if statschar == "o":
-			log.msg("DEBUG: {} {}".format(len(self.ircd.users), len(self.ircd.actions["commandextra"])))
 			for user in self.ircd.users.itervalues():
 				if "o" in user.mode:
 					caller.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
