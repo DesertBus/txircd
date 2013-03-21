@@ -8,7 +8,7 @@ class WhoisCommand(Command):
 			return
 		targets = data["targetuser"]
 		for u in targets:
-			user.sendMessage(irc.RPL_WHOISUSER, u.nickname, u.username, u.hostname, "*", u.realname)
+			user.sendMessage(irc.RPL_WHOISUSER, u.nickname, u.username, u.hostname, "*", ":{}".format(u.realname))
 			chanlist = u.channels
 			chandisplay = []
 			for chan in chanlist.iterkeys():
