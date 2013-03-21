@@ -353,7 +353,7 @@ class IRCUser(object):
 		for u in channel.users:
 			u.sendMessage("JOIN", to=channel.name, prefix=self.prefix())
 		if channel.topic:
-			self.sendMessage(irc.RPL_TOPIC, channel.name, ":{}".format(cdata.topic))
+			self.sendMessage(irc.RPL_TOPIC, channel.name, ":{}".format(channel.topic))
 			self.sendMessage(irc.RPL_TOPICWHOTIME, channel.name, channel.topicSetter, str(epoch(channel.topicTime)))
 		else:
 			self.sendMessage(irc.RPL_NOTOPIC, channel.name, ":No topic is set")
