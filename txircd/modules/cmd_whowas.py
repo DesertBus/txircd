@@ -46,7 +46,7 @@ class WhowasCommand(Command):
 			self.history[user.nickname].append(newEntry)
 			self.history[user.nickname] = self.history[user.nickname][-self.ircd.servconfig["client_whowas_limit"]:]
 			expiryTime = epoch(now()) - parse_duration(self.ircd.servconfig["client_whowas_expire"])
-			while epoch(self.history[user.nickname]["time"]) < expiryTime:
+			while epoch(self.history[user.nickname][0]["time"]) < expiryTime:
 				self.history[user.nickname].pop(0)
 		else:
 			self.history[user.nickname] = [newEntry]
