@@ -15,10 +15,10 @@ class ListCommand(Command):
 				if not filterMatch:
 					continue
 			cdata = {
-				"chandata": channel,
+				"channel": channel,
 				"name": channel.name,
 				"users": len(channel.users),
-				"topic": channel.topic if topic else ""
+				"topic": channel.topic if channel.topic else ""
 			}
 			user.commandExtraHook("LIST", {"user": user, "cdata": cdata})
 			if not cdata:
