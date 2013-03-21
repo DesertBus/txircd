@@ -8,6 +8,7 @@ class OperCommand(Command):
 			user.sendMessage(irc.ERR_PASSWDMISMATCH, ":Password incorrect")
 		else:
 			user.mode["o"] = None
+			user.sendMessage("MODE", "+o")
 			user.sendMessage(irc.RPL_YOUREOPER, ":You are now an IRC operator")
 	
 	def processParams(self, user, params):
