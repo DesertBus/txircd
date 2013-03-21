@@ -8,7 +8,7 @@ class IRCChannel(object):
 		self.topic = ""
 		self.topicSetter = ""
 		self.topicTime = now()
-		self.mode = {}
+		self.mode = self.ircd.servconfig["channel_default_mode"]
 		self.users = set()
 		self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
 			"server": {},
