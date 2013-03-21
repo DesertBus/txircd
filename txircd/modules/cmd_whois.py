@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.utils import epoch, now
 
 class WhoisCommand(Command):
 	def onUse(self, user, data):
