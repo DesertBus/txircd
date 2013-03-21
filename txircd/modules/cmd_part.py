@@ -22,10 +22,10 @@ class PartCommand(Command):
 		delChan = []
 		for chan in channels:
 			if chan not in self.ircd.channels:
-				user.sendMessage(irc.ERR_NOSUCHCHANNEL, channel, ":No such channel")
+				user.sendMessage(irc.ERR_NOSUCHCHANNEL, chan, ":No such channel")
 				delChan.append(chan)
 			elif chan not in user.channels:
-				user.sendMessage(irc.ERR_NOTONCHANNEL, channel, ":You're not on that channel")
+				user.sendMessage(irc.ERR_NOTONCHANNEL, chan, ":You're not on that channel")
 				delChan.append(chan)
 		for chan in delChan:
 			channels.remove(chan)
