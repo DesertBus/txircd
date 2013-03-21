@@ -1,6 +1,9 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
 
+irc.RPL_LOCALUSERS = "265"
+irc.RPL_GLOBALUSERS = "266"
+
 class LusersCommand(Command):
 	"""
 	:NickServ!NickServ@services.chatspike.net NOTICE Alchy|Test :Welcome to ChatSpike, Alchy|Test! Here on ChatSpike, we provide services to enable the registration of nicknames and channels! For details, type /msg NickServ help and /msg ChanServ help.
