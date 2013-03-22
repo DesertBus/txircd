@@ -19,9 +19,9 @@ class OpMode(Mode):
 		if param not in self.ircd.users:
 			return [False, param]
 		deoppingUser = self.ircd.users[param]
-		if target.name not in oppingUser.channels:
+		if target.name not in deoppingUser.channels:
 			return [False, param]
-		if "o" not in oppingUser.status(target.name):
+		if "o" not in deoppingUser.status(target.name):
 			return [False, param]
 		if user.hasAccess(target.name, "o") and user.hasAccess(target.name, deoppingUser.status(target.name)[0]):
 			return [True, param]
