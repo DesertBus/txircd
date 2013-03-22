@@ -21,7 +21,7 @@ class ModeCommand(Command):
 		for modedata in modes:
 			modetype, adding, mode, param = modedata
 			if not (modetype == 0 and param is None): # ignore these checks for listing list modes
-				if not adding and mode not in channel.mode:
+				if not adding and modetype >= 0 and mode not in channel.mode:
 					continue # channel does not have mode set; cannot remove
 				if adding:
 					allowed, param = self.ircd.channel_modes[modetype][mode].checkSet(user, channel, param) if modetype >= 0 else self.ircd.prefixes[mode][2].checkSet(user, channel, param)
@@ -45,6 +45,8 @@ class ModeCommand(Command):
 						if self.ircd.prefixes[statusLevel][1] < self.ircd.prefixes[mode][1]:
 							statusList.insert(index, mode)
 							break
+					if mode not in statusList: # no status to put this one before was found, so this goes at the end
+						statusList.append(mode)
 					udata.channels[channel.name]["status"] = "".join(statusList)
 					modeDisplay.append(modedata)
 				else:
