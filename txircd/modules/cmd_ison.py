@@ -7,7 +7,7 @@ class IsonCommand(Command):
 		for nick in data["nicklist"]:
 			if nick in self.ircd.users:
 				reply.append(self.ircd.users[nick].nickname)
-		self.sendMessage(irc.RPL_ISON, ":{}".format(" ".join(reply)))
+		user.sendMessage(irc.RPL_ISON, ":{}".format(" ".join(reply)))
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
