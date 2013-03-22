@@ -467,7 +467,7 @@ class IRCD(Factory):
 							self.prefix_order.insert(self.prefix_order.index(closestModeChar), mode[2])
 						else:
 							self.prefix_order.append(mode[2])
-						self.prefixes[mode[2]] = [mode[3], level, implementation]
+						self.prefixes[mode[2]] = [mode[3], level, implementation.hook(self)]
 						self.prefix_symbols[mode[3]] = mode[2]
 					self.channel_mode_type[mode[2]] = modetype
 				elif mode[0] == "u":
