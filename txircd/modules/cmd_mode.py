@@ -51,7 +51,7 @@ class ModeCommand(Command):
 					modeDisplay.append(modedata)
 				else:
 					if mode in udata.channels[channel.name]["status"]:
-						udata.channels[channel.name]["status"].remove(mode)
+						udata.channels[channel.name]["status"] = udata.channels[channel.name]["status"].replace(mode, "")
 						modeDisplay.append(modedata)
 			elif modetype == 0:
 				if not param:
