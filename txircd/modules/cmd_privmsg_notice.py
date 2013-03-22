@@ -11,8 +11,6 @@ class MessageCommand(object):
 		if "message" not in data or not data["message"]:
 			user.sendMessage(irc.ERR_NOTEXTTOSEND, ":No text to send")
 			return
-		targetChans = data["targetchan"]
-		targetUsers = data["targetuser"]
 		channelModifiers = data["chanmod"]
 		message = data["message"]
 		for index, channel in enumerate(data["targetchan"]):
@@ -25,6 +23,8 @@ class MessageCommand(object):
 				for u in channel.users:
 					if u != user:
 						u.sendMessage(cmd, ":{}".format(message), to=channel.name, prefix=user.prefix())
+		for udata in data["targetuser"]:
+			udata.sendMessage(cmd, ":{}".format(message), prefix=user.prefix())
 	
 	def processParams(self, cmd, user, params):
 		if user.registered > 0:
