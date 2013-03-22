@@ -4,7 +4,7 @@ from txircd.modbase import Command
 class InfoCommand(Command):
 	def onUse(self, user, data):
 		user.sendMessage(irc.RPL_INFO, ":{}".format(self.ircd.version))
-		user.sendMessage(irc.RPL_INFO, ":Developed by the Desert But for Hope Engineering Team")
+		user.sendMessage(irc.RPL_INFO, ":Developed by the Desert Bus for Hope Engineering Team")
 		user.sendMessage(irc.RPL_ENDOFINFO, ":End of /INFO list")
 	
 	def processParams(self, user, params):
