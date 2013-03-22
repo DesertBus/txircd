@@ -24,11 +24,11 @@ class ModeCommand(Command):
 				if not adding and mode not in channel.mode:
 					continue # channel does not have mode set; cannot remove
 				if adding:
-					allowed, param = self.ircd.channel_modes[modetype][mode].checkSet(user, channel, param)
+					allowed, param = self.ircd.channel_modes[modetype][mode].checkSet(user, channel, param) if modetype >= 0 else self.ircd.prefixes[mode].checkSet(user, channel, param)
 					if not allowed:
 						continue
 				else:
-					allowed, param = self.ircd.channel_modes[modetype][mode].checkUnset(user, channel, param)
+					allowed, param = self.ircd.channel_modes[modetype][mode].checkUnset(user, channel, param) if modetype >= 0 else self.ircd.prefixes[mode].checkUnset(user, channel, param)
 					if not allowed:
 						continue
 			modedata[3] = param # update the param in modedata so that the displayed mode change is shown correctly
