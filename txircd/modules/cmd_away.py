@@ -28,9 +28,8 @@ class AwayCommand(Command):
 			return
 		sourceUser = data["user"]
 		for user in data["targetuser"]:
-			udata = self.ircd.users[user]
-			if "away" in udata.metadata["ext"]:
-				sourceUser.sendMessage(irc.RPL_AWAY, udata.nickname, ":{}".format(udata.metadata["ext"]["away"]))
+			if "away" in user.metadata["ext"]:
+				sourceUser.sendMessage(irc.RPL_AWAY, user.nickname, ":{}".format(user.metadata["ext"]["away"]))
 	
 	def inviteReply(self, command, data):
 		if command != "INVITE":
