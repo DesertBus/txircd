@@ -314,21 +314,8 @@ class IRCUser(object):
 	
 	def report_names(self, channel):
 		# TODO: check whether user is in channel
-		# TODO: check for usermode +i
 		# TODO: check for chanmode +ps
-		# TODO: Possibly think of a modular way to do those last two
 		userlist = []
-		"""
-		if self.cap["multi-prefix"]:
-			for user in cdata.users.itervalues():
-				ranks = user.status(cdata.name)
-				name = ""
-				for p in ranks:
-					name += self.ircd.PREFIX_SYMBOLS[p]
-				name += user.nickname
-				userlist.append(name)
-		else:
-		"""
 		for user in channel.users:
 			ranks = user.status(channel.name)
 			representation = (self.ircd.prefixes[ranks[0]][0] + user.nickname) if ranks else user.nickname
