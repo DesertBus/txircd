@@ -11,13 +11,15 @@ class NamesCommand(Command):
 			user.sendMessage(irc.ERR_NOTREGISTERED, "NAMES", ":You have not registered")
 			return {}
 		if params:
-			channels = filter(lambda x: x in user.channels and x in self.ircd.channels, params[0].split(","))
+			channels = params[0].split(",")
 		else:
 			channels = user.channels.keys()
 		chan_param = []
 		for chan in channels:
 			if chan in self.ircd.channels:
 				chan_param.append(self.ircd.channels[chan])
+			else:
+				user.sendMessage(irc.ERR_NOSUCHNICK, chan, ":No such nick/channel")
 		return {
 			"user": user,
 			"targetchan": chan_param
