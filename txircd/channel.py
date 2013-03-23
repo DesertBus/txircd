@@ -1,4 +1,5 @@
 from txircd.utils import now
+from copy import deepcopy
 
 class IRCChannel(object):
 	def __init__(self, ircd, name):
@@ -8,7 +9,7 @@ class IRCChannel(object):
 		self.topic = ""
 		self.topicSetter = ""
 		self.topicTime = now()
-		self.mode = self.ircd.servconfig["channel_default_mode"]
+		self.mode = deepcopy(self.ircd.servconfig["channel_default_mode"]) # If the user specifies default bans or other lists, references to those will still be problematic
 		self.users = set()
 		self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
 			"server": {},
