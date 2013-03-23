@@ -253,7 +253,7 @@ class IRCUser(object):
 		if not kw["prefix"]:
 			del kw["prefix"]
 		if "to" not in kw:
-			kw["to"] = self.nickname
+			kw["to"] = self.nickname if self.nickname else "*"
 		if kw["to"]:
 			arglist = [command, kw["to"]] + list(parameter_list)
 		else:
