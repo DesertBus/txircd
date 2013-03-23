@@ -79,7 +79,7 @@ class QlineCommand(Command):
 				quit_to.add(u)
 		for u in quit_to:
 			u.sendMessage("QUIT", ":Q:Lined: {}".format(reason), to=None, prefix=user.prefix())
-		user.sendMessage("ERROR", ":Closing Link {} [Q:Lined: {}]".format(user.prefix(), data["reason"]), to=None, prefix=None)
+		user.sendMessage("ERROR", ":Closing Link {} [Q:Lined: {}]".format(user.prefix(), reason), to=None, prefix=None)
 		del self.ircd.users[user.nickname]
 		user.socket.transport.loseConnection()
 	
