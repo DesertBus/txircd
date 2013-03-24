@@ -362,6 +362,8 @@ class IRCUser(object):
 		else:
 			self.sendMessage(irc.RPL_NOTOPIC, channel.name, ":No topic is set")
 		self.report_names(channel)
+		for modfunc in self.ircd.actions["join"]:
+			modfunc(self, channel)
 	
 	def leave(self, channel):
 		del self.channels[channel.name]
