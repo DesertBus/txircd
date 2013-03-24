@@ -285,7 +285,7 @@ class IRCD(Factory):
 		            ]
 		ircv3_spec = [
 		              "ircv3_cap", # capability mechanism which essentially serves as the base for everything else
-		              "ircv3_multi-prefix" # IRC 3.1 extensions
+		              "ircv3_multi-prefix", "ircv3_sasl" # IRC 3.1 extensions
 		             ]
 		for module in rfc_spec:
 			check = self.load_module(module)
