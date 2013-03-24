@@ -18,6 +18,9 @@ class SajoinCommand(Command):
 		if params[0] not in self.ircd.users:
 			user.sendMessage(irc.ERR_NOSUCHNICK, params[0], ":No such nick/channel")
 			return {}
+		if params[1][0] != "#":
+			user.sendMessage(irc.ERR_BADCHANMASK, chan["channel"], ":Bad Channel Mask")
+			return {}
 		return {
 			"user": user,
 			"targetuser": self.ircd.users[params[0]]
