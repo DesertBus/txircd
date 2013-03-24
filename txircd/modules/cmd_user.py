@@ -13,7 +13,7 @@ class UserCommand(Command):
 	
 	def processParams(self, user, params):
 		if user.registered == 0:
-			user.sendMessage(irc.ERR_ALREADYREGISTRED, ":Unauthorized command (already registered)")
+			user.sendMessage(irc.ERR_ALREADYREGISTRED, ":You may not reregister")
 			return {}
 		if params and len(params) < 4:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "USER", ":Not enough parameters")
