@@ -83,6 +83,8 @@ class Spawner(object):
 		self.ircd.module_data_cache["cap"]["sasl"] = self.sasl
 		if "sasl_mechanisms" not in self.ircd.module_data_cache:
 			self.ircd.module_data_cache["sasl_mechanisms"] = {}
+		if "server_sasl_agent" not in self.ircd.servconfig:
+			self.ircd.servconfig["sasl_agent"] = "" # default to an internal agent, at least until we get s2s going
 		return {
 			"commands": {
 				"AUTHENTICATE": self.sasl
