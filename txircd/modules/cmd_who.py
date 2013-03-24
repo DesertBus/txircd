@@ -13,7 +13,7 @@ class WhoCommand(Command):
 						common_channel = True
 						break
 				if not common_channel:
-					user.sendMessage(irc.RPL_WHOREPLY, "*", u.username, u.hostname, u.server, u.nickname, "{}{}".format("G" if "away" in user.metadata["ext"] else "H", "*" if "o" in user.mode else ""), ":0 {}".format(u.realname))
+					self.sendWhoLine(user, u, "*", None, data["filters"])
 			user.sendMessage(irc.RPL_ENDOFWHO, self.nickname, "*", ":End of /WHO list.")
 		else:
 			if data["target"] in self.ircd.channels:
@@ -23,13 +23,12 @@ class WhoCommand(Command):
 					irc.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 					return
 				for u in cdata.users:
-					if (in_channel or "i" not in u.mode) and ("o" not in data["filters"] or "o" in u.mode):
-						user.sendMessage(irc.RPL_WHOREPLY, cdata.name, u.username, u.hostname, u.server, u.nickname, "{}{}{}".format("G" if "away" in u.metadata["ext"] else "H", "*" if "o" in u.mode else "", self.ircd.prefixes[u.status(cdata.name)[0]][0] if u.status(cdata.name) else ""), ":0 {}".format(u.realname))
+					self.sendWhoLine(user, u, cdata.name, data["filters"])
 				user.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 			else:
 				for u in self.ircd.users.itervalues():
-					if "i" not in u.mode and (fnmatch.fnmatch(irc_lower(u.nickname), irc_lower(params[0])) or fnmatch.fnmatch(irc_lower(u.hostname), irc_lower(params[0]))):
-						user.sendMessage(irc.RPL_WHOREPLY, params[0], u.username, u.hostname, u.server, u.nickname, "{}{}".format("G" if "away" in u.metadata["ext"] else "H", "*" if "o" in u.mode else ""), ":0 {}".format(u.realname))
+					if fnmatch.fnmatch(irc_lower(u.nickname), irc_lower(params[0])) or fnmatch.fnmatch(irc_lower(u.hostname), irc_lower(params[0])):
+						self.sendWhoLine(user, u, params[0], None, data["filters"])
 				user.sendMessage(irc.RPL_ENDOFWHO, params[0], ":End of /WHO list.") # params[0] is used here for the target so that the original glob pattern is returned
 	
 	def processParams(self, user, params):
@@ -50,6 +49,28 @@ class WhoCommand(Command):
 			"target": target,
 			"filters": filters
 		}
+	
+	def sendWhoLine(self, user, targetUser, destination, channel, filters):
+		udata = {
+			"dest": destination,
+			"targetuser": u,
+			"nick": u.nickname,
+			"ident": u.username,
+			"host": u.hostname,
+			"server": u.server,
+			"away": "away" in u.metadata["ext"],
+			"oper": "o" in u.mode,
+			"status": u.status(channel.name)[0] if channel and u.status(channel.name) else "",
+			"hopcount": 0,
+			"gecos": u.realname,
+			"cmdfilters": filters
+		}
+		extraData = { "user": user, "data": udata }
+		user.commandExtraHook("WHO", extraData)
+		if not extraData["data"]:
+			return
+		data = extraData["data"]
+		user.sendMessage(irc.RPL_WHOREPLY, data["dest"], data["ident"], data["host"], data["server"], data["nick"], "{}{}{}".format("G" if data["away"] else "H", "*" if data["oper"] else "", data["status"]), ":{} {}".format(data["hopcount"], data["gecos"]))
 
 class Spawner(object):
 	def __init__(self, ircd):
