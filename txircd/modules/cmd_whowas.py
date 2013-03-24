@@ -34,6 +34,8 @@ class WhowasCommand(Command):
 		}
 	
 	def addToWhowas(self, user, reason):
+		if user.registered > 0:
+			return # don't process users who haven't yet registered
 		newEntry = {
 			"nick": user.nickname,
 			"ident": user.username,
