@@ -42,7 +42,7 @@ class WhoCommand(Command):
 			}
 		target = params[0]
 		filters = params[1] if len(params) > 1 else ""
-		if target[0][0] in self.ircd.channel_prefixes and target not in self.ircd.channels:
+		if target[0][0] == "#" and target not in self.ircd.channels:
 			user.sendMessage(irc.RPL_ENDOFWHO, channel, ":End of /WHO list")
 			return {}
 		return {
