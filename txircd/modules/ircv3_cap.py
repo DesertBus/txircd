@@ -93,7 +93,7 @@ class CapCommand(Command):
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "CAP", ":Not enough parameters")
 			return {}
 		subcmd = params[0].upper()
-		caplist = params[1] if len(params) > 1 else []
+		caplist = params[1] if len(params) > 1 else ""
 		if subcmd not in ["LS", "LIST", "REQ", "ACK", "CLEAR", "END"]:
 			user.sendMessage(irc.ERR_INVALIDCAPCMD, ":Invalid CAP subcommand")
 			return {}
