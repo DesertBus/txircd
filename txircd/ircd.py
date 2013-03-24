@@ -186,7 +186,6 @@ class IRCProtocol(irc.IRC):
 
 class IRCD(Factory):
 	protocol = IRCProtocol
-	channel_prefixes = "#"
 
 	def __init__(self, config, options = None):
 		reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
@@ -227,6 +226,7 @@ class IRCD(Factory):
 		self.prefix_symbols = {}
 		self.prefix_order = []
 		self.module_data_cache = {}
+		self.isupport = {}
 		self.db = None
 		self.stats = None
 		self.stats_timer = LoopingCall(self.flush_stats)
@@ -246,6 +246,17 @@ class IRCD(Factory):
 		if not options:
 			options = {}
 		self.load_options(options)
+		# Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
+		self.isupport["CASEMAPPING"] = "rfc1459"
+		self.isupport["CHANMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes])
+		self.isupport["CHANNELLEN"] = "64"
+		self.isupport["CHANTYPES"] = "#"
+		self.isupport["MODES"] = 20
+		self.isupport["NETWORK"] = self.ircd.servconfig["network_name"]
+		self.isupport["NICKLEN"] = "32"
+		self.isupport["PREFIX"] = "({}){}".format("".join(self.ircd.prefix_order), "".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order]))
+		self.isupport["STATUSMSG"] = "".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order])
+		self.isupport["TOPICLEN"] = "316"
 		"""
 		if self.app_ip_log:
 			try:

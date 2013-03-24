@@ -99,18 +99,12 @@ class IRCUser(object):
 		self.send_motd()
 	
 	def send_isupport(self):
-		isupport = [
-			"CASEMAPPING=rfc1459",
-			"CHANMODES={}".format(",".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes])),
-			"CHANNELLEN=64",
-			"CHANTYPES={}".format(self.ircd.channel_prefixes),
-			"MODES=20",
-			"NETWORK={}".format(self.ircd.servconfig["network_name"]),
-			"NICKLEN=32",
-			"PREFIX=({}){}".format("".join(self.ircd.prefix_order), "".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order])),
-			"STATUSMSG={}".format("".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order])),
-			"TOPICLEN=316"
-		]
+		isupport = []
+		for key, value in self.ircd.isupport:
+			if value is None:
+				isupport.append(key)
+			else:
+				isupport.append("{}={}".format(key, value))
 		prevar_len = len(" ".join([self.ircd.servconfig["server_name"], irc.RPL_ISUPPORT, self.nickname])) + 31 # including ":are supported by this server"
 		thisline = []
 		while isupport:
