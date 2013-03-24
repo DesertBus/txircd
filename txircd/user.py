@@ -354,7 +354,17 @@ class IRCUser(object):
 		hostmask = irc_lower(self.prefix())
 		self.channels[channel.name] = {"status":status}
 		channel.users.add(self)
-		for u in channel.users:
+		joinShowUsers = channel.users
+		tryagain = []
+		for modfunc in self.ircd.actions["joinmessage"]:
+			result = modfunc(channel, user, joinShowUsers)
+			if result == "again":
+				tryagain.append(modfunc)
+			else:
+				joinShowUsers = result
+		for modfunc in tryagain:
+			joinShowUsers = modfunc(channel, user, joinShowUsers)
+		for u in joinShowUsers:
 			u.sendMessage("JOIN", to=channel.name, prefix=self.prefix())
 		if channel.topic:
 			self.sendMessage(irc.RPL_TOPIC, channel.name, ":{}".format(channel.topic))
