@@ -38,7 +38,7 @@ class Spawner(object):
 		self.account_notify = None
 	
 	def spawn(self):
-		self.account_notify = AccountNotify()
+		self.account_notify = AccountNotify().hook(self.ircd)
 		if "cap" not in self.ircd.module_data_cache:
 			self.ircd.module_data_cache["cap"] = {}
 		self.ircd.module_data_cache["cap"]["account-notify"] = self.account_notify
