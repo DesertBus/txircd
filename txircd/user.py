@@ -312,8 +312,6 @@ class IRCUser(object):
 			self.sendMessage(irc.ERR_NOMOTD, ":MOTD File is missing")
 	
 	def report_names(self, channel):
-		# TODO: check whether user is in channel
-		# TODO: check for chanmode +ps
 		userlist = []
 		for user in channel.users:
 			ranks = user.status(channel.name)

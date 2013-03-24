@@ -7,7 +7,7 @@ class SecretMode(Mode):
 			return data
 		remove = []
 		for chan in data["targetchan"]:
-			if "p" in chan.mode and chan.name not in user.channels:
+			if "s" in chan.mode and chan.name not in user.channels:
 				user.sendMessage(irc.ERR_NOSUCHNICK, chan, ":No such nick/channel")
 				remove.append(chan)
 		for chan in remove:
