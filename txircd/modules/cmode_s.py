@@ -1,6 +1,19 @@
+from twisted.words.protocols import irc
 from txircd.modbase import Mode
 
 class SecretMode(Mode):
+	def checkPermission(self, user, cmd, data):
+		if cmd != "NAMES":
+			return data
+		remove = []
+		for chan in data["targetchan"]:
+			if "p" in chan.mode and chan.name not in user.channels:
+				user.sendMessage(irc.ERR_NOSUCHNICK, chan, ":No such nick/channel")
+				remove.append(chan)
+		for chan in remove:
+			data["targetchan"].remove(chan)
+		return data
+	
 	def listOutput(self, command, data):
 		if command != "LIST":
 			return data
