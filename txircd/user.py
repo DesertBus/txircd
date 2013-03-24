@@ -59,7 +59,6 @@ class IRCUser(object):
 		self.channels = CaseInsensitiveDictionary()
 		self.disconnected = Deferred()
 		self.registered = 2
-		self.cap = {}
 		self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
 			"server": {},
 			"user": {},
