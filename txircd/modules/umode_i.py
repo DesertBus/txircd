@@ -11,10 +11,10 @@ class InvisibleMode(Mode):
 			return
 		destination = data["data"]["dest"]
 		if destination[0] == "#":
-			if destination not in data["user"].channels and "i" in data["data"]["targetuser"].mode:
+			if destination not in data["user"].channels and "i" in data["targetuser"].mode:
 				data["data"] = {}
-		elif "i" in data["data"]["targetuser"].mode:
-			target = data["data"]["targetuser"]
+		elif "i" in data["targetuser"].mode:
+			target = data["targetuser"]
 			share_channel = False
 			for chan in data["user"].channels:
 				if chan in target.channels:
