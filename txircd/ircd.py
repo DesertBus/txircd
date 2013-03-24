@@ -224,6 +224,7 @@ class IRCD(Factory):
 		self.prefixes = {}
 		self.prefix_symbols = {}
 		self.prefix_order = []
+		self.module_data_cache = {}
 		self.db = None
 		self.stats = None
 		self.stats_timer = LoopingCall(self.flush_stats)
