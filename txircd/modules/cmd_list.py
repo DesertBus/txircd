@@ -20,8 +20,9 @@ class ListCommand(Command):
 				"users": len(channel.users),
 				"topic": channel.topic if channel.topic else ""
 			}
-			user.commandExtraHook("LIST", {"user": user, "cdata": cdata})
-			if not cdata:
+			extraData = { "user": user, "cdata": cdata }
+			user.commandExtraHook("LIST", extraData)
+			if "cdata" not in extraData or not extraData["cdata"]:
 				continue
 			else:
 				user.sendMessage(irc.RPL_LIST, cdata["name"], str(cdata["users"]), ":[{}] {}".format(cdata["channel"].modeString(user), cdata["topic"]))
