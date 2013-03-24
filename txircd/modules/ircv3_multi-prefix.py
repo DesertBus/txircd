@@ -23,6 +23,14 @@ class MultiPrefix(Module):
 			representation = representation[1:]
 		statusModes = listingUser.status(channel.name)
 		return "{}{}".format("".join([self.ircd.prefixes[status][0] for status in statusModes]), representation)
+	
+	def whoStatus(self, cmd, data):
+		if cmd != "WHO":
+			return
+		user = data["user"]
+		target = data["targetuser"]
+		if data["channel"]:
+			data["status"] = "".join([self.ircd.prefixes[status][0] for status in target.status(data["channel"].name)])
 
 class Spawner(object):
 	def __init__(self, ircd):
@@ -36,10 +44,12 @@ class Spawner(object):
 		self.ircd.module_data_cache["cap"]["multi-prefix"] = self.multi_prefix
 		return {
 			"actions": {
-				"nameslistentry": [self.multi_prefix.namesListEntry]
+				"nameslistentry": [self.multi_prefix.namesListEntry],
+				"commandextra": [self.multi_prefix.whoStatus]
 			}
 		}
 	
 	def cleanup(self):
 		self.ircd.actions["nameslistentry"].remove(self.multi_prefix.namesListEntry)
+		self.ircd.actions["commandextra"].remove(self.multi_prefix.whoStatus)
 		del self.ircd.module_data_cache["cap"]["multi-prefix"]

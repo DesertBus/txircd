@@ -7,7 +7,7 @@ class OperMode(Mode):
 	def checkWhoFilter(self, cmd, data):
 		if cmd != "WHO":
 			return
-		if "o" in data["data"]["cmdfilters"] and not data["data"]["oper"]:
+		if "o" in data["cmdfilters"] and not data["data"]["oper"]:
 			data["data"] = {}
 
 class Spawner(object):

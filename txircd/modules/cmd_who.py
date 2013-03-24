@@ -53,7 +53,6 @@ class WhoCommand(Command):
 	def sendWhoLine(self, user, targetUser, destination, channel, filters):
 		udata = {
 			"dest": destination,
-			"targetuser": u,
 			"nick": u.nickname,
 			"ident": u.username,
 			"host": u.hostname,
@@ -63,9 +62,8 @@ class WhoCommand(Command):
 			"status": u.status(channel.name)[0] if channel and u.status(channel.name) else "",
 			"hopcount": 0,
 			"gecos": u.realname,
-			"cmdfilters": filters
 		}
-		extraData = { "user": user, "data": udata }
+		extraData = { "user": user, "targetuser": targetUser, "cmdfilters": filters, "channel": channel, "data": udata }
 		user.commandExtraHook("WHO", extraData)
 		if not extraData["data"]:
 			return
