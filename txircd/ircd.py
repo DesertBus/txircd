@@ -206,6 +206,7 @@ class IRCD(Factory):
 			"register": [],
 			"join": [],
 			"joinmessage": [],
+			"nick": [],
 			"quit": [],
 			"nameslistentry": [],
 			"chancreate": [],

@@ -389,4 +389,7 @@ class IRCUser(object):
 		prefix = self.prefix()
 		for u in notify:
 			u.sendMessage("NICK", to=newNick, prefix=prefix)
+		oldNick = self.nickname
 		self.nickname = newNick
+		for modfunc in self.ircd.actions["nick"]:
+			modfunc(self, oldNick)
