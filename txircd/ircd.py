@@ -298,7 +298,7 @@ class IRCD(Factory):
 		            ]
 		ircv3_spec = [
 		              "ircv3_cap", # capability mechanism which essentially serves as the base for everything else
-		              "ircv3_multi-prefix", "ircv3_sasl", "ircv3_account-notify", "ircv3_away-notify" # IRC 3.1 extensions
+		              "ircv3_multi-prefix", "ircv3_sasl", "ircv3_account-notify", "ircv3_away-notify", "ircv3_extended-join" # IRC 3.1 extensions
 		              "ircv3_sasl_plain" # SASL auth doesn't really make sense without at least one mechanism
 		             ]
 		for module in rfc_spec:
