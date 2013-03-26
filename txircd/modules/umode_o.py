@@ -23,6 +23,7 @@ class Spawner(object):
 			},
 			"actions": {
 				"commandextra": [self.oper_mode.checkWhoFilter]
+			}
 		}
 	
 	def cleanup(self):

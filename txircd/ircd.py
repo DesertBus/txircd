@@ -249,14 +249,14 @@ class IRCD(Factory):
 		self.load_options(options)
 		# Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
 		self.isupport["CASEMAPPING"] = "rfc1459"
-		self.isupport["CHANMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes])
+		self.isupport["CHANMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.channel_modes])
 		self.isupport["CHANNELLEN"] = "64"
 		self.isupport["CHANTYPES"] = "#"
 		self.isupport["MODES"] = 20
-		self.isupport["NETWORK"] = self.ircd.servconfig["network_name"]
+		self.isupport["NETWORK"] = self.servconfig["network_name"]
 		self.isupport["NICKLEN"] = "32"
-		self.isupport["PREFIX"] = "({}){}".format("".join(self.ircd.prefix_order), "".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order]))
-		self.isupport["STATUSMSG"] = "".join([self.ircd.prefixes[mode][0] for mode in self.ircd.prefix_order])
+		self.isupport["PREFIX"] = "({}){}".format("".join(self.prefix_order), "".join([self.prefixes[mode][0] for mode in self.prefix_order]))
+		self.isupport["STATUSMSG"] = "".join([self.prefixes[mode][0] for mode in self.prefix_order])
 		self.isupport["TOPICLEN"] = "316"
 		"""
 		if self.app_ip_log:
@@ -299,7 +299,7 @@ class IRCD(Factory):
 		            ]
 		ircv3_spec = [
 		              "ircv3_cap", # capability mechanism which essentially serves as the base for everything else
-		              "ircv3_multi-prefix", "ircv3_sasl", "ircv3_account-notify", "ircv3_away-notify", "ircv3_extended-join" # IRC 3.1 extensions
+		              "ircv3_multi-prefix", "ircv3_sasl", "ircv3_account-notify", "ircv3_away-notify", "ircv3_extended-join", # IRC 3.1 extensions
 		              "ircv3_sasl_plain" # SASL auth doesn't really make sense without at least one mechanism
 		             ]
 		for module in rfc_spec:
