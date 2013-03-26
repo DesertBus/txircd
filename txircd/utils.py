@@ -34,7 +34,7 @@ def parse_duration(duration_string):
 	"""
 	try: # attempt to parse as a number of seconds if we get just a number before we go through the parsing process
 		return int(duration_string)
-	except:
+	except ValueError:
 		pass
 	timeparts = DURATION_REGEX.match(duration_string).groupdict()
 
@@ -43,7 +43,7 @@ def parse_duration(duration_string):
 		if amount is not None:
 			try:
 				duration += int(amount) * time_lengths[unit]
-			except:
+			except ValueError:
 				pass
 	return duration
 def build_duration(duration_int):
