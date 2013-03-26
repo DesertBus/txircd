@@ -100,7 +100,7 @@ class IRCUser(object):
 	
 	def send_isupport(self):
 		isupport = []
-		for key, value in self.ircd.isupport:
+		for key, value in self.ircd.isupport.iteritems():
 			if value is None:
 				isupport.append(key)
 			else:
