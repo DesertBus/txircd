@@ -197,6 +197,7 @@ class IRCD(Factory):
 		self.token = uuid.uuid1()
 		self.servers = CaseInsensitiveDictionary()
 		self.users = CaseInsensitiveDictionary()
+		self.localusers = CaseInsensitiveDictionary()
 		self.whowas = CaseInsensitiveDictionary()
 		self.channels = CaseInsensitiveDictionary()
 		self.peerConnections = {}

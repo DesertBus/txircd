@@ -6,18 +6,7 @@ class KillCommand(Command):
 		target = data["targetuser"]
 		reason = "Killed by {}: {}".format(user.nickname, data["reason"])
 		target.sendMessage("KILL", ":{} {}".format(user.nickname, data["reason"]), prefix=user.prefix())
-		quit_to = set()
-		leavingChans = target.channels.keys()
-		for chan in leavingChans:
-			cdata = self.ircd.channels[chan]
-			target.leave(cdata)
-			for u in cdata.users:
-				quit_to.add(u)
-		for u in quit_to:
-			u.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=target.prefix())
-		target.sendMessage("ERROR", ":Closing Link: {} [{}]".format(target.prefix(), reason), to=None, prefix=None)
-		del self.ircd.users[target.nickname]
-		target.socket.transport.loseConnection()
+		target.disconnect(reason)
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
