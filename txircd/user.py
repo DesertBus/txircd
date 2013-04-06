@@ -97,6 +97,7 @@ class IRCUser(object):
 		self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
 		self.sendMessage(irc.RPL_MYINFO, self.ircd.servconfig["network_name"], self.ircd.version, usermodelist, chanmodelist) # usermodes & channel modes
 		self.send_isupport()
+		self.send_lusers()
 		self.send_motd()
 	
 	def send_isupport(self):
@@ -277,6 +278,35 @@ class IRCUser(object):
 		else:
 			self.sendMessage(irc.ERR_NOMOTD, ":MOTD File is missing")
 	
+	def send_lusers(self):
+		userCount = 0
+		invisibleCount = 0
+		serverCount = 0
+		networkServerCount = len(self.ircd.servers) + 1 # this server is also a server
+		operCount = 0
+		localCount = len(self.ircd.localusers)
+		globalCount = len(self.ircd.users)
+		for user in self.ircd.users.itervalues():
+			if "i" in user.mode:
+				invisibleCount += 1
+			else:
+				userCount += 1
+			if "o" in user.mode:
+				operCount += 1
+		for server in self.ircd.server.itervalues():
+			if server.name == server.firsthop:
+				serverCount += 1
+		if localCount > self.ircd.usercount["localmax"]:
+			self.ircd.usercount["localmax"] = localCount
+		if globalCount > self.ircd.usercount["globalmax"]:
+			self.ircd.usercount["globalmax"] = globalCount
+		self.sendMessage(irc.RPL_LUSERCLIENT, ":There are {} users and {} invisible on {} server{}.".format(userCount, invisibleCount, networkServerCount, "" if networkServerCount == 1 else "s"))
+		self.sendMessage(irc.RPL_LUSEROP, str(operCount), ":operator(s) online")
+		self.sendMessage(irc.RPL_LUSERCHANNELS, str(len(self.ircd.channels)), ":channels formed")
+		self.sendMessage(irc.RPL_LUSERME, ":I have {} clients and {} servers".format(localCount, serverCount))
+		self.sendMessage(irc.RPL_LOCALUSERS, ":Current Local Users: {}  Max: {}".format(localCount, self.ircd.usercount["localmax"]))
+		self.sendMessage(irc.RPL_GLOBALUSERS, ":Current Global Users: {}  Max: {}".format(globalCount, self.ircd.usercount["globalmax"]))
+	
 	def report_names(self, channel):
 		userlist = []
 		for user in channel.users:
@@ -351,7 +381,9 @@ class IRCUser(object):
 	
 	def nick(self, newNick):
 		del self.ircd.users[self.nickname]
+		del self.ircd.localusers[self.nickname]
 		self.ircd.users[newNick] = self
+		self.ircd.localusers[newNick] = self
 		notify = set()
 		notify.add(self)
 		for chan in self.channels.iterkeys():

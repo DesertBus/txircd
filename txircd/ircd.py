@@ -16,6 +16,8 @@ import uuid, socket, yaml, os, json, imp
 irc.RPL_STATS = "210"
 irc.RPL_STATSOPERS = "249" # Same here.
 irc.RPL_STATSPORTS = "249" # And here.
+irc.RPL_LOCALUSERS = "265"
+irc.RPL_GLOBALUSERS = "266"
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
@@ -243,6 +245,10 @@ class IRCD(Factory):
 			"total_lines_out": 0,
 			"connections": 0,
 			"total_connections": 0
+		}
+		self.usercount = {
+			"localmax": 0,
+			"globalmax": 0
 		}
 		self.servconfig = {}
 		if not options:
