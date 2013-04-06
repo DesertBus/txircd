@@ -117,55 +117,28 @@ class IRCUser(object):
 			self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
 	
 	def disconnect(self, reason):
-		if self.nickname in self.ircd.users
+		if self.registered == 0:
 			quitdest = set()
-			for channel in self.channels.iterkeys():
-				chanusers = self.ircd.channels[channel].users
-				del chanusers[self.nickname]
-				for u in chanusers.itervalues():
+			leavingChannels = self.channels.keys()
+			for channel in leavingChannels:
+				cdata = self.ircd.channels[channel]
+				self.leave(cdata)
+				for u in cdata.users:
 					quitdest.add(u)
 			del self.ircd.users[self.nickname]
+			del self.ircd.localusers[self.nickname]
 			for user in quitdest:
 				user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+		self.sendMessage("ERROR", ":Closing Link: {}@{} [{}]".format(self.username if self.username else "unknown", self.hostname, reason))
 		self.socket.transport.loseConnection()
 	
 	def checkData(self, data):
 		if data > self.ircd.servconfig["client_max_data"] and "o" not in self.mode:
 			log.msg("Killing user '{}' for flooding".format(self.nickname))
-			self.handleCommand("QUIT", None, ["Killed for flooding"])
-			if self.registered == 0:
-				quit_to = set()
-				leavingChans = self.channels.keys()
-				for chan in leavingChans:
-					cdata = self.ircd.channels[chan]
-					self.leave(cdata)
-					for u in cdata.users:
-						quit_to.add(u)
-				for u in quit_to:
-					u.sendMessage("QUIT", ":Quit: {}".format(reason), to=None, prefix=self.prefix())
-				self.sendMessage("ERROR", ":Closing Link {} [Killed for flooding]".format(self.prefix()), to=None, prefix=None)
-				del self.ircd.users[self.nickname]
-			else:
-				self.sendMessage("ERROR", ":Closing Link {} [Killed for flooding]".format(self.hostname), to=None, prefix=None)
-			self.socket.transport.loseConnection()
+			self.disconnect("Killed for flooding")
 	
 	def connectionLost(self, reason):
-		if self.nickname and self.nickname in self.ircd.users:
-			if self.registered == 0:
-				quit_to = set()
-				leavingChans = self.channels.keys()
-				for chan in leavingChans:
-					cdata = self.ircd.channels[chan]
-					self.leave(cdata)
-					for u in cdata.users:
-						quit_to.add(u)
-				for u in quit_to:
-					u.sendMessage("QUIT", ":Quit: Connection lost", to=None, prefix=self.prefix())
-				self.sendMessage("ERROR", ":Closing Link {} [Connection lost]".format(self.prefix()), to=None, prefix=None)
-				del self.ircd.users[self.nickname]
-			else:
-				self.sendMessage("ERROR", ":Closing Link {} [Connection lost]".format(self.hostname), to=None, prefix=None)
-		self.socket.transport.loseConnection()
+		self.disconnect("Connection Lost")
 		for modfunc in self.ircd.actions["quit"]:
 			modfunc(self, reason)
 		self.disconnected.callback(None)
