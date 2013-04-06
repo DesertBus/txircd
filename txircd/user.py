@@ -87,6 +87,7 @@ class IRCUser(object):
 		
 		# Add self to user list
 		self.ircd.users[self.nickname] = self
+		self.ircd.localusers[self.nickname] = self
 		
 		# Send all those lovely join messages
 		chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
@@ -116,9 +117,7 @@ class IRCUser(object):
 			self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
 	
 	def disconnect(self, reason):
-		if self.nickname in self.ircd.users:
-			for action in self.ircd.actions:
-				action.onQuit(self, reason)
+		if self.nickname in self.ircd.users
 			quitdest = set()
 			for channel in self.channels.iterkeys():
 				chanusers = self.ircd.channels[channel].users
