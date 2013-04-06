@@ -21,15 +21,15 @@ class QlineCommand(Command):
 			user.sendMessage("NOTICE", ":*** Q:Line set on {}, to expire in {} seconds".format(mask, data["duration"]))
 			if "*" not in mask and "?" not in mask:
 				if mask in self.ircd.users:
-					self.remove_user(self.ircd.users[mask], data["reason"])
+					self.ircd.users[mask].disconnect("Q:Lined: {}".format(data["reason"]))
 			else:
 				now_banned = {}
-				for uid, user in self.ircd.users.iteritems():
+				for user in self.ircd.users.itervalues():
 					reason = self.match_qline(user)
 					if reason:
-						now_banned[uid] = reason
-				for uid, reason in now_banned.iteritems():
-					self.remove_user(self.ircd.users[uid], reason)
+						now_banned[user] = reason
+				for user, reason in now_banned.iteritems():
+					user.disconnect("Q:Lined: {}".format(reason))
 		else:
 			del self.banList[mask]
 			user.sendMessage("NOTICE", ":*** Q:Line removed on {}".format(mask))
@@ -68,20 +68,6 @@ class QlineCommand(Command):
 			"duration": parse_duration(params[1]),
 			"reason": " ".join(params[2:])
 		}
-	
-	def remove_user(self, user, reason):
-		quit_to = set()
-		leavingChans = user.channels.keys()
-		for chan in leavingChans:
-			cdata = self.ircd.channels[chan]
-			user.leave(cdata)
-			for u in cdata.users:
-				quit_to.add(u)
-		for u in quit_to:
-			u.sendMessage("QUIT", ":Q:Lined: {}".format(reason), to=None, prefix=user.prefix())
-		user.sendMessage("ERROR", ":Closing Link {} [Q:Lined: {}]".format(user.prefix(), reason), to=None, prefix=None)
-		del self.ircd.users[user.nickname]
-		user.socket.transport.loseConnection()
 	
 	def statsList(self, cmd, data):
 		if cmd != "STATS":
