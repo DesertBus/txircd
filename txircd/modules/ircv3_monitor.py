@@ -121,6 +121,7 @@ class MonitorCommand(Command):
 		return []
 	
 	def listWatchedBy(self, user):
+		user = irc_lower(user)
 		if user in self.watched_by:
 			return self.watched_by[user]
 		return []
