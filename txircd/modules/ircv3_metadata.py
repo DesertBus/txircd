@@ -31,9 +31,9 @@ class MetadataCommand(Command):
 						if fnmatch("{}.{}".format(namespace, key), filter):
 							encounteredItem = True
 							if value:
-								user.sendMessage(irc.RPL_KEYVALUE, key, ":{}".format(value))
+								user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key), ":{}".format(value))
 							else:
-								user.sendMessage(irc.RPL_KEYVALUE, key)
+								user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key))
 				if encounteredItem:
 					user.sendMessage(irc.RPL_METADATAEND, ":End of metadata")
 				else:
@@ -44,9 +44,9 @@ class MetadataCommand(Command):
 					for key, value in target.metadata[namespace].iteritems():
 						encounteredItem = True
 						if value:
-							user.sendMessage(irc.RPL_KEYVALUE, key, ":{}".format(value))
+							user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key), ":{}".format(value))
 						else:
-							user.sendMessage(irc.RPL_KEYVALUE, key)
+							user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key))
 				if encounteredItem:
 					user.sendMessage(irc.RPL_METADATAEND, ":End of metadata")
 				else:
