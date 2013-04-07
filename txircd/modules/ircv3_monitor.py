@@ -30,8 +30,8 @@ class MonitorCommand(Command):
 				self.watch_masks[user] = []
 			if user not in self.watching:
 				self.watching[user] = []
-			if self.mon_limit and len(self.watch_masks[user]) + len(targetlist) > self.mon_limit:
-				user.sendMessage(irc.ERR_MONLISTFULL, str(self.mon_limit), ",".join(targetlist), ":Monitor list is full")
+			if self.limit and len(self.watch_masks[user]) + len(targetlist) > self.limit:
+				user.sendMessage(irc.ERR_MONLISTFULL, str(self.limit), ",".join(targetlist), ":Monitor list is full")
 				return
 			online = []
 			offline = []
