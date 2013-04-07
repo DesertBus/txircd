@@ -177,6 +177,7 @@ class MetadataCommand(Command):
 		for modfunc in self.ircd.actions["monitorwatchedby"]:
 			watcherList += modfunc(target.nickname)
 		watchers = set(watcherList)
+		watchers.add(target)
 		if not value and key not in target.metadata[namespace]:
 			for u in watchers:
 				if "cap" in u.cache and "metadata-notify" in u.cache["cap"]:
