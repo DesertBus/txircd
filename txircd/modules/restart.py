@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from twisted.internet import reactor
 
 class RestartCommand(Command):
 	def onUse(self, user, data):
