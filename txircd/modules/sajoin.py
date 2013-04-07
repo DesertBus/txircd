@@ -23,7 +23,7 @@ class SajoinCommand(Command):
 			return {}
 		return {
 			"user": user,
-			"targetuser": self.ircd.users[params[0]]
+			"targetuser": self.ircd.users[params[0]],
 			"channame": params[1]
 		}
 
