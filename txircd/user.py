@@ -233,9 +233,9 @@ class IRCUser(object):
 			modfunc(self, namespace, key, oldValue, value)
 	
 	def delMetadata(self, namespace, key):
-		del self.metadata[namespace][key]
 		for modfunc in self.ircd.actions["metadataupdate"]:
 			modfunc(self, namespace, key, self.metadata[namespace][key], "")
+		del self.metadata[namespace][key]
 	
 	#=====================
 	#== Utility Methods ==
