@@ -177,9 +177,14 @@ class MetadataCommand(Command):
 		for modfunc in self.ircd.actions["monitorwatchedby"]:
 			watcherList += modfunc(target.nickname)
 		watchers = set(watcherList)
-		for u in watchers:
-			if "cap" in u.cache and "metadata-notify" in u.cache["cap"]:
-				u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key), ":{}".format(value))
+		if not value and key not in target.metadata[namespace]:
+			for u in watchers:
+				if "cap" in u.cache and "metadata-notify" in u.cache["cap"]:
+					u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key))
+		else:
+			for u in watchers:
+				if "cap" in u.cache and "metadata-notify" in u.cache["cap"]:
+					u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key), ":{}".format(value))
 
 class Spawner(object):
 	def __init__(self, ircd):
