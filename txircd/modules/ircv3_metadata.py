@@ -175,7 +175,8 @@ class MetadataCommand(Command):
 			watcherList += modfunc(target.nickname)
 		watchers = set(watcherList)
 		for u in watchers:
-			u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key), ":{}".format(value))
+			if "cap" in u.cache and "metadata-notify" in u.cache["cap"]:
+				u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key), ":{}".format(value))
 
 class Spawner(object):
 	def __init__(self, ircd):
