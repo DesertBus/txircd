@@ -111,11 +111,11 @@ class IRCUser(object):
 		thisline = []
 		while isupport:
 			if len(" ".join(thisline)) + len(isupport[0]) + prevar_len > 509:
-				self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
+				self.sendMessage(irc.RPL_ISUPPORT, *thisline, ":are supported by this server")
 				thisline = []
 			thisline.append(isupport.pop(0))
 		if thisline:
-			self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
+			self.sendMessage(irc.RPL_ISUPPORT, *thisline, ":are supported by this server")
 	
 	def disconnect(self, reason):
 		if self.registered == 0:
