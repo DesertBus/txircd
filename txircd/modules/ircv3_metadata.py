@@ -23,7 +23,7 @@ class MetadataCommand(Command):
 			namespaceList = ["server", "client", "user", "ext"]
 			if "o" in user.mode:
 				namespaceList.append("private")
-			if "filter" in data:
+			if data["filter"]:
 				filter = data["filter"]
 				encounteredItem = False
 				for namespace in namespaceList:
