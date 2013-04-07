@@ -101,7 +101,7 @@ class MetadataCommand(Command):
 			if len(params) < 3:
 				user.sendMessage(irc.ERR_NEEDMOREPARAMS, "METADATA", ":Not enough parameters")
 				return {}
-			if "o" not in user:
+			if "o" not in user.mode:
 				try:
 					if not user.hasAccess(target.name, self.ircd.servconfig["channel_metadata_set_level"]):
 						user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, target.name, ":You do not have access to set metadata on this channel")
