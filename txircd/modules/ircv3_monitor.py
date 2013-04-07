@@ -28,7 +28,7 @@ class MonitorCommand(Command):
 				targetlist.remove(target)
 			if user not in self.watch_masks:
 				self.watch_masks[user] = []
-			if user not in watching:
+			if user not in self.watching:
 				self.watching[user] = []
 			if self.mon_limit and len(self.watch_masks[user]) + len(targetlist) > self.mon_limit:
 				user.sendMessage(irc.ERR_MONLISTFULL, str(self.mon_limit), ",".join(targetlist), ":Monitor list is full")
