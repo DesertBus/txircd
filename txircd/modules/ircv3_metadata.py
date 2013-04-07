@@ -122,6 +122,9 @@ class MetadataCommand(Command):
 				"value": params[3] if len(params) >= 4 else None
 			}
 		if subcmd == "CLEAR":
+			if "o" not in user.mode and user != target:
+				user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
+				return {}
 			return {
 				"user": user,
 				"targetname": params[0],
