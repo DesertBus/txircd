@@ -19,7 +19,7 @@ class KlineCommand(Command):
 			}
 			user.sendMessage("NOTICE", ":*** K:Line added on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
 			now_banned = {}
-			for nick, u in self.ircd.users.iteritems():
+			for nick, u in self.ircd.localusers.iteritems():
 				result = self.match_kline(u)
 				if result:
 					now_banned[nick] = result
@@ -89,6 +89,8 @@ class KlineCommand(Command):
 	def match_kline(self, user):
 		if "o" in user.mode:
 			return None # don't allow bans to affect opers
+		if user.server != self.ircd.servconfig["server_name"]:
+			return None # only match users on this server
 		if "except_line" not in user.cache:
 			if "kline_match" in user.cache:
 				return user.cache["kline_match"]
