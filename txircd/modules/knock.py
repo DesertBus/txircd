@@ -41,14 +41,16 @@ class KnockCommand(Command):
 		for user in self.ircd.users.itervalues():
 			if "knocks" not in user.cache:
 				continue
-			user.cache["knocks"].remove(channel.name) if channel.name in user.cache["knocks"]
+			if channel.name in user.cache["knocks"]:
+				user.cache["knocks"].remove(channel.name)
 	
 	def removeKnockOnInvite(self, command, data):
 		if command != "INVITE":
 			return
 		targetUser = data["targetuser"]
 		targetChan = data["targetchan"]
-		targetUser.cache["knocks"].remove(targetChan.name) if targetChan.name in targetUser.cache["knocks"]
+		if targetChan.name in targetUser.cache["knocks"]:
+			targetUser.cache["knocks"].remove(targetChan.name)
 
 class NoknockMode(Mode):
 	def checkPermission(self, user, cmd, data):
