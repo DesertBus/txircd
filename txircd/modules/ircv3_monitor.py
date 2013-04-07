@@ -158,8 +158,10 @@ class Spawner(object):
 			self.ircd.servconfig["client_monitor_limit"] = None # Default to no limit
 		try:
 			mon_limit = int(self.ircd.servconfig["client_monitor_limit"])
-		except ValueError:
+		except TypeError:
 			mon_limit = None # When we do not enforce a limit, we don't show a value for MONITOR in ISUPPORT; the ISUPPORT code hides values of None
+		except ValueError:
+			mon_limit = None # Invalid arguments go to the default
 		self.ircd.isupport["MONITOR"] = mon_limit
 		self.monitor_cmd = MonitorCommand(mon_limit)
 		return {
