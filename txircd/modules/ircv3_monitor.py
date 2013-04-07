@@ -37,7 +37,7 @@ class MonitorCommand(Command):
 			offline = []
 			for target in targetlist:
 				lowerTarget = irc_lower(target)
-				if target not in self.watch_masks[user]:
+				if lowerTarget not in self.watching[user]:
 					self.watch_masks[user].append(target)
 					self.watching[user].append(lowerTarget)
 					if lowerTarget not in self.watched_by:
