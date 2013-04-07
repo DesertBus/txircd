@@ -58,7 +58,7 @@ class MetadataCommand(Command):
 				return
 			# This may be restricted later to only keys in the key registry; for now, I don't think allowing
 			# whatever keys in the user-settable namespaces is a major problem. //EA
-			if "value" in data:
+			if data["value"]:
 				target.setMetadata(namespace, key, data["value"])
 				user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key), ":{}".format(data["value"]))
 			else:
