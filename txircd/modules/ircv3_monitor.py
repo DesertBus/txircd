@@ -76,7 +76,7 @@ class MonitorCommand(Command):
 			self.watching[user] = []
 		elif modifier == "L":
 			if user in self.watch_masks:
-				userlist = chunk_message(" ".join(self.watch_masks[user]))
+				userlist = chunk_message(" ".join(self.watch_masks[user]), 400)
 				for line in userlist:
 					user.sendMessage(irc.RPL_MONLIST, ":{}".format(line.replace(" ", ",")))
 			user.sendMessage(irc.RPL_ENDOFMONLIST, ":End of MONITOR list")
