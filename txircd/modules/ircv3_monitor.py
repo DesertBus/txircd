@@ -146,7 +146,7 @@ class MonitorCommand(Command):
 			for watcher in self.watched_by[lowerOldNick]:
 				watcher.sendMessage(irc.RPL_MONOFFLINE, ":{}".format(oldNick))
 		if lowerNick in self.watched_by:
-			for watcher in self.watched_by[oldNick]:
+			for watcher in self.watched_by[lowerNick]:
 				watcher.sendMessage(irc.RPL_MONONLINE, ":{}".format(user.nickname))
 
 class Spawner(object):
