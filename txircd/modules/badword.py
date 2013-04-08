@@ -81,3 +81,10 @@ class Spawner(object):
 	
 	def cleanup(self):
 		del self.ircd.commands["BADWORD"]
+		self.ircd.actions["commandpermission"].remove(self.badwordCmd.censor)
+	
+	def data_serialize(self):
+		return [True, self.badwordCmd.badwords]
+	
+	def data_unserialize(self, data):
+		self.badwordCmd.badwords = data

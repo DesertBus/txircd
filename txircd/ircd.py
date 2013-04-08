@@ -230,6 +230,12 @@ class IRCD(Factory):
 		self.prefix_symbols = {}
 		self.prefix_order = []
 		self.module_data_cache = {}
+		try:
+			with open("data.yaml", "r") as dataFile:
+				self.serialized_data = yaml.safe_load(dataFile)
+		except IOError:
+			self.serialized_data = {}
+		self.serialize_timer = LoopingCall(self.save_serialized)
 		self.isupport = {}
 		self.db = None
 		self.stats = None
@@ -282,6 +288,7 @@ class IRCD(Factory):
 		self.stats_log = DailyLogFile("log",logfile)
 		self.stats_timer.start(1)
 		"""
+		self.serialize_timer.start(300, now=False) # run every 5 minutes
 	
 	def all_module_load(self):
 		# load RFC-required modules
@@ -402,15 +409,24 @@ class IRCD(Factory):
 		# Finally, save the config. Just in case.
 		log.msg("Saving options...")
 		self.save_options()
+		log.msg("Saving serialized data...")
+		self.save_serialized()
 		# Return deferreds
 		log.msg("Waiting on deferreds...")
 		self.dead = True
 		return DeferredList(deferreds)
 	
 	def load_module(self, name):
+		saved_data = {}
 		if name in self.modules:
 			try:
 				self.modules[name].cleanup()
+				try:
+					dbstore, saved_data = self.modules[name].data_serialize()
+					if dbstore:
+						self.serialized_data[name] = saved_data
+				except AttributeError:
+					pass
 			except:
 				log.msg("Cleanup failed for module {}: some pieces may still be remaining!".format(name))
 			del self.modules[name]
@@ -511,6 +527,13 @@ class IRCD(Factory):
 						self.actions[actiontype].append(func)
 				else:
 					self.actions[actiontype] = actionfuncs
+		if not saved_data and name in self.serialized_data:
+			saved_data = self.serialized_data[name] # present serialized data on first load of session
+		if saved_data:
+			try:
+				mod_spawner.data_unserialize(saved_data)
+			except AttributeError:
+				pass
 		return True
 	
 	def removeMode(self, modedesc):
@@ -544,6 +567,10 @@ class IRCD(Factory):
 				del self.user_modes[modetype][modedesc[2]]
 			if modedesc[2] in self.user_mode_type:
 				del self.user_mode_type[modedesc[2]]
+	
+	def save_serialized(self):
+		with open("data.yaml", "w") as dataFile:
+			yaml.dump(self.serialized_data, dataFile, default_flow_style=False)
 	
 	def buildProtocol(self, addr):
 		if self.dead:

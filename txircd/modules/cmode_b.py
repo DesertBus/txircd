@@ -86,15 +86,24 @@ class BanMode(Mode):
 class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
+		self.ban_mode = None
 	
 	def spawn(self):
 		if "channel_ban_list_size" not in self.ircd.servconfig:
 			self.ircd.servconfig["channel_ban_list_size"] = 60
+		self.ban_mode = BanMode()
 		return {
 			"modes": {
-				"clb": BanMode()
+				"clb": self.ban_mode
 			}
 		}
 	
 	def cleanup(self):
 		self.ircd.removeMode("clb")
+	
+	def data_serialize(self):
+		return [False, self.ban_mode.banMetadata._data]
+	
+	def data_unserialize(self, data):
+		for mask, metadata in data.iteritems():
+			self.ban_mode.banMetadata[mask] = metadata

@@ -76,3 +76,10 @@ class Spawner(object):
 	def cleanup(self):
 		del self.ircd.commands["WHOWAS"]
 		self.ircd.actions["quit"].remove(self.whowasCmd.addToWhowas)
+	
+	def data_serialize(self):
+		return [True, self.whowasCmd.history._data]
+	
+	def data_unserialize(self, data):
+		for nick, entry in data.iteritems():
+			self.whowasCmd.history[nick] = entry

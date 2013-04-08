@@ -140,3 +140,10 @@ class Spawner(object):
 		self.ircd.actions["commandextra"].remove(self.qlineCmd.statsList)
 		self.ircd.actions["register"].remove(self.qlineCmd.check_register)
 		self.ircd.actions["commandpermission"].remove(self.qlineCmd.blockNick)
+	
+	def data_serialize(self):
+		return [True, self.qlineCmd.banList._data]
+	
+	def data_unserialize(self, data):
+		for mask, linedata in data.iteritems():
+			self.qlineCmd.banList[mask] = linedata

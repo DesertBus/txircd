@@ -132,3 +132,10 @@ class Spawner(object):
 		del self.ircd.commands["ELINE"]
 		self.ircd.actions["commandextra"].remove(self.elineCmd.statsList)
 		self.ircd.actions["register"].remove(self.elineCmd.check_register)
+	
+	def data_serialize(self):
+		return [True, self.elineCmd.exceptList._data]
+	
+	def data_unserialize(self, data):
+		for mask, linedata in data.iteritems():
+			self.elineCmd.exceptList[mask] = linedata
