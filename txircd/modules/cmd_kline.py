@@ -155,3 +155,10 @@ class Spawner(object):
 		self.ircd.actions["commandextra"].remove(self.klineCmd.statsList)
 		self.ircd.actions["register"].remove(self.klineCmd.register_check)
 		self.ircd.actions["xline_rematch"].remove(self.klineCmd.match_kline)
+	
+	def data_serialize(self):
+		return [True, self.klineCmd.banList._data]
+	
+	def data_unserialize(self, data):
+		for mask, linedata in data.iteritems():
+			self.klineCmd.banList[mask] = linedata

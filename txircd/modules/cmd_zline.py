@@ -120,3 +120,10 @@ class Spawner(object):
 		del self.ircd.commands["ZLINE"]
 		self.ircd.actions["commandextra"].remove(self.zlineCmd.stats_list)
 		self.ircd.actions["connect"].remove(self.zlineCmd.check_connect)
+	
+	def data_serialize(self):
+		return [True, self.zlineCmd.banList._data]
+	
+	def data_unserialize(self, data):
+		for mask, linedata in data.iteritems():
+			self.zlineCmd.banList[mask] = linedata

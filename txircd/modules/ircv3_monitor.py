@@ -185,3 +185,16 @@ class Spawner(object):
 		self.ircd.actions["register"].remove(self.monitor_cmd.notifyConnect)
 		self.ircd.actions["quit"].remove(self.monitor_cmd.notifyQuit)
 		self.ircd.actions["nick"].remove(self.monitor_cmd.notifyNick)
+	
+	def data_serialize(self):
+		dataToSave = {
+			"watching": self.monitor_cmd.watching,
+			"watched_by": self.monitor_cmd.watched_by,
+			"watch_masks": self.monitor_cmd.watch_masks
+		}
+		return [False, dataToSave]
+	
+	def data_unserialize(self, data):
+		self.monitor_cmd.watching = data["watching"]
+		self.monitor_cmd.watched_by = data["watched_by"]
+		self.monitor_cmd.watch_masks = data["watch_masks"]
