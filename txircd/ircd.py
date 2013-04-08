@@ -412,7 +412,7 @@ class IRCD(Factory):
 			try:
 				self.modules[name].cleanup()
 			except:
-				pass
+				log.msg("Cleanup failed for module {}: some pieces may still be remaining!".format(name))
 			del self.modules[name]
 		try:
 			mod_find = imp.find_module("txircd/modules/{}".format(name))
