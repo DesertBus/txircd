@@ -147,7 +147,7 @@ class Spawner(object):
 			self.ircd.servconfig["shun_command_list"] = ["JOIN", "PART", "QUIT", "PING", "PONG"]
 		self.shunCmd = ShunCommand()
 		return {
-			"command": {
+			"commands": {
 				"SHUN": self.shunCmd
 			},
 			"actions": {
@@ -163,3 +163,10 @@ class Spawner(object):
 		self.ircd.actions["commandextra"].remove(self.shunCmd.statsList)
 		self.ircd.actions["register"].remove(self.shunCmd.check_register)
 		self.ircd.actions["commandpermission"].remove(self.shunCmd.check_command)
+	
+	def data_serialize(self):
+		return self.shunCmd.shunList._data
+	
+	def data_unserialize(self, data):
+		for mask, meta in data.iteritems():
+			self.shunCmd.shunList[mask] = meta
