@@ -406,6 +406,15 @@ class IRCD(Factory):
 			c.log.close()
 		"""
 		#self.stats_log.close()
+		log.msg("Unloading modules...")
+		for name, spawner in self.modules.iteritems():
+			spawner.cleanup()
+			try:
+				dbstore, saved_data = self.modules[name].data_serialize()
+				if dbstore:
+					self.serialized_data[name] = saved_data
+			except AttributeError:
+				pass
 		# Finally, save the config. Just in case.
 		log.msg("Saving options...")
 		self.save_options()
