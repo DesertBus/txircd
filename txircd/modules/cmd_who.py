@@ -23,7 +23,7 @@ class WhoCommand(Command):
 					irc.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 					return
 				for u in cdata.users:
-					self.sendWhoLine(user, u, cdata.name, data["filters"])
+					self.sendWhoLine(user, u, cdata.name, cdata, data["filters"])
 				user.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 			else:
 				for u in self.ircd.users.itervalues():
