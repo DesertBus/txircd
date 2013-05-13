@@ -354,13 +354,13 @@ class IRCUser(object):
 		joinShowUsers = channel.users
 		tryagain = []
 		for modfunc in self.ircd.actions["joinmessage"]:
-			result = modfunc(channel, user, joinShowUsers)
+			result = modfunc(channel, self, joinShowUsers)
 			if result == "again":
 				tryagain.append(modfunc)
 			else:
 				joinShowUsers = result
 		for modfunc in tryagain:
-			joinShowUsers = modfunc(channel, user, joinShowUsers)
+			joinShowUsers = modfunc(channel, self, joinShowUsers)
 		for u in joinShowUsers:
 			u.sendMessage("JOIN", to=channel.name, prefix=self.prefix())
 		if channel.topic:
