@@ -384,11 +384,6 @@ class IRCD(Factory):
 		return True
 	
 	def cleanup(self):
-		for module in self.modules.itervalues():
-			try:
-				module.cleanup()
-			except:
-				pass
 		# Track the disconnections so we know they get done
 		deferreds = []
 		# Cleanly disconnect all clients
