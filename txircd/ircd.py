@@ -237,7 +237,6 @@ class IRCD(Factory):
 			self.serialized_data = {}
 		self.serialize_timer = LoopingCall(self.save_serialized)
 		self.isupport = {}
-		self.db = None
 		self.stats = None
 		self.stats_timer = LoopingCall(self.flush_stats)
 		self.stats_data = {
