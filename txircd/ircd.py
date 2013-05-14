@@ -38,6 +38,7 @@ default_options = {
 	"app_ssl_key": "test.key",
 	"app_ssl_pem": "test.pem",
 	"app_irc_spec": "rfc1459",
+	"app_log_dir": "logs",
 	# Network details
 	"network_name": "txircd",
 	# Server details
