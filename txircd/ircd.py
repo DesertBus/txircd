@@ -201,7 +201,6 @@ class IRCD(Factory):
 		self.servers = CaseInsensitiveDictionary()
 		self.users = CaseInsensitiveDictionary()
 		self.localusers = CaseInsensitiveDictionary()
-		self.whowas = CaseInsensitiveDictionary()
 		self.channels = CaseInsensitiveDictionary()
 		self.peerConnections = {}
 		self.modules = {}
