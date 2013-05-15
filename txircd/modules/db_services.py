@@ -332,7 +332,7 @@ class NSNicklistCommand(Command):
 		}
 	
 	def showNicks(self, results, user):
-		user.sendMessage("NOTICE", ":Registered Nicknames: {}".format(", ".join([n[0] for n in result])), prefix=self.nickserv.prefix())
+		user.sendMessage("NOTICE", ":Registered Nicknames: {}".format(", ".join([n[0] for n in results])), prefix=self.nickserv.prefix())
 
 class NSAccountCommand(Command):
 	def __init__(self, module, service):
