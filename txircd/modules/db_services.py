@@ -1160,7 +1160,7 @@ class Spawner(object):
 	def registered(self, user):
 		for channel in user.channels.iterkeys():
 			c = self.ircd.channels[channel]
-			self.promote(user, c)
+			self.promote(user, c, True)
 	
 	def unregistered(self, user):
 		for channel, data in user.channels.iteritems():
@@ -1171,7 +1171,7 @@ class Spawner(object):
 					u.sendMessage("MODE", "-{} {}".format(status, " ".join([user.nickname for i in len(status)])), to=c.name, prefix=self.chanserv.prefix())
 				data["status"] = ""
 	
-	def promote(self, user, channel):
+	def promote(self, user, channel, keepOldStatus=False):
 		if channel.name in self.chanserv.cache["registered"]:
 			flags = set()
 			if "o" in user.mode and "~o" in self.chanserv.cache["registered"][channel.name]["access"]:
@@ -1184,11 +1184,19 @@ class Spawner(object):
 				if user.metadata["ext"]["accountid"] in self.chanserv.cache["registered"][channel.name]["access"]:
 					for flag in self.chanserv.cache["registered"][channel.name]["access"][user.metadata["ext"]["accountid"]]:
 						flags.add(flag)
-			for flag in user.status(channel.name):
-				try:
-					flags.remove(flag)
-				except KeyError:
-					pass
+			if keepOldStatus:
+				for flag in user.status(channel.name):
+					try:
+						flags.remove(flag)
+					except KeyError:
+						pass
+			else:
+				userStatus = user.status(channel.name)
+				if userStatus:
+					modeMsg = "-{} {}".format(userStatus, " ".join([user.nickname for i in userStatus]))
+					for u in channel.users:
+						u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
+					user.channels[channel.name]["status"] = ""
 			
 			if flags:
 				for flag in flags:
