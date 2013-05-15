@@ -1031,7 +1031,12 @@ class Spawner(object):
 					pass
 		outputDict["registeredchannels"] = registeredChannels
 		if "auction" in self.bidserv.cache:
-			outputDict["currentauction"] = self.bidserv.cache["auction"]
+			auctionDict = self.bidserv.cache["auction"]
+			auctionDict["item"] = int(auctionDict["item"])
+			auctionDict["highbidderid"] = int(auctionDict["highbidderid"])
+			for bid in auctionDict["bids"]:
+				bid["bidder"] = int(bid["bidder"])
+			outputDict["currentauction"] = auctionDict
 		return [True, outputDict]
 	
 	def data_unserialize(self, data):
