@@ -931,6 +931,8 @@ class Spawner(object):
 		self.ircd.users["BidServ"] = self.bidserv
 		self.ircd.localusers["BidServ"] = self.bidserv
 		
+		self.ircd.module_data_cache["sasl_agent"] = self
+		
 		return {
 			"commands": {
 				"NICKSERV": NickServAlias(),
