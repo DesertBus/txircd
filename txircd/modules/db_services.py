@@ -672,6 +672,7 @@ class BSBidCommand(Command):
 			return {}
 		if "services_bidserv_increment" in self.ircd.servconfig and bid < self.bidserv.cache["auction"]["highbid"] + self.ircd.servconfig["services_bidserv_increment"]:
 			user.sendMessage("NOTICE", ":The minimum bid increment is ${:,.2f}.".format(self.ircd.servconfig["services_bidserv_increment"]), prefix=self.bidserv.prefix())
+			return {}
 		return {
 			"user": user,
 			"bid": bid,
