@@ -3,17 +3,21 @@ from txircd.modbase import Command
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 import math, os, yaml
 
-# Database connection from original txircd:
-# self.db = adbapi.ConnectionPool(self.db_library, host=self.db_host, port=self.db_port, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
-# Database connection can also be closed:
-# self.db.close()
-
 class Service(object):
+	
+	class ServiceSocket(object):
+		class ServiceTransport(object):
+			def loseConnection(self):
+				pass
+		
+		def __init__(self):
+			self.transport = self.ServiceTransport()
+	
 	def __init__(self, ircd, nick, ident, host, gecos, helpTexts):
 		# We're going to try to keep Service fairly consistent with IRCUser, even if most of these variables will never be used
 		# in order to prevent exceptions all over the place
 		self.ircd = ircd
-		self.socket = None
+		self.socket = self.ServiceSocket()
 		self.password = None
 		self.nickname = nick
 		self.username = ident
@@ -232,7 +236,7 @@ class NSLoginCommand(Command):
 		self.nickserv = service
 	
 	def onUse(self, user, data):
-		self.module.auth(data["email"], data["password"])
+		self.module.auth(user, data["email"], data["password"])
 	
 	def processParams(self, user, params):
 		if not params or len(params) < 2:
