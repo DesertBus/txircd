@@ -1041,7 +1041,7 @@ class Spawner(object):
 				del self.auth_timer[user]
 			user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
 			self.checkNick(user)
-			self.registered()
+			self.registered(user)
 		else:
 			self.checkNick(user)
 			user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
