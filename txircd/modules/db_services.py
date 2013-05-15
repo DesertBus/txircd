@@ -837,6 +837,8 @@ class Spawner(object):
 		self.nickserv = None
 		self.chanserv = None
 		self.bidserv = None
+		
+		self.auth_timer = {}
 	
 	def spawn(self):
 		if "servdb_library" in self.ircd.servconfig and "servdb_host" in self.ircd.servconfig and "servdb_port" in self.ircd.servconfig and "servdb_database" in self.ircd.servconfig and "servdb_username" in self.ircd.servconfig and "servdb_password" in self.ircd.servconfig and self.ircd.servconfig["servdb_library"]:
@@ -1009,9 +1011,9 @@ class Spawner(object):
 		return d
 	
 	def checkNick(self, user):
-		if "auth_timer" in user.cache:
-			user.cache["auth_timer"].cancel()
-			del user.cache["auth_timer"]
+		if user in self.auth_timer:
+			self.auth_timer[user].cancel()
+			del self.auth_timer[user]
 		if irc_lower(user.nickname).startswith(irc_lower(self.ircd.servconfig["services_nickserv_guest_prefix"])):
 			return # Don't check guest nicks
 		d = self.query("SELECT donor_id FROM ircnicks WHERE nick = {0}", irc_lower(user.nickname))
@@ -1028,9 +1030,9 @@ class Spawner(object):
 		if check == hash:
 			user.setMetadata("ext", "accountid", result[0][0])
 			user.setMetadata("ext", "accountname", result[0][2].replace(" ", "_"))
-			if "auth_timer" in user.cache:
-				user.cache["auth_timer"].cancel()
-				del user.cache["auth_timer"]
+			if user in self.auth_timer:
+				self.auth_timer[user].cancel()
+				del self.auth_timer[user]
 			user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
 			self.checkNick(user)
 			self.registered()
@@ -1052,14 +1054,14 @@ class Spawner(object):
 		if result:
 			id = result[0][0]
 			if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
-				if "auth_timer" in user.cache: # Clear the timer
-					user.cache["auth_timer"].cancel()
-					del user.cache["auth_timer"]
+				if user in self.auth_timer: # Clear the timer
+					self.auth_timer[user].cancel()
+					del self.auth_timer[user]
 				return # Already identified
 			user.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg {} login EMAIL PASSWORD\x0F to verify your identity".format(self.nickserv.nickname), prefix=self.nickserv.prefix())
-			if "auth_timer" in user.cache:
-				user.cache["auth_timer"].cancel() # In case we had another going
-			user.cache["auth_timer"] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
+			if user in self.auth_timer:
+				self.auth_timer[user].cancel() # In case we had another going
+			self.auth_timer[user] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
 		elif self.nickserv_id:
 			# Try to register the nick
 			d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", self.nickserv_id)
@@ -1073,16 +1075,16 @@ class Spawner(object):
 			return
 		user.setMetadata("ext", "accountid", result[0][0])
 		user.setMetadata("ext", "accountname", result[0][1])
-		if "auth_timer" in user.cache:
-			user.cache["auth_timer"].cancel()
-			del user.cache["auth_timer"]
+		if user in self.auth_timer:
+			self.auth_timer[user].cancel()
+			del self.auth_timer[user]
 		user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
 		self.checkNick(user)
 		self.registered()
 	
 	def changeNick(self, user, id, nickname):
-		if "auth_timer" in user.cache:
-			del user.cache["auth_timer"]
+		if user in self.auth_timer:
+			del self.auth_timer[user]
 		if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
 			return # Somehow we auth'd and didn't clear the timer?
 		if irc_lower(user.nickname) != nickname:
@@ -1169,16 +1171,16 @@ class Spawner(object):
 		return True
 	
 	def onQuit(self, user, reason):
-		if "auth_timer" in user.cache:
-			user.cache["auth_timer"].cancel()
-			del user.cache["auth_timer"]
+		if user in self.auth_timer:
+			self.auth_timer[user].cancel()
+			del self.auth_timer[user]
 	
 	def onNickChange(self, user, oldNick):
 		if irc_lower(user.nickname) != irc_lower(oldNick):
 			self.checkNick(user)
 	
 	def commandPermission(self, user, cmd, data):
-		if "auth_timer" not in user.cache:
+		if user not in self.auth_timer:
 			return data
 		if cmd == "PRIVMSG":
 			to_nickserv = False
