@@ -34,7 +34,7 @@ class Spawner(object):
 	def spawn(self):
 		if "sasl_mechanisms" not in self.ircd.module_data_cache:
 			self.ircd.module_data_cache["sasl_mechanisms"] = {}
-		self.ircd.module_data_cache["sasl_mechanisms"]["PLAIN"] = SaslPlainMechanism()
+		self.ircd.module_data_cache["sasl_mechanisms"]["PLAIN"] = SaslPlainMechanism().hook(self.ircd)
 		return {}
 	
 	def cleanup(self):
