@@ -909,6 +909,7 @@ class Spawner(object):
 				"HIGHBIDDER": BSHighbidderCommand(self, self.bidserv)
 			},
 			"actions": {
+				"register": [self.onRegister],
 				"join": [self.promote],
 				"quit": [self.onQuit],
 				"nick": [self.onNickChange],
@@ -955,6 +956,7 @@ class Spawner(object):
 		del self.ircd.commands["SOLD"]
 		del self.ircd.commands["HIGHBIDDER"]
 		
+		self.ircd.actions["register"].remove(self.onRegister)
 		self.ircd.actions["join"].remove(self.promote)
 		self.ircd.actions["quit"].remove(self.onQuit)
 		self.ircd.actions["nick"].remove(self.onNickChange)
@@ -1143,6 +1145,17 @@ class Spawner(object):
 				modeMsg = "+{} {}".format("".join(flags), " ".join([user.nickname for i in flags]))
 				for u in channel.users:
 					u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
+	
+	def onRegister(self, user):
+		if user.password:
+			if ":" in user.password:
+				email, password = user.password.split(":", 1)
+				self.auth(user, email, password)
+			elif " " in user.password:
+				email, password = user.password.split(":", 1)
+				self.auth(user, email, password)
+			else:
+				self.token(user, user.password)
 	
 	def onQuit(self, user, reason):
 		if "auth_timer" in user.cache:
