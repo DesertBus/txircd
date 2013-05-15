@@ -175,7 +175,7 @@ class NSIdentifyCommand(Command):
 		self.nickserv = service
 	
 	def onUse(self, user, data):
-		self.module.auth(data["email"], data["password"])
+		self.module.auth(user, data["email"], data["password"])
 	
 	def processParams(self, user, params):
 		if not params:
