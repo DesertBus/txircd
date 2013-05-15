@@ -425,7 +425,10 @@ class CSAccessCommand(Command):
 				user.sendMessage("NOTICE", ":  {}: +{}".format(id, flags), prefix=self.chanserv.prefix())
 			user.sendMessage("NOTICE", ":End of ACCESS list", prefix=self.chanserv.prefix())
 			return
-		flagSet = list(self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID])
+		try:
+			flagSet = list(self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID])
+		except KeyError:
+			flagSet = []
 		adding = True
 		for flag in data["flags"]:
 			if flag == "+":
@@ -1012,10 +1015,17 @@ class Spawner(object):
 		registeredChannels = self.chanserv.cache["registered"]._data
 		for chandata in registeredChannels.itervalues():
 			chandata["founder"] = int(chandata["founder"])
+			accessDict = chandata["access"]
+			for key, value in accessDict.iteritems():
+				try:
+					newKey = int(key)
+					del chandata["access"][key]
+					chandata["access"][newKey] = value
+				except ValueError:
+					pass
 		outputDict["registeredchannels"] = registeredChannels
 		if "auction" in self.bidserv.cache:
 			outputDict["currentauction"] = self.bidserv.cache["auction"]
-		print outputDict
 		return [True, outputDict]
 	
 	def data_unserialize(self, data):
@@ -1184,7 +1194,7 @@ class Spawner(object):
 				for flag in flags:
 					currentStatus = user.channels[channel.name]["status"]
 					statusList = list(currentStatus)
-					for index, statusLevel in enumerate(status):
+					for index, statusLevel in enumerate(currentStatus):
 						if self.ircd.prefixes[statusLevel][1] < self.ircd.prefixes[flag][1]:
 							statusList.insert(index, flag)
 							break
