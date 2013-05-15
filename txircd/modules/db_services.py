@@ -589,6 +589,7 @@ class BSStopCommand(Command):
 			for u in channel.users:
 				u.sendMessage("PRIVMSG", cancelMsg, to=channel.name, prefix=self.bidserv.prefix())
 		del self.bidserv.cache["auction"]
+		user.sendMessage("NOTICE", ":The auction has been canceled.", prefix=self.bidserv.prefix())
 	
 	def processParams(self, user, params):
 		if "o" not in user.mode:
