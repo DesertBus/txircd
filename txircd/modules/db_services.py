@@ -1170,7 +1170,7 @@ class Spawner(object):
 				email, password = user.password.split(":", 1)
 				self.auth(user, email, password)
 			elif " " in user.password:
-				email, password = user.password.split(":", 1)
+				email, password = user.password.split(" ", 1)
 				self.auth(user, email, password)
 			else:
 				self.token(user, user.password)
