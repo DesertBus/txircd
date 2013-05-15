@@ -209,7 +209,7 @@ class NSGhostCommand(Command):
 			targetUser.disconnect("Killed (GHOST command issued by {})".format(user.nickname))
 			user.sendMessage("NOTICE", ":{} has been disconnected.".format(targetUser.nickname), prefix=self.nickserv.prefix())
 		else:
-			d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0} AND nick = {0}", self.nickserv_id, irc_lower(params[0]))
+			d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0} AND nick = {0}", user.metadata["ext"]["accountid"], irc_lower(targetUser.nickname))
 			d.addCallback(self.ghostSuccess, user, targetUser)
 			d.addErrback(self.module.exclaimServerError, user, self.nickserv)
 	
