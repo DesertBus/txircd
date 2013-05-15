@@ -417,6 +417,9 @@ class CSAccessCommand(Command):
 			group = True
 		elif "targetaccount" in data:
 			accessID = data["targetaccount"]
+		elif data["targetchan"] not in self.chanserv.cache["registered"]:
+			user.sendMessage("NOTICE", ":{} is not registered.".format(data["targetchan"]), prefix=self.chanserv.prefix())
+			return
 		else:
 			for id, flags in self.chanserv.cache["registered"][data["targetchan"]]["access"].iteritems():
 				user.sendMessage("NOTICE", ":  {}: +{}".format(id, flags), prefix=self.chanserv.prefix())
