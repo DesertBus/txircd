@@ -79,7 +79,7 @@ class Service(object):
 							continue
 						user.sendMessage("NOTICE", ":\x02{}\x02\t{}".format(cmd.upper(), info[0]), prefix=self.prefix())
 					user.sendMessage("NOTICE", ": ", prefix=self.prefix())
-					user.sendMessage("NOTICE", ":End of HELP", prefix=self.prefix())
+					user.sendMessage("NOTICE", ":*** End of help", prefix=self.prefix())
 				else:
 					helpCmd = params[0]
 					if helpCmd not in self.help[1]:
