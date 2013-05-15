@@ -974,16 +974,22 @@ class Spawner(object):
 		self.ircd.actions["commandpermission"].remove(self.commandPermission)
 	
 	def data_serialize(self):
+		if "auction" in self.bidserv.cache:
+			return [True, {
+				"registeredchannels": self.chanserv.cache["registered"]._data,
+				"currentauction": self.bidserv.cache["auction"]
+			}]
 		return [True, {
-			"nickserv": self.nickserv.cache,
-			"chanserv": self.chanserv.cache,
-			"bidserv": self.bidserv.cache
+			"registeredchannels": self.chanserv.cache["registered"]._data
 		}]
 	
 	def data_unserialize(self, data):
-		self.nickserv.cache = data["nickserv"]
-		self.chanserv.cache = data["chanserv"]
-		self.bidserv.cache = data["bidserv"]
+		if "currentauction" in data:
+			self.bidserv.cache["auction"] = data["currentauction"]
+		if "registered" not in self.chanserv.cache:
+			self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
+		for key, value in data["registeredchannels"]:
+			self.chanserv.cache["registered"][key] = value
 	
 	# Services Functions
 	def query(self, query, *args):
