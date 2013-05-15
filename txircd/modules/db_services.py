@@ -370,7 +370,10 @@ class NSAccountCommand(Command):
 			return {}
 	
 	def shownicks(self, results, user, accountID):
-		user.sendMessage("NOTICE", ":Nicks for account {}: {}".format(accountID, ", ".join([n[0] for n in result])), prefix=self.nickserv.prefix())
+		if results:
+			user.sendMessage("NOTICE", ":Nicks for account {}: {}".format(accountID, ", ".join([n[0] for n in results])), prefix=self.nickserv.prefix())
+		else:
+			user.sendMessage("NOTICE", ":No such account", prefix=self.nickserv.prefix())
 
 
 class CSRegisterCommand(Command):
