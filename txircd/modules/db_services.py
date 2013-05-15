@@ -826,7 +826,7 @@ class Spawner(object):
 		self.bidserv = None
 	
 	def spawn(self):
-		if "servdb_library" in self.ircd.servconfig and "servdb_host" in self.ircd.servconfig and "servdb_port" in self.ircd.servconfig and "servdb_database" in self.ircd.servconfig and "servdb_username" in self.ircd.servconfig and "servdb_password" in self.ircd servconfig and self.ircd.servconfig["servdb_library"]:
+		if "servdb_library" in self.ircd.servconfig and "servdb_host" in self.ircd.servconfig and "servdb_port" in self.ircd.servconfig and "servdb_database" in self.ircd.servconfig and "servdb_username" in self.ircd.servconfig and "servdb_password" in self.ircd.servconfig and self.ircd.servconfig["servdb_library"]:
 			self.db = adbapi.ConnectionPool(self.db_library, host=self.db_host, port=self.db_port, db=self.db_database, user=self.db_username, passwd=self.db_password, cp_reconnect=True)
 		if "servdb_marker" not in self.ircd.servconfig:
 			self.ircd.servconfig["servdb_marker"] = "%s"
