@@ -514,6 +514,8 @@ class IRCD(Factory):
 						self.prefixes[mode[2]] = [mode[3], level, implementation.hook(self)]
 						self.prefix_symbols[mode[3]] = mode[2]
 					self.channel_mode_type[mode[2]] = modetype
+					self.isupport["PREFIX"] = "({}){}".format("".join(self.prefix_order), "".join([self.prefixes[mode][0] for mode in self.prefix_order]))
+					self.isupport["STATUSMSG"] = "".join([self.prefixes[mode][0] for mode in self.prefix_order])
 				elif mode[0] == "u":
 					if modetype == -1:
 						log.msg("Module {} registers a mode of an invalid type".format(name))
