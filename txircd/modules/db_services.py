@@ -319,7 +319,7 @@ class NSNicklistCommand(Command):
 		self.nickserv = service
 	
 	def onUse(self, user, data):
-		d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
+		d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
 		d.addCallback(self.shownicks, user)
 		d.addErrback(self.module.exclaimServerError, user, self.nickserv)
 	
@@ -341,7 +341,7 @@ class NSAccountCommand(Command):
 	
 	def onUse(self, user, data):
 		if "targetaccount" in data:
-			d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", data["targetaccount"])
+			d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", data["targetaccount"])
 			d.addCallback(self.shownicks, user, data["targetaccount"])
 			d.addErrback(self.module.exclaimServerError, user, self.nickserv)
 		else:
@@ -485,7 +485,7 @@ class BSStartCommand(Command):
 		self.bidserv = service
 	
 	def onUse(self, user, data):
-		d = self.query("SELECT id, name, sold, starting_bid FROM prizes WHERE id = {0}", data["auction"])
+		d = self.module.query("SELECT id, name, sold, starting_bid FROM prizes WHERE id = {0}", data["auction"])
 		d.addCallback(self.auctionStart, user, data["auction"])
 		d.addErrback(self.module.exclaimServerError, user, self.bidserv)
 	
@@ -749,7 +749,7 @@ class BSSoldCommand(Command):
 			udata = self.ircd.users[self.bidserv.cache["auction"]["highbidder"]]
 			if "accountid" in udata.metadata["ext"] and udata.metadata["ext"]["accountid"] == self.bidserv.cache["auction"]["highbidderid"]:
 				udata.sendMessage("Congratulations!  You won \"{}\"!  Please log into your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["item"]), prefix=self.bidserv.prefix())
-		d = self.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}", self.bidserv.cache["auction"]["highbidderid"], self.bidserv.cache["auction"]["highbid"], self.bidserv.cache["auction"]["item"])
+		d = self.module.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}", self.bidserv.cache["auction"]["highbidderid"], self.bidserv.cache["auction"]["highbid"], self.bidserv.cache["auction"]["item"])
 		d.addErrback(self.reportError, user)
 		del self.bidserv.cache["auction"]
 	
