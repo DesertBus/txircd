@@ -92,7 +92,7 @@ class Service(object):
 							for line in helpOut:
 								user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
 							user.sendMessage("NOTICE", ":*** End of \x02{}\x02 help".format(helpCmd), prefix=self.prefix())
-			elif serviceCommand in self.help:
+			elif serviceCommand in self.help[1]:
 				self.ircd.users[nick].handleCommand(serviceCommand, None, params)
 			else:
 				self.ircd.users[nick].sendMessage("NOTICE", ":Unknown command \x02{}\x02.  Use \x1F/msg {} HELP\x1F for help.".format(serviceCommand, self.nickname), prefix=self.prefix())
