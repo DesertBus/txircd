@@ -1,4 +1,5 @@
 from twisted.enterprise import adbapi
+from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from txircd.modbase import Command
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
@@ -1058,7 +1059,7 @@ class Spawner(object):
 			user.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg {} login EMAIL PASSWORD\x0F to verify your identity".format(self.nickserv.nickname), prefix=self.nickserv.prefix())
 			if "auth_timer" in user.cache:
 				user.cache["auth_timer"].cancel() # In case we had another going
-			user.cache["auth_timer"] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, nickname)
+			user.cache["auth_timer"] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
 		elif self.nickserv_id:
 			# Try to register the nick
 			d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", self.nickserv_id)
