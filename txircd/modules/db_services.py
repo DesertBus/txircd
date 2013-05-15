@@ -283,9 +283,9 @@ class NSDropCommand(Command):
 		self.nickserv = service
 	
 	def onUse(self, user, data):
-		d = self.ircd.db.runInteraction(self.dropNicknameTransaction, user.metadata["ext"]["accountid"], data["nick"], self.ircd.servconfig["servdb_marker"])
-		d.addCallback(self.confirmDropped, user, nick)
-		d.addErrback(self.confirmNotDropped, user, nick)
+		d = self.module.db.runInteraction(self.dropNicknameTransaction, user.metadata["ext"]["accountid"], data["nick"], self.ircd.servconfig["servdb_marker"])
+		d.addCallback(self.confirmDropped, user, data["nick"])
+		d.addErrback(self.module.exclaimServerError, user, self.nickserv)
 	
 	def processParams(self, user, params):
 		if "accountid" not in user.metadata["ext"]:
@@ -309,9 +309,6 @@ class NSDropCommand(Command):
 			user.sendMessage("NOTICE", ":The nickname {} has been dropped from your account.".format(nick), prefix=self.nickserv.prefix())
 		else:
 			user.sendMessage("NOTICE", ":Could not drop nickname {} from your account.  Ensure that it belongs to you.".format(nick), prefix=self.nickserv.prefix())
-	
-	def confirmNotDropped(self, result, user, nick):
-		user.sendMessage("NOTICE", ":Could not drop nickname {} from your account.  Ensure that it belongs to you.".format(nick), prefix=self.nickserv.prefix())
 
 class NSNicklistCommand(Command):
 	def __init__(self, module, service):
