@@ -880,6 +880,7 @@ class Spawner(object):
 		self.bidserv = None
 		
 		self.auth_timer = {}
+		self.saslUsers = {}
 	
 	def spawn(self):
 		if "servdb_library" in self.ircd.servconfig and "servdb_host" in self.ircd.servconfig and "servdb_port" in self.ircd.servconfig and "servdb_database" in self.ircd.servconfig and "servdb_username" in self.ircd.servconfig and "servdb_password" in self.ircd.servconfig and self.ircd.servconfig["servdb_library"]:
@@ -1037,7 +1038,7 @@ class Spawner(object):
 			for bid in auctionDict["bids"]:
 				bid["bidder"] = int(bid["bidder"])
 			outputDict["currentauction"] = auctionDict
-		return [outputDict, {"auth_timers": self.auth_timer}]
+		return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
 	
 	def data_unserialize(self, data):
 		if "currentauction" in data:
@@ -1071,6 +1072,13 @@ class Spawner(object):
 		d.addCallback(self.loadDonorInfo, user)
 		return d
 	
+	def authenticate(self, user, **kw):
+		self.auth(user, kw["authenticationid"], kw["password"])
+		return "wait"
+	
+	def bindSaslResult(self, user, successFunction, failureFunction):
+		self.saslUsers[user] = [successFunction, failureFunction]
+	
 	def checkNick(self, user):
 		if user in self.auth_timer:
 			self.auth_timer[user].cancel()
@@ -1084,7 +1092,11 @@ class Spawner(object):
 	def verifyPassword(self, result, user, password):
 		if not result:
 			self.checkNick(user)
-			user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
+			if user in self.saslUsers:
+				self.saslUsers[user][1](user)
+				del self.saslUsers[user]
+			else:
+				user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
 			return
 		hash = result[0][1]
 		check = crypt(password, hash)
@@ -1094,7 +1106,11 @@ class Spawner(object):
 			if user in self.auth_timer:
 				self.auth_timer[user].cancel()
 				del self.auth_timer[user]
-			user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
+			if user in self.saslUsers:
+				self.saslUsers[user][0](user)
+				del self.saslUsers[user]
+			else:
+				user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
 			self.checkNick(user)
 			self.registered(user)
 		else:
