@@ -1156,6 +1156,7 @@ class Spawner(object):
 				self.auth(user, email, password)
 			else:
 				self.token(user, user.password)
+		return True
 	
 	def onQuit(self, user, reason):
 		if "auth_timer" in user.cache:
