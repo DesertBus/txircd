@@ -774,14 +774,14 @@ class BSSoldCommand(Command):
 				yaml.dump(self.bidserv.cache["auction"], logFile, default_flow_style=False)
 		except IOError:
 			user.sendMessage("NOTICE", ":The log file for this auction could not be written.", prefix=self.bidserv.prefix())
-		soldMsg = ":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["bid"], user.nickname)
+		soldMsg = ":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
 		for channel in self.ircd.channels.itervalues():
 			for u in channel.users:
 				u.sendMessage("PRIVMSG", soldMsg, to=channel.name, prefix=self.bidserv.prefix())
 		if self.bidserv.cache["auction"]["highbidder"] in self.ircd.users:
 			udata = self.ircd.users[self.bidserv.cache["auction"]["highbidder"]]
 			if "accountid" in udata.metadata["ext"] and udata.metadata["ext"]["accountid"] == self.bidserv.cache["auction"]["highbidderid"]:
-				udata.sendMessage("Congratulations!  You won \"{}\"!  Please log into your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["item"]), prefix=self.bidserv.prefix())
+				udata.sendMessage("NOTICE", ":Congratulations!  You won \"{}\"!  Please log into your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["item"]), prefix=self.bidserv.prefix())
 		d = self.module.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}", self.bidserv.cache["auction"]["highbidderid"], self.bidserv.cache["auction"]["highbid"], self.bidserv.cache["auction"]["item"])
 		d.addErrback(self.reportError, user)
 		del self.bidserv.cache["auction"]
@@ -801,10 +801,10 @@ class BSSoldCommand(Command):
 		}
 	
 	def logname(self, id):
-		log = "{}/auction_{!s}.log".format(self.ircd.app_log_dir, id)
+		log = "{}/auction_{!s}.log".format(self.ircd.servconfig["app_log_dir"], id)
 		count = 1
 		while os.path.exists(log):
-			log = "{}/auction_{!s}-{!s}.log".format(self.ircd.app_log_dir, id, count)
+			log = "{}/auction_{!s}-{!s}.log".format(self.ircd.servconfig["app_log_dir"], id, count)
 			count += 1
 		return log
 	
