@@ -3,7 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from txircd.modbase import Command
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
-import math, os, yaml
+import math, os, random, yaml
 
 class Service(object):
 	
@@ -794,6 +794,7 @@ class BSHighbidderCommand(Command):
 			"user": user
 		}
 
+
 class Spawner(object):
 	def __init__(self, ircd):
 		self.ircd = ircd
@@ -1064,13 +1065,13 @@ class Spawner(object):
 					self.auth_timer[user].cancel()
 					del self.auth_timer[user]
 				return # Already identified
-			user.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg {} login EMAIL PASSWORD\x0F to verify your identity".format(self.nickserv.nickname), prefix=self.nickserv.prefix())
+			user.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg {} login EMAIL PASSWORD\x0F to verify your identity.".format(self.nickserv.nickname), prefix=self.nickserv.prefix())
 			if user in self.auth_timer:
 				self.auth_timer[user].cancel() # In case we had another going
 			self.auth_timer[user] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
-		elif self.nickserv_id:
+		elif "accountid" in user.metadata["ext"]:
 			# Try to register the nick
-			d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", self.nickserv_id)
+			d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
 			d.addCallback(self.registerNick, user, nickname)
 			d.addErrback(self.failedRegisterNick, user, nickname)
 	
@@ -1098,10 +1099,10 @@ class Spawner(object):
 		user.nick(self.genGuestNick())
 	
 	def registerNick(self, result, user, nickname):
-		if len(result) >= self.ircd.nickserv_limit:
+		if "services_nickserv_nick_limit" in self.ircd.servconfig and self.ircd.servconfig["services_nickserv_nick_limit"] and len(result) >= self.ircd.servconfig["services_nickserv_nick_limit"]:
 			# Already registered all the nicks we can
 			nicklist = ", ".join([l[0] for l in result[:-1]])+", or "+result[-1][0] if len(result) > 1 else result[0][0]
-			message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.servconfig["services_nickserv_nick_limit"] if "services_nickserv_nick_limit" in self.ircd.servconfig else 3, nickname, nicklist)
+			message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.servconfig["services_nickserv_nick_limit"], nickname, nicklist)
 			user.sendMessage("NOTICE", message, prefix=self.nickserv.prefix())
 		else:
 			d = self.query("INSERT INTO ircnicks(donor_id, nick) VALUES({0},{0})", user.metadata["ext"]["accountid"], irc_lower(nickname))
