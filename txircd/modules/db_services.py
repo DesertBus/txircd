@@ -571,6 +571,7 @@ class BSStartCommand(Command):
 			for u in channel.users:
 				for line in lines:
 					u.sendMessage("PRIVMSG", line, to=channel.name, prefix=self.bidserv.prefix())
+		user.sendMessage("NOTICE", ":The auction has been started.", prefix=self.bidserv.prefix())
 
 class BSStopCommand(Command):
 	def __init__(self, module, service):
