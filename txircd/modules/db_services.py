@@ -1192,11 +1192,11 @@ class Spawner(object):
 		if cmd == "PRIVMSG":
 			to_nickserv = False
 			for u in data["targetuser"]:
-				if irc_lower(u) == irc_lower(self.nickserv.nickname):
+				if irc_lower(u.nickname) == irc_lower(self.nickserv.nickname):
 					to_nickserv = True
 					break
 			if to_nickserv:
-				data["targetuser"] = [self.nickserv.nickname]
+				data["targetuser"] = [self.nickserv]
 				data["targetchan"] = []
 				return data
 			user.sendMessage("NOTICE", ":You cannot message anyone other than NickServ until you identify or change nicks.", prefix=self.nickserv.prefix())
