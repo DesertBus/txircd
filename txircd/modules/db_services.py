@@ -971,14 +971,14 @@ class Spawner(object):
 		self.ircd.actions["nick"].remove(self.onNickChange)
 		self.ircd.actions["commandpermission"].remove(self.commandPermission)
 	
-	def serialize(self):
-		return {
+	def data_serialize(self):
+		return [True, {
 			"nickserv": self.nickserv.cache,
 			"chanserv": self.chanserv.cache,
 			"bidserv": self.bidserv.cache
-		}
+		}]
 	
-	def unserialize(self, data):
+	def data_unserialize(self, data):
 		self.nickserv.cache = data["nickserv"]
 		self.chanserv.cache = data["chanserv"]
 		self.bidserv.cache = data["bidserv"]
