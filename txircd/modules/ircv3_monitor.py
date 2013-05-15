@@ -134,10 +134,11 @@ class MonitorCommand(Command):
 		return True
 	
 	def notifyQuit(self, user, reason):
-		lowerNick = irc_lower(user.nickname)
-		if lowerNick in self.watched_by:
-			for watcher in self.watched_by[lowerNick]:
-				watcher.sendMessage(irc.RPL_MONOFFLINE, ":{}".format(user.nickname))
+		if user.registered == 0:
+			lowerNick = irc_lower(user.nickname)
+			if lowerNick in self.watched_by:
+				for watcher in self.watched_by[lowerNick]:
+					watcher.sendMessage(irc.RPL_MONOFFLINE, ":{}".format(user.nickname))
 	
 	def notifyNick(self, user, oldNick):
 		lowerNick = irc_lower(user.nickname)
