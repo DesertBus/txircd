@@ -11,7 +11,7 @@ class SaslPlainMechanism(Module):
 		except ValueError:
 			user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
 			return False
-		if self.ircd.servconfig["server_sasl_agent"] == "":
+		if "server_sasl_agent" not in self.ircd.servconfig or self.ircd.servconfig["server_sasl_agent"] == "":
 			if "sasl_agent" not in self.ircd.module_data_cache:
 				user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
 				return False
@@ -20,7 +20,7 @@ class SaslPlainMechanism(Module):
 		return False
 	
 	def bindSaslResult(self, user, successFunction, failureFunction):
-		if self.ircd.servconfig["server_sasl_agent"] == "":
+		if "server_sasl_agent" not in self.ircd.servconfig or self.ircd.servconfig["server_sasl_agent"] == "":
 			if "sasl_agent" not in self.ircd.module_data_cache:
 				user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
 				return
