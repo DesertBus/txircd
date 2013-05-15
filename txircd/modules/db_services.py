@@ -543,30 +543,30 @@ class BSStartCommand(Command):
 		}
 	
 	def auctionStart(self, results, user, auctionID):
-		if not result:
+		if not results:
 			user.sendMessage("NOTICE", ":Could not find the item ID {}".format(auctionID), prefix=self.bidserv.prefix())
 			return
-		if result[0][2]:
-			user.sendMessage("NOTICE", ":The item {} ({}) has already been sold.".format(result[0][0], result[0][1]), prefix=self.bidserv.prefix())
+		if results[0][2]:
+			user.sendMessage("NOTICE", ":The item {} ({}) has already been sold.".format(results[0][0], results[0][1]), prefix=self.bidserv.prefix())
 			return
 		self.bidserv.cache["auction"] = {
-			"item": result[0][0],
-			"name": result[0][1],
-			"highbid": float(result[0][3]),
+			"item": results[0][0],
+			"name": results[0][1],
+			"highbid": float(results[0][3]),
 			"highbidder": "Nobody",
 			"highbidderid": None,
-			"startbid": float(result[0][3]),
+			"startbid": float(results[0][3]),
 			"bids": [],
 			"called": 0
 		}
 		lines = [] # The lines array here serves as a cache for the lines so that the format isn't applied repeatedly on every iteration
-		lines.append(":\x02\x034Starting Auction for Lot #{}: \"{}\"\x02 - Called by {}".format(result[0][0], result[0][1], user.nickname))
+		lines.append(":\x02\x034Starting Auction for Lot #{}: \"{}\"\x02 - Called by {}".format(results[0][0], results[0][1], user.nickname))
 		lines.append(":\x02\x034Make bids with \x1F/bid ###.## [smack talk]")
 		if "services_bidserv_increment" in self.ircd.servconfig:
 			lines.append(":\x02\x034The minimum increment between bids is ${:,.2f}".format(self.ircd.servconfig["services_bidserv_increment"]))
 		lines.append(":\x02\x034Only voiced (registered donor) users can bid - https://donor.desertbus.org/")
 		lines.append(":\x02\x034Please do not make any fake bids")
-		lines.append(":\x02\x034Beginning bidding at ${:,.2f}".format(float(result[0][3])))
+		lines.append(":\x02\x034Beginning bidding at ${:,.2f}".format(float(results[0][3])))
 		for channel in self.ircd.channels.itervalues():
 			for u in channel.users:
 				for line in lines:
