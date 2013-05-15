@@ -481,6 +481,33 @@ class CSAccessCommand(Command):
 			user.sendMessage("NOTICE", ":The account, nick, or group identifier that you provided is not valid.", prefix=self.chanserv.prefix())
 			return {}
 
+class CSCdropCommand(Command):
+	def __init__(self, module, service):
+		self.module = module
+		self.chanserv = service
+	
+	def onUse(self, user, data):
+		del self.chanserv.cache["registered"][data["channel"]]
+		user.sendMessage("NOTICE", ":The channel \x02{}\x02 has been dropped.".format(data["channel"]), prefix=self.chanserv.prefix())
+	
+	def processParams(self, user, params):
+		if "accountid" not in user.metadata["ext"]:
+			user.sendMessage("NOTICE", ":You must be logged in to drop a channel.", prefix=self.chanserv.prefix())
+			return {}
+		if not params:
+			user.sendMessage("NOTICE", ":Usage: \x02CDROP \x1Fchannel", prefix=self.chanserv.prefix())
+			return {}
+		if params[0] not in self.chanserv.cache["registered"]:
+			user.sendMessage("NOTICE", ":The channel \x02{}\x02 isn't registered.".format(params[0]), prefix=self.chanserv.prefix())
+			return {}
+		if user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"]:
+			user.sendMessage("NOTICE", ":You must be the channel founder in order to drop it.", prefix=self.chanserv.prefix())
+			return {}
+		return {
+			"user": user,
+			"channel": params[0]
+		}
+
 
 class BSStartCommand(Command):
 	def __init__(self, module, service):
@@ -824,9 +851,10 @@ class Spawner(object):
 		self.helpText["nickserv"][1]["NICKLIST"] = ["Lists all the nicknames registered to your account", "Syntax: \x02NICKLIST\x02\n\nLists all the nicknames registered to your account.", False]
 		self.helpText["nickserv"][1]["ACCOUNT"] = ["Gives the account ID or nick provided the other", "Syntax: \x02ACCOUNT \x1Fnick|id\x1F\x02\n\nGives the account ID for the provided nick or the nicks associated with the provided account ID.  This is really only useful for use with ChanServ's access lists.", False]
 		
-		self.helpText["chanserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optinoal command parameter, displays help for the given command.", False]
+		self.helpText["chanserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
 		self.helpText["chanserv"][1]["REGISTER"] = ["Registers a channel for your use", "Syntax: \x02REGISTER \x1Fchannel\x1F\x02\n\nRegisters a channel with you as a founder.  You must be a channel op or higher in the specified channel in order to register the channel.", False]
 		self.helpText["chanserv"][1]["ACCESS"] = ["Allows you to change the access level of another user in a channel you own", "Syntax: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]\x02\n\nLists or changes access information for a channel.  If an account is not specified, the channel's access list will be displayed.  If an account and flags are specified, the given flag changes will be applied to the given account in the channel.  Valid flags are any channel status mode level, and they are automatically applied to matching users on join or identify.  The group parameter can be any of the following:\n\t~o\tAll opered users\n\t~r\tAll registered and identified users", False]
+		self.helpText["chanserv"][1]["CDROP"] = ["Allows you to drop channels you own", "Syntax: \x02CDROP \x1Fchannel\x1F\x02\n\nDrops the specified channel that you own.", False]
 		
 		self.helpText["bidserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
 		self.helpText["bidserv"][1]["START"] = ["Start an auction", "Syntax: \x02START \x1FItemID\x1F\x02\n\nStarts an auction with the given item ID.", True]
@@ -913,6 +941,7 @@ class Spawner(object):
 				
 				"REGISTER": CSRegisterCommand(self, self.chanserv),
 				"ACCESS": CSAccessCommand(self, self.chanserv),
+				"CDROP": CSCdropCommand(self, self.chanserv),
 				
 				"START": BSStartCommand(self, self.bidserv),
 				"STOP": BSStopCommand(self, self.bidserv),
@@ -961,6 +990,7 @@ class Spawner(object):
 		
 		del self.ircd.commands["REGISTER"]
 		del self.ircd.commands["ACCESS"]
+		del self.ircd.commands["CDROP"]
 		
 		del self.ircd.commands["START"]
 		del self.ircd.commands["STOP"]
