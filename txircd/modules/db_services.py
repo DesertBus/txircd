@@ -1072,8 +1072,8 @@ class Spawner(object):
 		elif "accountid" in user.metadata["ext"]:
 			# Try to register the nick
 			d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
-			d.addCallback(self.registerNick, user, nickname)
-			d.addErrback(self.failedRegisterNick, user, nickname)
+			d.addCallback(self.registerNick, user, user.nickname)
+			d.addErrback(self.failedRegisterNick, user, user.nickname)
 	
 	def setDonorInfo(self, result, user):
 		if not result:
