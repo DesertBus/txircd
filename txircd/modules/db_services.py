@@ -1205,5 +1205,5 @@ class Spawner(object):
 			return {}
 		if cmd in [ "PING", "PONG", "NICK", "QUIT", "NS", "NICKSERV", "LOGIN", "ID", "IDENTIFY" ]:
 			return data
-		user.sendMessage("NOTICE", ":You cannot use that command until you identify or change nicks.", prefix=self.nickserv.prefix())
+		user.sendMessage("NOTICE", ":You cannot use the command \x02{}\x02 until you identify or change nicks.".format(cmd), prefix=self.nickserv.prefix())
 		return {}
