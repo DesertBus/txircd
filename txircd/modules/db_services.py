@@ -597,6 +597,9 @@ class BSStopCommand(Command):
 		if "auction" not in self.bidserv.cache:
 			user.sendMessage("NOTICE", ":There is not an auction going on now.", prefix=self.bidserv.prefix())
 			return {}
+		return {
+			"user": user
+		}
 	
 	def failedLogName(self, id):
 		log = "{}/auction_stopped-{!s}.log".format(self.ircd.servconfig["app_log_dir"], id)
