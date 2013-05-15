@@ -423,9 +423,13 @@ class IRCD(Factory):
 		saved_data = {}
 		if name in self.modules:
 			try:
-				dbstore, saved_data = self.modules[name].data_serialize()
-				if dbstore:
-					self.serialized_data[name] = saved_data
+				data_to_save, free_data = self.modules[name].data_serialize()
+				if data_to_save:
+					self.serialized_data[name] = data_to_save
+				for key, value in free_data.iteritems():
+					saved_data[key] = value
+				for key, value in data_to_save.iteritems():
+					saved_data[key] = value
 			except AttributeError:
 				pass
 			try:
