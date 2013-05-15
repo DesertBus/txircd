@@ -130,7 +130,7 @@ class IRCUser(object):
 			del self.ircd.localusers[self.nickname]
 			for user in quitdest:
 				user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
-		self.sendMessage("ERROR", ":Closing Link: {}@{} [{}]".format(self.username if self.username else "unknown", self.hostname, reason))
+		self.sendMessage("ERROR", ":Closing Link: {}@{} [{}]".format(self.username if self.username else "unknown", self.hostname, reason), to=None, prefix=None)
 		self.socket.transport.loseConnection()
 	
 	def checkData(self, data):
