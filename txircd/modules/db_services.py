@@ -530,7 +530,7 @@ class BSStartCommand(Command):
 			user.sendMessage("NOTICE", ":You cannot start an auction when one is currently in progress.", prefix=self.bidserv.prefix())
 			return {}
 		if not params:
-			user.sendMesage("NOTICE", ":Usage: \x02START \x1FauctionID", prefix=self.bidserv.prefix())
+			user.sendMessage("NOTICE", ":Usage: \x02START \x1FauctionID", prefix=self.bidserv.prefix())
 			return {}
 		try:
 			auctionID = int(params[0])
