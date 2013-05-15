@@ -978,21 +978,20 @@ class Spawner(object):
 		self.ircd.actions["commandpermission"].remove(self.commandPermission)
 	
 	def data_serialize(self):
+		outputDict = {}
+		registeredChannels = self.chanserv.cache["registered"]._data
+		for chandata in registeredChannels.itervalues():
+			chandata["founder"] = int(chandata["founder"])
+		outputDict["registeredchannels"] = registeredChannels
 		if "auction" in self.bidserv.cache:
-			return [True, {
-				"registeredchannels": self.chanserv.cache["registered"]._data,
-				"currentauction": self.bidserv.cache["auction"]
-			}]
-		return [True, {
-			"registeredchannels": self.chanserv.cache["registered"]._data
-		}]
+			outputDict["currentauction"] = self.bidserv.cache["auction"]
+		print outputDict
+		return [True, outputDict]
 	
 	def data_unserialize(self, data):
 		if "currentauction" in data:
 			self.bidserv.cache["auction"] = data["currentauction"]
-		if "registered" not in self.chanserv.cache:
-			self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
-		for key, value in data["registeredchannels"]:
+		for key, value in data["registeredchannels"].iteritems():
 			self.chanserv.cache["registered"][key] = value
 	
 	# Services Functions
