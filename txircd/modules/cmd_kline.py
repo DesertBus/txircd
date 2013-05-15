@@ -157,7 +157,7 @@ class Spawner(object):
 		self.ircd.actions["xline_rematch"].remove(self.klineCmd.match_kline)
 	
 	def data_serialize(self):
-		return [True, self.klineCmd.banList._data]
+		return [self.klineCmd.banList._data, {}]
 	
 	def data_unserialize(self, data):
 		for mask, linedata in data.iteritems():

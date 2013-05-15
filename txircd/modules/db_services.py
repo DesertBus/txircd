@@ -1037,13 +1037,14 @@ class Spawner(object):
 			for bid in auctionDict["bids"]:
 				bid["bidder"] = int(bid["bidder"])
 			outputDict["currentauction"] = auctionDict
-		return [True, outputDict]
+		return [outputDict, {"auth_timers": self.auth_timer}]
 	
 	def data_unserialize(self, data):
 		if "currentauction" in data:
 			self.bidserv.cache["auction"] = data["currentauction"]
 		for key, value in data["registeredchannels"].iteritems():
 			self.chanserv.cache["registered"][key] = value
+		self.auth_timer = data["auth_timers"]
 	
 	# Services Functions
 	def query(self, query, *args):

@@ -78,7 +78,7 @@ class Spawner(object):
 		self.ircd.actions["quit"].remove(self.whowasCmd.addToWhowas)
 	
 	def data_serialize(self):
-		return [True, self.whowasCmd.history._data]
+		return [self.whowasCmd.history._data, {}]
 	
 	def data_unserialize(self, data):
 		for nick, entry in data.iteritems():

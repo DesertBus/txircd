@@ -134,7 +134,7 @@ class Spawner(object):
 		self.ircd.actions["register"].remove(self.elineCmd.check_register)
 	
 	def data_serialize(self):
-		return [True, self.elineCmd.exceptList._data]
+		return [self.elineCmd.exceptList._data, {}]
 	
 	def data_unserialize(self, data):
 		for mask, linedata in data.iteritems():
