@@ -122,7 +122,7 @@ class Spawner(object):
 		self.ircd.actions["connect"].remove(self.zlineCmd.check_connect)
 	
 	def data_serialize(self):
-		return [True, self.zlineCmd.banList._data]
+		return [self.zlineCmd.banList._data, {}]
 	
 	def data_unserialize(self, data):
 		for mask, linedata in data.iteritems():

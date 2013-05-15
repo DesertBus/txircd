@@ -84,7 +84,7 @@ class Spawner(object):
 		self.ircd.actions["commandpermission"].remove(self.badwordCmd.censor)
 	
 	def data_serialize(self):
-		return [True, self.badwordCmd.badwords]
+		return [self.badwordCmd.badwords, {}]
 	
 	def data_unserialize(self, data):
 		self.badwordCmd.badwords = data

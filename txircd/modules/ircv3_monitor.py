@@ -192,7 +192,7 @@ class Spawner(object):
 			"watched_by": self.monitor_cmd.watched_by,
 			"watch_masks": self.monitor_cmd.watch_masks
 		}
-		return [False, dataToSave]
+		return [{}, dataToSave]
 	
 	def data_unserialize(self, data):
 		self.monitor_cmd.watching = data["watching"]

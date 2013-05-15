@@ -165,7 +165,7 @@ class Spawner(object):
 		self.ircd.actions["commandpermission"].remove(self.shunCmd.check_command)
 	
 	def data_serialize(self):
-		return [True, self.shunCmd.shunList._data]
+		return [self.shunCmd.shunList._data, {}]
 	
 	def data_unserialize(self, data):
 		for mask, meta in data.iteritems():

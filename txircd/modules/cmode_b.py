@@ -102,7 +102,7 @@ class Spawner(object):
 		self.ircd.removeMode("clb")
 	
 	def data_serialize(self):
-		return [False, self.ban_mode.banMetadata._data]
+		return [{}, self.ban_mode.banMetadata._data]
 	
 	def data_unserialize(self, data):
 		for mask, metadata in data.iteritems():
