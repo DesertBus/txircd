@@ -63,9 +63,10 @@ class Service(object):
 		if command == "PRIVMSG" and "prefix" in kw:
 			nick = kw["prefix"][0:kw["prefix"].find("!")]
 			user = self.ircd.users[nick]
-			serviceCommand = parameter_list.pop(0).upper()
+			params = list(parameter_list)
+			serviceCommand = params.pop(0).upper()
 			if serviceCommand == "HELP":
-				if not parameter_list:
+				if not params:
 					helpOut = chunk_message(self.help[0], 80)
 					for line in helpOut:
 						user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
@@ -79,7 +80,7 @@ class Service(object):
 					user.sendMessage("NOTICE", ": ", prefix=self.prefix())
 					user.sendMessage("NOTICE", ":End of HELP", prefix=self.prefix())
 				else:
-					helpCmd = parameter_list[0]
+					helpCmd = params[0]
 					if helpCmd not in self.help[1]:
 						user.sendMessage("NOTICE", ":No help available for \x02{}\x02.".format(helpCmd), prefix=self.prefix())
 					else:
@@ -87,8 +88,8 @@ class Service(object):
 						for line in helpOut:
 							user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
 						user.sendMessage("NOTICE", ":End of {} help".format(helpCmd), prefix=self.prefix())
-			elif serviceCommand in helpTexts:
-				self.ircd.users[nick].handleCommand(serviceCommand, None, parameter_list)
+			elif serviceCommand in self.help:
+				self.ircd.users[nick].handleCommand(serviceCommand, None, params)
 			else:
 				self.ircd.users[nick].sendMessage("NOTICE", ":Unknown command \x02{}\x02.  Use \x1F/msg {} HELP\x1F for help.".format(command, self.nickname), prefix=self.prefix())
 	
