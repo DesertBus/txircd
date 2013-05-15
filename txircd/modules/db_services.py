@@ -419,7 +419,7 @@ class CSAccessCommand(Command):
 			accessID = data["targetaccount"]
 		else:
 			for id, flags in self.chanserv.cache["registered"][data["targetchan"]]["access"].iteritems():
-				user.sendMessage("NOTICE", "  {}: +{}".format(id, flags), prefix=self.chanserv.prefix())
+				user.sendMessage("NOTICE", ":  {}: +{}".format(id, flags), prefix=self.chanserv.prefix())
 			user.sendMessage("NOTICE", ":End of ACCESS list", prefix=self.chanserv.prefix())
 			return
 		flagSet = list(self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID])
