@@ -1094,7 +1094,7 @@ class Spawner(object):
 			del self.auth_timer[user]
 		if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
 			return # Somehow we auth'd and didn't clear the timer?
-		if irc_lower(user.nickname) != nickname:
+		if irc_lower(user.nickname) != irc_lower(nickname):
 			return # Changed nick before the timeout. Whatever
 		user.nick(self.genGuestNick())
 	
