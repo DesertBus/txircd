@@ -16,8 +16,16 @@ class SaslPlainMechanism(Module):
 				user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
 				return False
 			return self.ircd.module_data_cache["sasl_agent"].authenticate(user, authenticationid=authenticationID, authorizationid=authorizationID, password=password)
-		# The rest of this doesn't really make sense until s2s, but we'll return false for now since it's failing
+		# TODO: The rest of this doesn't really make sense until s2s, but we'll return false for now since it's failing
 		return False
+	
+	def bindSaslResult(self, user, successFunction, failureFunction):
+		if self.ircd.servconfig["server_sasl_agent"] == "":
+			if "sasl_agent" not in self.ircd.module_data_cache:
+				user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
+				return
+			self.ircd.module_data_cache["sasl_agent"].bindSaslResult(user, successFunction, failureFunction)
+		# TODO: server_sasl_agent stuff when s2s
 
 class Spawner(object):
 	def __init__(self, ircd):

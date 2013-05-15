@@ -34,6 +34,9 @@ class Sasl(Command):
 			result = self.ircd.module_data_cache["sasl_mechanisms"][user.cache["sasl_authenticating"]].authenticate(user, data["authentication"])
 			if result == "more":
 				return
+			if result == "wait":
+				self.ircd.module_data_cache["sasl_mechanisms"][user.cache["sasl_authenticating"]].bindSaslResult(user, self.sendSuccess, self.sendFailure)
+				return
 			if result:
 				user.sendMessage(irc.RPL_SASLACCOUNT, "{}!{}@{}".format(user.nickname if user.nickname else "unknown", user.username if user.username else "unknown", user.hostname), user.metadata["ext"]["accountname"], ":You are now logged in as {}".format(user.metadata["ext"]["accountname"]))
 				user.sendMessage(irc.RPL_SASLSUCCESS, ":SASL authentication successful")
@@ -70,6 +73,13 @@ class Sasl(Command):
 			del user.cache["sasl_authenticating"]
 			user.sendMessage(irc.ERR_SASLABORTED, ":SASL authentication aborted")
 		return True
+	
+	def sendSuccess(self, user):
+		user.sendMessage(irc.RPL_SASLACCOUNT, "{}!{}@{}".format(user.nickname if user.nickname else "unknown", user.username if user.username else "unknown", user.hostname), user.metadata["ext"]["accountname"], ":You are now logged in as {}".format(user.metadata["ext"]["accountname"]))
+		user.sendMessage(irc.RPL_SASLSUCCESS, ":SASL authentication successful")
+	
+	def sendFailure(self, user):
+		user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
 
 class Spawner(object):
 	def __init__(self, ircd):
