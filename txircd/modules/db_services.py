@@ -91,7 +91,7 @@ class Service(object):
 							helpOut = chunk_message(info[1], 80)
 							for line in helpOut:
 								user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
-							user.sendMessage("NOTICE", ":End of {} help".format(helpCmd), prefix=self.prefix())
+							user.sendMessage("NOTICE", ":*** End of \x02{}\x02 help".format(helpCmd), prefix=self.prefix())
 			elif serviceCommand in self.help:
 				self.ircd.users[nick].handleCommand(serviceCommand, None, params)
 			else:
