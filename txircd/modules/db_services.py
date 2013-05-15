@@ -320,7 +320,7 @@ class NSNicklistCommand(Command):
 	
 	def onUse(self, user, data):
 		d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
-		d.addCallback(self.shownicks, user)
+		d.addCallback(self.showNicks, user)
 		d.addErrback(self.module.exclaimServerError, user, self.nickserv)
 	
 	def processParams(self, user, params):
