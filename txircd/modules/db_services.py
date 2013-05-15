@@ -838,36 +838,36 @@ class Spawner(object):
 		if "servdb_marker" not in self.ircd.servconfig:
 			self.ircd.servconfig["servdb_marker"] = "%s"
 		
-		if "service_nickserv_nick" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_nickserv_nick"] = "NickServ"
-		if "service_nickserv_ident" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_nickserv_ident"] = "NickServ"
-		if "service_nickserv_host" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_nickserv_host"] = "services.desertbus.org"
-		if "service_nickserv_gecos" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_nickserv_gecos"] = "Nickname Service"
+		if "services_nickserv_nick" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_nickserv_nick"] = "NickServ"
+		if "services_nickserv_ident" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_nickserv_ident"] = "NickServ"
+		if "services_nickserv_host" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_nickserv_host"] = "services.desertbus.org"
+		if "services_nickserv_gecos" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_nickserv_gecos"] = "Nickname Service"
 		
-		if "service_chanserv_nick" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_chanserv_nick"] = "ChanServ"
-		if "service_chanserv_ident" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_chanserv_ident"] = "ChanServ"
-		if "service_chanserv_host" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_chanserv_host"] = "services.desertbus.org"
-		if "service_chanserv_gecos" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_chanserv_gecos"] = "Channel Service"
+		if "services_chanserv_nick" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_chanserv_nick"] = "ChanServ"
+		if "services_chanserv_ident" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_chanserv_ident"] = "ChanServ"
+		if "services_chanserv_host" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_chanserv_host"] = "services.desertbus.org"
+		if "services_chanserv_gecos" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_chanserv_gecos"] = "Channel Service"
 		
-		if "service_bidserv_nick" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_bidserv_nick"] = "BidServ"
-		if "service_bidserv_ident" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_bidserv_ident"] = "BidServ"
-		if "service_bidserv_host" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_bidserv_host"] = "services.desertbus.org"
-		if "service_bidserv_gecos" not in self.ircd.servconfig:
-			self.ircd.servconfig["service_bidserv_gecos"] = "Bidding Service"
+		if "services_bidserv_nick" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_bidserv_nick"] = "BidServ"
+		if "services_bidserv_ident" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_bidserv_ident"] = "BidServ"
+		if "services_bidserv_host" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_bidserv_host"] = "services.desertbus.org"
+		if "services_bidserv_gecos" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_bidserv_gecos"] = "Bidding Service"
 		
-		self.nickserv = Service(self.ircd, self.ircd.servconfig["service_nickserv_nick"], self.ircd.servconfig["service_nickserv_ident"], self.ircd.servconfig["service_nickserv_host"], self.ircd.servconfig["service_nickserv_gecos"], self.helpText["nickserv"])
-		self.chanserv = Service(self.ircd, self.ircd.servconfig["service_chanserv_nick"], self.ircd.servconfig["service_chanserv_ident"], self.ircd.servconfig["service_chanserv_host"], self.ircd.servconfig["service_chanserv_gecos"], self.helpText["chanserv"])
-		self.bidserv = Service(self.ircd, self.ircd.servconfig["service_bidserv_nick"], self.ircd.servconfig["service_bidserv_ident"], self.ircd.servconfig["service_bidserv_host"], self.ircd.servconfig["service_bidserv_gecos"], self.helpText["bidserv"])
+		self.nickserv = Service(self.ircd, self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_nickserv_ident"], self.ircd.servconfig["services_nickserv_host"], self.ircd.servconfig["services_nickserv_gecos"], self.helpText["nickserv"])
+		self.chanserv = Service(self.ircd, self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_chanserv_ident"], self.ircd.servconfig["services_chanserv_host"], self.ircd.servconfig["services_chanserv_gecos"], self.helpText["chanserv"])
+		self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"])
 		
 		self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
 		
