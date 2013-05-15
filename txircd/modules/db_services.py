@@ -91,7 +91,7 @@ class Service(object):
 			elif serviceCommand in self.help:
 				self.ircd.users[nick].handleCommand(serviceCommand, None, params)
 			else:
-				self.ircd.users[nick].sendMessage("NOTICE", ":Unknown command \x02{}\x02.  Use \x1F/msg {} HELP\x1F for help.".format(command, self.nickname), prefix=self.prefix())
+				self.ircd.users[nick].sendMessage("NOTICE", ":Unknown command \x02{}\x02.  Use \x1F/msg {} HELP\x1F for help.".format(serviceCommand, self.nickname), prefix=self.prefix())
 	
 	def setMetadata(self, namespace, key, value):
 		oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
