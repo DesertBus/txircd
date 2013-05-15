@@ -63,8 +63,8 @@ class Service(object):
 		if command == "PRIVMSG" and "prefix" in kw:
 			nick = kw["prefix"][0:kw["prefix"].find("!")]
 			user = self.ircd.users[nick]
-			params = list(parameter_list)
-			serviceCommand = params.pop(0).upper()
+			params = parameter_list[0].split(" ")
+			serviceCommand = params.pop(0).upper().lstrip(":") # Messages sent this way start with a colon
 			if serviceCommand == "HELP":
 				if not params:
 					helpOut = chunk_message(self.help[0], 80)
@@ -76,7 +76,7 @@ class Service(object):
 						info = self.help[1][cmd]
 						if info[2] and "o" not in user.mode:
 							continue
-						user.sendMessage("NOTICE", ":\x02{}\x02\t{}".format(cmd, info[0]), prefix=self.prefix())
+						user.sendMessage("NOTICE", ":\x02{}\x02\t{}".format(cmd.upper(), info[0]), prefix=self.prefix())
 					user.sendMessage("NOTICE", ": ", prefix=self.prefix())
 					user.sendMessage("NOTICE", ":End of HELP", prefix=self.prefix())
 				else:
@@ -84,10 +84,14 @@ class Service(object):
 					if helpCmd not in self.help[1]:
 						user.sendMessage("NOTICE", ":No help available for \x02{}\x02.".format(helpCmd), prefix=self.prefix())
 					else:
-						helpOut = chunk_message(self.help[1][helpCmd], 80)
-						for line in helpOut:
-							user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
-						user.sendMessage("NOTICE", ":End of {} help".format(helpCmd), prefix=self.prefix())
+						info = self.help[1][helpCmd]
+						if info[2] and "o" not in user.mode:
+							user.sendMessage("NOTICE", ":No help available for \x02{}\x02.".format(helpCmd), prefix=self.prefix())
+						else:
+							helpOut = chunk_message(info[1], 80)
+							for line in helpOut:
+								user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
+							user.sendMessage("NOTICE", ":End of {} help".format(helpCmd), prefix=self.prefix())
 			elif serviceCommand in self.help:
 				self.ircd.users[nick].handleCommand(serviceCommand, None, params)
 			else:
@@ -153,15 +157,15 @@ class Service(object):
 
 class NickServAlias(Command):
 	def onUse(self, user, data):
-		user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_nickserv_nick"]] + data["params"])
+		user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_nickserv_nick"], " ".join(data["params"])])
 
 class ChanServAlias(Command):
 	def onUse(self, user, data):
-		user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_chanserv_nick"]] + data["params"])
+		user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_chanserv_nick"], " ".join(data["params"])])
 
 class BidServAlias(Command):
 	def onUse(self, user, data):
-		user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"]] + data["params"])
+		user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], " ".join(data["params"])])
 
 
 class NSIdentifyCommand(Command):
