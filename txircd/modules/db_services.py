@@ -818,7 +818,7 @@ class Spawner(object):
 		self.helpText["nickserv"][1]["LOGOUT"] = ["Log out of your donor account", "Syntax: \x02LOGOUT\x02\n\nLogs out of whatever account you are in right now. Useful to prevent your roommate from bidding on auctions in your name.", False]
 		self.helpText["nickserv"][1]["GHOST"] = ["Disconnects a user with the given nick", "Syntax: \x02GHOST \x1Fnickname\x1F\x02\n\nIf the given nickname is linked with your account, the user with the given nick is disconnected.", False]
 		self.helpText["nickserv"][1]["DROP"] = ["Unregisters a givennickname from your account", "Syntax: \x02DROP \x1Fnickname\x1F\x02\n\nUnregisters the given nickname from your account, allowing other people to use it and giving you more space to register other nicknames.", False]
-		self.helpText["nickserv"][1]["NICKLIST"] = ["Lists all the nicknames registered to your account", "Syntax: \x02LIST\x02\n\nLists all the nicknames registered to your account.", False]
+		self.helpText["nickserv"][1]["NICKLIST"] = ["Lists all the nicknames registered to your account", "Syntax: \x02NICKLIST\x02\n\nLists all the nicknames registered to your account.", False]
 		self.helpText["nickserv"][1]["ACCOUNT"] = ["Gives the account ID or nick provided the other", "Syntax: \x02ACCOUNT \x1Fnick|id\x1F\x02\n\nGives the account ID for the provided nick or the nicks associated with the provided account ID.  This is really only useful for use with ChanServ's access lists.", False]
 		
 		self.helpText["chanserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optinoal command parameter, displays help for the given command.", False]
