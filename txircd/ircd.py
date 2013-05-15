@@ -423,13 +423,13 @@ class IRCD(Factory):
 		saved_data = {}
 		if name in self.modules:
 			try:
+				dbstore, saved_data = self.modules[name].data_serialize()
+				if dbstore:
+					self.serialized_data[name] = saved_data
+			except AttributeError:
+				pass
+			try:
 				self.modules[name].cleanup()
-				try:
-					dbstore, saved_data = self.modules[name].data_serialize()
-					if dbstore:
-						self.serialized_data[name] = saved_data
-				except AttributeError:
-					pass
 			except:
 				log.msg("Cleanup failed for module {}: some pieces may still be remaining!".format(name))
 			del self.modules[name]
