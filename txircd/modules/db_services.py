@@ -843,6 +843,9 @@ class Spawner(object):
 		if "servdb_marker" not in self.ircd.servconfig:
 			self.ircd.servconfig["servdb_marker"] = "%s"
 		
+		if "services_nickserv_guest_prefix" not in self.ircd.servconfig:
+			self.ircd.servconfig["services_nickserv_guest_prefix"] = "Guest"
+		
 		if "services_nickserv_nick" not in self.ircd.servconfig:
 			self.ircd.servconfig["services_nickserv_nick"] = "NickServ"
 		if "services_nickserv_ident" not in self.ircd.servconfig:
@@ -1161,6 +1164,7 @@ class Spawner(object):
 				self.auth(user, email, password)
 			else:
 				self.token(user, user.password)
+		self.checkNick(user)
 		return True
 	
 	def onQuit(self, user, reason):
