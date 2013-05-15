@@ -1,4 +1,5 @@
 from twisted.enterprise import adbapi
+from twisted.internet.defer import Deferred
 from txircd.modbase import Command
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 import math, os, yaml
@@ -30,6 +31,8 @@ class Service(object):
 		self.lastpong = now()
 		self.mode = {}
 		self.channels = CaseInsensitiveDictionary()
+		self.disconnected = Deferred()
+		self.disconnected.callback(None)
 		self.registered = 0
 		self.metadata = {
 			"server": {},
