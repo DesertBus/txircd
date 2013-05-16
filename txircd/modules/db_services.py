@@ -1055,7 +1055,11 @@ class Spawner(object):
 		return self.db.runQuery(query, args)
 	
 	def exclaimServerError(self, result, user, service):
-		user.sendMessage("NOTICE", ":A server error has occurred.", prefix=service.prefix())
+		if user in self.saslUsers:
+			self.saslUsers[user][1](user)
+			del self.saslUsers[user]
+		else:
+			user.sendMessage("NOTICE", ":A server error has occurred.", prefix=service.prefix())
 	
 	def genGuestNick(self):
 		nick = "{}{:>06d}".format(self.ircd.servconfig["services_nickserv_guest_prefix"] if "services_nickserv_guest_prefix" in self.ircd.servconfig and self.ircd.servconfig["services_nickserv_guest_prefix"] else "Guest", random.randrange(1000000))
