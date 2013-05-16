@@ -77,9 +77,11 @@ class Sasl(Command):
 	def sendSuccess(self, user):
 		user.sendMessage(irc.RPL_SASLACCOUNT, "{}!{}@{}".format(user.nickname if user.nickname else "unknown", user.username if user.username else "unknown", user.hostname), user.metadata["ext"]["accountname"], ":You are now logged in as {}".format(user.metadata["ext"]["accountname"]))
 		user.sendMessage(irc.RPL_SASLSUCCESS, ":SASL authentication successful")
+		del user.cache["sasl_authenticating"]
 	
 	def sendFailure(self, user):
 		user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
+		del user.cache["sasl_authenticating"]
 
 class Spawner(object):
 	def __init__(self, ircd):
