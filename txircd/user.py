@@ -351,7 +351,7 @@ class IRCUser(object):
 		hostmask = irc_lower(self.prefix())
 		self.channels[channel.name] = {"status":status}
 		channel.users.add(self)
-		joinShowUsers = channel.users
+		joinShowUsers = set(channel.users) # copy the channel.users set to prevent accidental modification of the users list
 		tryagain = []
 		for modfunc in self.ircd.actions["joinmessage"]:
 			result = modfunc(channel, self, joinShowUsers)
