@@ -7,6 +7,8 @@ irc.ERR_CHANNOTALLOWED = "926" # I fully admit that this is an entirely made-up 
 
 class DenychansModule(Module):
 	def denyChannels(self, user, cmd, data):
+		if "o" in user.mode:
+			return data
 		if cmd != "JOIN":
 			return data
 		channels = data["targetchan"]
