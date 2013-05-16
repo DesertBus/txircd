@@ -404,9 +404,9 @@ class IRCD(Factory):
 		for name, spawner in self.modules.iteritems():
 			spawner.cleanup()
 			try:
-				dbstore, saved_data = self.modules[name].data_serialize()
-				if dbstore:
-					self.serialized_data[name] = saved_data
+				data_to_save, free_data = self.modules[name].data_serialize()
+				if data_to_save:
+					self.serialized_data[name] = data_to_save
 			except AttributeError:
 				pass
 		# Finally, save the config. Just in case.
