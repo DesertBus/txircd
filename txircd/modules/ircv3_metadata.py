@@ -163,7 +163,8 @@ class MetadataCommand(Command):
 	
 	def notify(self, target, namespace, key, oldValue, value):
 		try:
-			target.nickname
+			if target.nickname is None:
+				return # An unregistered user isn't being monitored
 		except AttributeError: # don't process channels
 			return
 		source = None
