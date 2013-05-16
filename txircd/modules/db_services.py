@@ -3,6 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from txircd.modbase import Command
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
+from base64 import b64decode
 import math, os, random, yaml
 
 class Service(object):
@@ -1060,7 +1061,7 @@ class Spawner(object):
 	
 	def exclaimServerError(self, result, user, service):
 		if user in self.saslUsers:
-			self.saslUsers[user][1](user)
+			self.saslUsers[user]["failure"](user)
 			del self.saslUsers[user]
 		else:
 			user.sendMessage("NOTICE", ":A server error has occurred.", prefix=service.prefix())
@@ -1082,13 +1083,6 @@ class Spawner(object):
 		d.addCallback(self.loadDonorInfo, user)
 		return d
 	
-	def authenticate(self, user, **kw):
-		self.auth(user, kw["authenticationid"], kw["password"])
-		return "wait"
-	
-	def bindSaslResult(self, user, successFunction, failureFunction):
-		self.saslUsers[user] = [successFunction, failureFunction]
-	
 	def checkNick(self, user):
 		if user in self.auth_timer:
 			self.auth_timer[user].cancel()
@@ -1102,7 +1096,7 @@ class Spawner(object):
 	def verifyPassword(self, result, user, password):
 		if not result:
 			if user in self.saslUsers:
-				self.saslUsers[user][1](user)
+				self.saslUsers[user]["failure"](user)
 				del self.saslUsers[user]
 			else:
 				self.checkNick(user)
@@ -1117,7 +1111,7 @@ class Spawner(object):
 				self.auth_timer[user].cancel()
 				del self.auth_timer[user]
 			if user in self.saslUsers:
-				self.saslUsers[user][0](user)
+				self.saslUsers[user]["success"](user)
 				del self.saslUsers[user]
 			else:
 				user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
@@ -1125,7 +1119,7 @@ class Spawner(object):
 			self.registered(user)
 		else:
 			if user in self.saslUsers:
-				self.saslUsers[user][1](user)
+				self.saslUsers[user]["failure"](user)
 				del self.saslUsers[user]
 			else:
 				self.checkNick(user)
@@ -1198,6 +1192,39 @@ class Spawner(object):
 	
 	def successRegisterNick(self, result, user, nickname):
 		user.sendMessage("NOTICE", ":Nickname {} is now registered to account {} and can not be used by any other user.".format(nickname, user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
+	
+	def saslStart(self, user, mechanism):
+		try:
+			setupfunc = getattr(self, "saslSetup_{}".format(mechanism))
+		except AttributeError:
+			return "fail"
+		self.saslUsers[user] = { "mechanism": mechanism }
+		setupfunc(user)
+	
+	def saslSetup_PLAIN(self, user):
+		user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
+	
+	def saslNext(self, user, data):
+		try:
+			processfunc = getattr(self, "saslProcess_{}".format(self.saslUsers[user]["mechanism"]))
+		except AttributeError:
+			return "done"
+		return processfunc(user, data)
+	
+	def saslProcess_PLAIN(self, user, data):
+		try:
+			authenticationID, authorizationID, password = b64decode(data[0]).split("\0")
+		except (TypeError, ValueError):
+			return "done"
+		self.auth(user, authenticationID, password)
+		return "wait"
+	
+	def saslDone(self, user, success):
+		del self.saslUsers[user]
+	
+	def bindSaslResult(self, user, successFunction, failureFunction):
+		self.saslUsers[user]["success"] = successFunction
+		self.saslUsers[user]["failure"] = failureFunction
 	
 	def registered(self, user):
 		for channel in user.channels.iterkeys():
