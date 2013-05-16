@@ -1097,11 +1097,11 @@ class Spawner(object):
 	
 	def verifyPassword(self, result, user, password):
 		if not result:
-			self.checkNick(user)
 			if user in self.saslUsers:
 				self.saslUsers[user][1](user)
 				del self.saslUsers[user]
 			else:
+				self.checkNick(user)
 				user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
 			return
 		hash = result[0][1]
