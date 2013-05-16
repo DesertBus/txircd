@@ -1121,11 +1121,15 @@ class Spawner(object):
 				del self.saslUsers[user]
 			else:
 				user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
-			self.checkNick(user)
+				self.checkNick(user)
 			self.registered(user)
 		else:
-			self.checkNick(user)
-			user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
+			if user in self.saslUsers:
+				self.saslUsers[user][1](user)
+				del self.saslUsers[user]
+			else:
+				self.checkNick(user)
+				user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
 	
 	def loadDonorInfo(self, result, user):
 		if not result:
