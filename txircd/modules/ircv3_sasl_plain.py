@@ -1,3 +1,4 @@
+from twisted.words.protocols import irc
 from txircd.modbase import Module
 from base64 import b64decode
 
