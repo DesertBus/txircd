@@ -27,22 +27,32 @@ class Sasl(Command):
 		return True
 	
 	def onUse(self, user, data):
-		if "mechanism" in data:
-			user.cache["sasl_authenticating"] = data["mechanism"]
-			user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
-		if "authentication" in data:
-			result = self.ircd.module_data_cache["sasl_mechanisms"][user.cache["sasl_authenticating"]].authenticate(user, data["authentication"])
-			if result == "more":
-				return
-			if result == "wait":
-				self.ircd.module_data_cache["sasl_mechanisms"][user.cache["sasl_authenticating"]].bindSaslResult(user, self.sendSuccess, self.sendFailure)
-				return
-			if result:
-				user.sendMessage(irc.RPL_SASLACCOUNT, "{}!{}@{}".format(user.nickname if user.nickname else "unknown", user.username if user.username else "unknown", user.hostname), user.metadata["ext"]["accountname"], ":You are now logged in as {}".format(user.metadata["ext"]["accountname"]))
-				user.sendMessage(irc.RPL_SASLSUCCESS, ":SASL authentication successful")
+		if "sasl_authenticating" not in user.cache:
+			mechanism = data["authentication"][0].upper()
+			user.cache["sasl_authenticating"] = data["authentication"][0].upper()
+			if "server_sasl_agent" in self.ircd.servconfig and self.ircd.servconfig["server_sasl_agent"]:
+				pass # TODO after s2s
+			elif "sasl_agent" in self.ircd.module_data_cache:
+				result = self.ircd.module_data_cache["sasl_agent"].saslStart(user, mechanism)
+				if result == "fail":
+					self.sendFailure(user)
 			else:
+				del user.cache["sasl_authenticating"]
 				user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
-			del user.cache["sasl_authenticating"]
+		else:
+			if "server_sasl_agent" in self.ircd.servconfig and self.ircd.servconfig["server_sasl_agent"]:
+				pass # TODO after s2s
+			else:
+				result = self.ircd.module_data_cache["sasl_agent"].saslNext(user, data["authentication"])
+				if result == "done":
+					if "accountname" in user.metadata["ext"]:
+						self.sendSuccess(user)
+						self.ircd.module_data_cache["sasl_agent"].saslDone(user, True)
+					else:
+						self.sendFailure(user)
+						self.ircd.module_data_cache["sasl_agent"].saslDone(user, False)
+				elif result == "wait":
+					self.ircd.module_data_cache["sasl_agent"].bindSaslResult(user, self.sendSuccess, self.sendFailure)
 	
 	def processParams(self, user, params):
 		if user.registered == 0:
@@ -54,18 +64,9 @@ class Sasl(Command):
 		if "accountname" in user.metadata["ext"]:
 			user.sendMessage(irc.ERR_SASLALREADYAUTHED, ":You have already authenticated")
 			return {}
-		if "sasl_authenticating" in user.cache:
-			return {
-				"user": user,
-				"authentication": params
-			}
-		mechanism = params[0].upper()
-		if mechanism not in self.ircd.module_data_cache["sasl_mechanisms"]:
-			user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
-			return {}
 		return {
 			"user": user,
-			"mechanism": mechanism
+			"authentication": params
 		}
 	
 	def checkInProgress(self, user):
