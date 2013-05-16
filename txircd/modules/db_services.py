@@ -1045,9 +1045,13 @@ class Spawner(object):
 	def data_unserialize(self, data):
 		if "currentauction" in data:
 			self.bidserv.cache["auction"] = data["currentauction"]
-		for key, value in data["registeredchannels"].iteritems():
-			self.chanserv.cache["registered"][key] = value
-		self.auth_timer = data["auth_timers"]
+		if "registeredchannels" in data:
+			for key, value in data["registeredchannels"].iteritems():
+				self.chanserv.cache["registered"][key] = value
+		if "auth_timers" in data:
+			self.auth_timer = data["auth_timers"]
+		if "saslusers" in data:
+			self.saslUsers = data["saslusers"]
 	
 	# Services Functions
 	def query(self, query, *args):
