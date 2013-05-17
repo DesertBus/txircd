@@ -23,6 +23,12 @@ class WhoisCommand(Command):
 			if chandisplay:
 				user.sendMessage(irc.RPL_WHOISCHANNELS, u.nickname, ":{}".format(" ".join(chandisplay)))
 			user.sendMessage(irc.RPL_WHOISSERVER, u.nickname, u.server)
+			if "accountname" in u.metadata["ext"]:
+				user.sendMessage(irc.RPL_WHOISACCOUNT, u.nickname, u.metadata["ext"]["accountname"], ":is logged in as")
+			if u.socket.secure:
+				user.sendMessage(irc.RPL_WHOISSECURE, u.nickname, ":is using a secure connection")
+			if "o" in u.mode:
+				user.sendMessage(irc.RPL_WHOISOPERATOR, u.nickname, ":is an IRC operator")
 			user.commandExtraHook("WHOIS", { "user": user, "targetuser": u })
 			user.sendMessage(irc.RPL_WHOISIDLE, u.nickname, str(epoch(now()) - epoch(u.lastactivity)), str(epoch(u.signon)), ":seconds idle, signon time")
 			user.sendMessage(irc.RPL_ENDOFWHOIS, u.nickname, ":End of /WHOIS list")
