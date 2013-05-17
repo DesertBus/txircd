@@ -65,30 +65,6 @@ default_options = {
 	# Oper details
 	"oper_ips": ["127.0.0.1"],
 	"oper_logins": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
-	# Database details
-	"db_host": "localhost",
-	"db_port": 3306,
-	"db_library": None,
-	"db_marker": "?",
-	"db_username": None,
-	"db_password": None,
-	"db_database": None,
-	# Nickserv details
-	"nickserv_timeout": 40,
-	"nickserv_limit": 5,
-	"nickserv_guest_prefix": "Guest",
-	# Bidserv details
-	"bidserv_display_all_madness": False,
-	"bidserv_bid_limit": 1000000,
-	"bidserv_auction_item": None,
-	"bidserv_auction_name": None,
-	"bidserv_auction_state": 0,
-	"bidserv_min_increase": 5,
-	"bidserv_bids": [],
-	"bidserv_admins": [1,3],
-	"bidserv_madness_levels": {1000: "Myth Busted"},
-	"bidserv_space_bid": "SPACE BID",
-	"bidserv_kill_reason": "Being a dick",
 	# Channel details
 	"channel_default_mode": {"n": None, "t": None},
 	"channel_default_status": "o",
