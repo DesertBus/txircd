@@ -1,6 +1,12 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command, Mode
 
+irc.RPL_KNOCK = "710"
+irc.RPL_KNOCKDLVR = "711"
+irc.ERR_TOOMANYKNOCK = "712"
+irc.ERR_CHANOPEN = "713"
+irc.ERR_KNOCKONCHAN = "714"
+
 class KnockCommand(Command):
 	def onUse(self, user, data):
 		cdata = data["targetchan"]

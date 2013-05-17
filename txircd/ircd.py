@@ -22,11 +22,6 @@ irc.RPL_CREATIONTIME = "329"
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
 irc.RPL_WHOISSECURE  = "671"
-irc.RPL_KNOCK = "710"
-irc.RPL_KNOCKDLVR = "711"
-irc.ERR_TOOMANYKNOCK = "712"
-irc.ERR_CHANOPEN = "713"
-irc.ERR_KNOCKONCHAN = "714"
 irc.ERR_CHANNOTALLOWED = "926" # I had to make this one up, too.
 # Fix twisted being silly
 irc.RPL_ADMINLOC1 = "257"
