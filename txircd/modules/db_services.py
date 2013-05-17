@@ -1341,7 +1341,7 @@ class Spawner(object):
 			status = data["status"]
 			if status:
 				for u in c.users:
-					u.sendMessage("MODE", "-{} {}".format(status, " ".join([user.nickname for i in len(status)])), to=c.name, prefix=self.chanserv.prefix())
+					u.sendMessage("MODE", "-{} {}".format(status, " ".join([user.nickname for i in status])), to=c.name, prefix=self.chanserv.prefix())
 				data["status"] = ""
 	
 	def promote(self, user, channel, keepOldStatus=False):
