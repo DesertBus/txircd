@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-from collections import MutableMapping
 from twisted.internet import reactor
-from pbkdf2 import PBKDF2
 from base64 import b64encode, b64decode
+from collections import MutableMapping
+from Crypto.Hash import MD5, SHA, SHA224, SHA256, SHA384, SHA512
+from pbkdf2 import PBKDF2
 from struct import pack
 from random import randint
-import re, datetime, hashlib, sys
+import re, datetime, sys
 
 VALID_NICKNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{0,31}$") # up to 32 char nicks
 DURATION_REGEX = re.compile(r"((?P<years>\d+?)y)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?")
@@ -163,12 +164,12 @@ def crypt(word, salt=None, iterations=1000, algorithm="sha256", bytes=24):
 	
 	# Reserve algorithms
 	algos = {
-		"md5": hashlib.md5,
-		"sha1": hashlib.sha1,
-		"sha224": hashlib.sha224,
-		"sha256": hashlib.sha256,
-		"sha384": hashlib.sha384,
-		"sha512": hashlib.sha512,
+		"md5": MD5,
+		"sha1": SHA,
+		"sha224": SHA224,
+		"sha256": SHA256,
+		"sha384": SHA384,
+		"sha512": SHA512
 	}
 	
 	# Generate a (pseudo-)random salt if the user hasn't provided one.
