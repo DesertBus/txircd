@@ -2,7 +2,9 @@ from txircd.modbase import Module
 
 class UserhostInNames(Module):
 	def namesListEntry(self, user, channel, listingUser, representation):
-		return "{}!{}@{}".format(representation, listingUser.username, listingUser.hostname)
+		if "cap" in user.cache and "userhost-in-names" in user.cache["cap"]:
+			return "{}!{}@{}".format(representation, listingUser.username, listingUser.hostname)
+		return representation
 	
 	def capRequest(self, user, capability):
 		return True
