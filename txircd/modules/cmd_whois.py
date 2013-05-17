@@ -15,7 +15,7 @@ class WhoisCommand(Command):
 				cdata = self.ircd.channels[chan]
 				if chan in user.channels or ("s" not in cdata.mode and "p" not in cdata.mode):
 					statuses = u.status(cdata.name)
-					status = statuses[0] if statuses else ""
+					status = self.ircd.prefixes[statuses[0]][0] if statuses else ""
 					chandisplay.append("{}{}".format(status, cdata.name))
 			if chandisplay:
 				user.sendMessage(irc.RPL_WHOISCHANNELS, u.nickname, ":{}".format(" ".join(chandisplay)))
