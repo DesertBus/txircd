@@ -4,7 +4,7 @@ from txircd.modbase import Command
 class PingCommand(Command):
 	def onUse(self, user, data):
 		if data["params"]:
-			user.sendMessage("PONG", ":{}".format(data["params"][0]), to=self.ircd.servconfig["server_name"], prefix=None)
+			user.sendMessage("PONG", ":{}".format(data["params"][0]), to=self.ircd.servconfig["server_name"])
 		else:
 			user.sendMessage(irc.ERR_NOORIGIN, ":No origin specified")
 	
