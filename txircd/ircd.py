@@ -89,12 +89,10 @@ default_options = {
 	"bidserv_madness_levels": {1000: "Myth Busted"},
 	"bidserv_space_bid": "SPACE BID",
 	"bidserv_kill_reason": "Being a dick",
-	# Chanserv?? details
+	# Channel details
 	"channel_default_mode": {"n": None, "t": None},
 	"channel_default_status": "o",
 	"channel_exempt_chanops": "", # list of modes from which channel operators are exempt
-	"channel_auto_ops": {1:"q"},
-	"channel_founder_mode": "q",
 	# Admin details
 	"admin_info_server": "Host Corp: 123 example street, Seattle, WA, USA",
 	"admin_info_organization": "Umbrella Corp: 123 example street, Seattle, WA, USA",
