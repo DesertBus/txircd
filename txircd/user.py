@@ -89,6 +89,8 @@ class IRCUser(object):
 		self.send_isupport()
 		self.send_lusers()
 		self.send_motd()
+		for action in self.ircd.actions["welcome"]:
+			action(self)
 	
 	def send_isupport(self):
 		isupport = []
