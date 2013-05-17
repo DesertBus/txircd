@@ -14,14 +14,12 @@ import uuid, socket, yaml, os, json, imp
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_STATS = "210"
-irc.RPL_STATSOPERS = "249" # Same here.
-irc.RPL_STATSPORTS = "249" # And here.
+irc.RPL_STATSOPERS = "249"
+irc.RPL_STATSPORTS = "249"
 irc.RPL_LOCALUSERS = "265"
 irc.RPL_GLOBALUSERS = "266"
 irc.RPL_CREATIONTIME = "329"
-irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_TOPICWHOTIME = "333"
-irc.RPL_WHOISSECURE  = "671"
 irc.ERR_CHANNOTALLOWED = "926" # I had to make this one up, too.
 # Fix twisted being silly
 irc.RPL_ADMINLOC1 = "257"
