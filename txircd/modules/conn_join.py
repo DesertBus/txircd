@@ -17,9 +17,9 @@ class Spawner(object):
 		self.conn_join = Autojoin().hook(self.ircd)
 		return {
 			"actions": {
-				"register": [self.conn_join.joinOnConnect]
+				"welcome": [self.conn_join.joinOnConnect]
 			}
 		}
 	
 	def cleanup(self):
-		self.ircd.actions["register"].remove(self.conn_join.joinOnConnect)
+		self.ircd.actions["welcome"].remove(self.conn_join.joinOnConnect)

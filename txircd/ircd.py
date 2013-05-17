@@ -207,6 +207,7 @@ class IRCD(Factory):
 		self.actions = {
 			"connect": [],
 			"register": [],
+			"welcome": [],
 			"join": [],
 			"joinmessage": [],
 			"nick": [],
