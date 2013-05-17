@@ -13,9 +13,6 @@ from txircd import __version__
 import uuid, socket, yaml, os, json, imp
 
 # Add additional numerics to complement the ones in the RFC
-irc.RPL_STATS = "210"
-irc.RPL_STATSOPERS = "249"
-irc.RPL_STATSPORTS = "249"
 irc.RPL_LOCALUSERS = "265"
 irc.RPL_GLOBALUSERS = "266"
 irc.RPL_CREATIONTIME = "329"
