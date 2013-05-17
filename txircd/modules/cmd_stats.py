@@ -3,6 +3,10 @@ from txircd.modbase import Command
 from txircd.utils import epoch, now
 import collections
 
+irc.RPL_STATS = "210"
+irc.RPL_STATSOPERS = "249"
+irc.RPL_STATSPORTS = "249"
+
 class StatsCommand(Command):
 	def onUse(self, user, data):
 		user.commandExtraHook("STATS", data)
