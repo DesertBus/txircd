@@ -49,8 +49,6 @@ default_options = {
 	"server_port_ssl": 6697,
 	"server_port_web": 8080,
 	"server_stats_public": "ou",
-	"server_denychans": [],
-	"server_allowchans": [],
 	"server_modules": [],
 	"server_password": None,
 	# Client details
