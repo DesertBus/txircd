@@ -99,10 +99,6 @@ default_options = {
 	"admin_info_server": "Host Corp: 123 example street, Seattle, WA, USA",
 	"admin_info_organization": "Umbrella Corp: 123 example street, Seattle, WA, USA",
 	"admin_info_person": "Lazy admin <admin@example.com>",
-	# Stats details
-	"stats_enabled": True,
-	"stats_port_tcp": 43789,
-	"stats_port_web": 43790,
 }
 
 class IRCProtocol(irc.IRC):
