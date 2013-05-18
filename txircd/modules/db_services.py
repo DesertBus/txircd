@@ -1019,6 +1019,7 @@ class Spawner(object):
 				"join": [self.promote],
 				"quit": [self.onQuit],
 				"nick": [self.onNickChange],
+				"topic": [self.onTopicChange],
 				"commandpermission": [self.commandPermission]
 			}
 		}
@@ -1098,6 +1099,12 @@ class Spawner(object):
 		if "registeredchannels" in data:
 			for key, value in data["registeredchannels"].iteritems():
 				self.chanserv.cache["registered"][key] = value
+				if "topic" in value and key in self.ircd.channels:
+					cdata = self.ircd.channels[key]
+					if value["topic"][0] != cdata.topic:
+						cdata.setTopic(value["topic"][0], value["topic"][1])
+						for u in cdata.users:
+							u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=self.chanserv.prefix())
 		if "auth_timers" in data:
 			self.auth_timer = data["auth_timers"]
 		if "saslusers" in data:
@@ -1409,6 +1416,10 @@ class Spawner(object):
 	def onNickChange(self, user, oldNick):
 		if irc_lower(user.nickname) != irc_lower(oldNick):
 			self.checkNick(user)
+	
+	def onTopicChange(self, channel, newTopic, newSetter):
+		if channel.name in self.chanserv.cache["registered"]:
+			self.chanserv.cache["registered"][channel.name]["topic"] = [newTopic, newSetter]
 	
 	def commandPermission(self, user, cmd, data):
 		if user not in self.auth_timer:
