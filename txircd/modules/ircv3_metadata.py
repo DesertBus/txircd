@@ -103,7 +103,7 @@ class MetadataCommand(Command):
 				return {}
 			if "o" not in user.mode:
 				try:
-					if not user.hasAccess(target.name, self.ircd.servconfig["channel_metadata_set_level"]):
+					if not user.hasAccess(target.name, self.ircd.servconfig["channel_minimum_level"]["METADATA"]):
 						user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, target.name, ":You do not have access to set metadata on this channel")
 						return {}
 				except AttributeError: # in this case, it's a user, not a channel
@@ -194,8 +194,10 @@ class Spawner(object):
 		self.metadata_cmd = None
 	
 	def spawn(self):
-		if "channel_metadata_set_level" not in self.ircd.servconfig:
-			self.ircd.servconfig["channel_metadata_set_level"] = "o"
+		if "channel_minimum_level" not in self.ircd.servconfig:
+			self.ircd.servconfing["channel_minimum_level"] = {}
+		if "METADATA" not in self.ircd.servconfig["channel_minimum_level"]:
+			self.ircd.servconfig["channel_minimum_level"]["METADATA"] = "o"
 		self.metadata_cmd = MetadataCommand()
 		if "cap" not in self.ircd.module_data_cache:
 			self.ircd.module_data_cache["cap"] = {}
