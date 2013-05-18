@@ -974,12 +974,12 @@ class Spawner(object):
 		
 		self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
 		
-		self.ircd.users["NickServ"] = self.nickserv
-		self.ircd.localusers["NickServ"] = self.nickserv
-		self.ircd.users["ChanServ"] = self.chanserv
-		self.ircd.localusers["ChanServ"] = self.chanserv
-		self.ircd.users["BidServ"] = self.bidserv
-		self.ircd.localusers["BidServ"] = self.bidserv
+		self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
+		self.ircd.localusers[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
+		self.ircd.users[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
+		self.ircd.localusers[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
+		self.ircd.users[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
+		self.ircd.localusers[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
 		
 		self.ircd.module_data_cache["sasl_agent"] = self
 		
