@@ -33,7 +33,7 @@ default_options = {
 	"network_name": "txircd",
 	# Server details
 	"server_name": socket.getfqdn(),
-	"server_motd": "Welcome to txIRCD",
+	"server_motd": "Welcome to txircd",
 	"server_motd_line_length": 80,
 	"server_port_tcp": 6667,
 	"server_port_ssl": 6697,
@@ -49,7 +49,6 @@ default_options = {
 	"client_ping_interval": 60,
 	"client_timeout_delay": 120,
 	"client_ban_msg": "You're banned! Email abuse@xyz.com for help.",
-	"client_whowas_limit": 10,
 	# Oper details
 	"oper_ips": ["127.0.0.1"],
 	"oper_logins": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
