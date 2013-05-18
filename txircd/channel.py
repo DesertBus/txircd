@@ -32,6 +32,8 @@ class IRCChannel(object):
 		return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
 	
 	def setTopic(self, topic, setter):
+		for action in self.ircd.actions["topic"]:
+			action(self, topic, setter)
 		self.topic = topic
 		self.topicSetter = setter
 		self.topicTime = now()

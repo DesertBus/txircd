@@ -167,6 +167,7 @@ class IRCD(Factory):
 			"joinmessage": [],
 			"nick": [],
 			"quit": [],
+			"topic": [],
 			"nameslistentry": [],
 			"chancreate": [],
 			"chandestroy": [],
