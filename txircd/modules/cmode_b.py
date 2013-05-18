@@ -1,5 +1,3 @@
-# TODO: make sane before committing
-
 from twisted.words.protocols import irc
 from txircd.modbase import Mode
 from txircd.utils import irc_lower, epoch, now, CaseInsensitiveDictionary
