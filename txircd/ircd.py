@@ -51,7 +51,7 @@ default_options = {
 	"client_ban_msg": "You're banned! Email abuse@xyz.com for help.",
 	# Oper details
 	"oper_ips": ["127.0.0.1"],
-	"oper_logins": {"admin":"$p5k2$$gGs8NHIY$ZtbawYVNM63aojnLWXmvkNA33ciJbOfB"},
+	"oper_logins": {"admin":"sha256:1000:abc:e/+7RSuHvTHideDuZkpvFXtq65+oHM9x"},
 	# Channel details
 	"channel_default_mode": {"n": None, "t": None},
 	"channel_default_status": "o",
