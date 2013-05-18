@@ -1020,6 +1020,7 @@ class Spawner(object):
 				"quit": [self.onQuit],
 				"nick": [self.onNickChange],
 				"topic": [self.onTopicChange],
+				"chancreate": [self.onChanCreate],
 				"commandpermission": [self.commandPermission]
 			}
 		}
@@ -1068,6 +1069,8 @@ class Spawner(object):
 		self.ircd.actions["join"].remove(self.promote)
 		self.ircd.actions["quit"].remove(self.onQuit)
 		self.ircd.actions["nick"].remove(self.onNickChange)
+		self.ircd.actions["topic"].remove(self.onTopicChange)
+		self.ircd.actions["chancreate"].remove(self.onChanCreate)
 		self.ircd.actions["commandpermission"].remove(self.commandPermission)
 	
 	def data_serialize(self):
@@ -1420,6 +1423,10 @@ class Spawner(object):
 	def onTopicChange(self, channel, newTopic, newSetter):
 		if channel.name in self.chanserv.cache["registered"]:
 			self.chanserv.cache["registered"][channel.name]["topic"] = [newTopic, newSetter]
+	
+	def onChanCreate(self, channel):
+		if channel.name in self.chanserv.cache["registered"] and "topic" in self.chanserv.cache["registered"][channel.name]:
+			channel.setTopic(self.chanserv.cache["registered"][channel.name]["topic"][0], self.chanserv.cache["registered"][channel.name]["topic"][1])
 	
 	def commandPermission(self, user, cmd, data):
 		if user not in self.auth_timer:
