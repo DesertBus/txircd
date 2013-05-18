@@ -119,8 +119,6 @@ class IRCProtocol(irc.IRC):
 			self.sendMessage("PING",":{}".format(self.factory.servconfig["server_name"]))
 	
 	def handleCommand(self, command, prefix, params):
-		self.factory.stats_data["lines_in"] += 1
-		self.factory.stats_data["total_lines_in"] += 1
 		log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
 		return self.type.handleCommand(command, prefix, params)
 	
