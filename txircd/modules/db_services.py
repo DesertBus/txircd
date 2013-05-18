@@ -18,6 +18,7 @@ class Service(object):
 		
 		def __init__(self):
 			self.transport = self.ServiceTransport()
+			self.secure = False
 	
 	def __init__(self, ircd, nick, ident, host, gecos, helpTexts):
 		# We're going to try to keep Service fairly consistent with IRCUser, even if most of these variables will never be used
