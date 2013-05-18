@@ -31,16 +31,17 @@ class StripColor(Mode):
 	def checkPermission(self, user, cmd, data):
 		if cmd not in ["PRIVMSG", "NOTICE"]:
 			return data
-		okchans = []
-		stripchans = []
-		for chan in data["targetchan"]:
-			if "S" in chan.mode:
-				stripchans.append(chan.name)
-			else:
-				okchans.append(chan)
-		data["targetchan"] = okchans
-		if stripchans:
-			user.handleCommand(cmd, None, [",".join(stripchans), self.strip_colors(data["message"])])
+		if chr(2) in data["message"] or chr(3) in data["message"] or chr(15) in data["message"] or chr(22) in data["message"] or chr(29) in data["message"] or chr(31) in data["message"]:
+			okchans = []
+			stripchans = []
+			for chan in data["targetchan"]:
+				if "S" in chan.mode:
+					stripchans.append(chan.name)
+				else:
+					okchans.append(chan)
+			data["targetchan"] = okchans
+			if stripchans:
+				user.handleCommand(cmd, None, [",".join(stripchans), self.strip_colors(data["message"])])
 		return data
 
 class Spawner(object):
