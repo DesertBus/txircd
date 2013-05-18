@@ -5,7 +5,7 @@ class UserhostCommand(Command):
 	def onUse(self, user, data):
 		replyList = []
 		for nick in data["targetnick"]:
-			udata = self.ircd.users[data["targetnick"]]
+			udata = self.ircd.users[nick]
 			replyList.append("{}{}={}{}@{}".format(udata.nickname, "*" if "o" in udata.mode else "", "-" if "away" in udata.metadata["ext"] else "+", udata.username, udata.hostname))
 		user.sendMessage(irc.RPL_USERHOST, ":{}".format(" ".join(replyList)))
 	
