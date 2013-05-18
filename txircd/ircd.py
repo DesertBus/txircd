@@ -93,7 +93,7 @@ class IRCProtocol(irc.IRC):
 			self.secure = ISSLTransport(self.transport, None) is not None
 			self.data_checker.start(5)
 			self.last_message = now()
-			self.pinger.start(self.factory.servconfig["client_ping_interval"])
+			self.pinger.start(self.factory.servconfig["client_ping_interval"], now=False)
 
 	def dataReceived(self, data):
 		if self.dead:
