@@ -1102,12 +1102,6 @@ class Spawner(object):
 		if "registeredchannels" in data:
 			for key, value in data["registeredchannels"].iteritems():
 				self.chanserv.cache["registered"][key] = value
-				if "topic" in value and key in self.ircd.channels:
-					cdata = self.ircd.channels[key]
-					if value["topic"][0] != cdata.topic:
-						cdata.setTopic(value["topic"][0], value["topic"][1])
-						for u in cdata.users:
-							u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=self.chanserv.prefix())
 		if "auth_timers" in data:
 			self.auth_timer = data["auth_timers"]
 		if "saslusers" in data:
@@ -1422,11 +1416,13 @@ class Spawner(object):
 	
 	def onTopicChange(self, channel, newTopic, newSetter):
 		if channel.name in self.chanserv.cache["registered"]:
-			self.chanserv.cache["registered"][channel.name]["topic"] = [newTopic, newSetter]
+			self.chanserv.cache["registered"][channel.name]["topic"] = [newTopic, newSetter, now()]
 	
 	def onChanCreate(self, channel):
 		if channel.name in self.chanserv.cache["registered"] and "topic" in self.chanserv.cache["registered"][channel.name]:
-			channel.setTopic(self.chanserv.cache["registered"][channel.name]["topic"][0], self.chanserv.cache["registered"][channel.name]["topic"][1])
+			topicData = self.chanserv.cache["registered"][channel.name]["topic"]
+			channel.setTopic(topicData[0], topicData[1])
+			channel.topicTime = topicData[2]
 	
 	def commandPermission(self, user, cmd, data):
 		if user not in self.auth_timer:
