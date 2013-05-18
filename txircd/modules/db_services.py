@@ -457,7 +457,7 @@ class CSAccessCommand(Command):
 				"user": user,
 				"targetchan": params[0]
 			}
-		if "accountid" not in user.metadata["ext"] or user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"]:
+		if ("accountid" not in user.metadata["ext"] or user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"]) and "o" not in user.mode:
 			user.sendMessage("NOTICE", ":You must own the channel to change its access permissions.", prefix=self.chanserv.prefix())
 			return {}
 		if params[1] in ["~o", "~r"]:
@@ -508,7 +508,7 @@ class CSCdropCommand(Command):
 		if params[0] not in self.chanserv.cache["registered"]:
 			user.sendMessage("NOTICE", ":The channel \x02{}\x02 isn't registered.".format(params[0]), prefix=self.chanserv.prefix())
 			return {}
-		if user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"]:
+		if user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"] and "o" not in user.mode:
 			user.sendMessage("NOTICE", ":You must be the channel founder in order to drop it.", prefix=self.chanserv.prefix())
 			return {}
 		return {
