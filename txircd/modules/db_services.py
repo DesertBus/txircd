@@ -568,7 +568,7 @@ class BSStartCommand(Command):
 		lines.append(":\x02\x034Make bids with \x1F/bid ###.## [smack talk]")
 		if "services_bidserv_increment" in self.ircd.servconfig:
 			lines.append(":\x02\x034The minimum increment between bids is ${:,.2f}".format(self.ircd.servconfig["services_bidserv_increment"]))
-		lines.append(":\x02\x034Only voiced (registered donor) users can bid - https://donor.desertbus.org/")
+		lines.append(":\x02\x034Only registered donors can bid - https://donor.desertbus.org/")
 		lines.append(":\x02\x034Please do not make any fake bids")
 		lines.append(":\x02\x034Beginning bidding at ${:,.2f}".format(float(results[0][3])))
 		for channel in self.ircd.channels.itervalues():
