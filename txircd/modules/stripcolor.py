@@ -39,7 +39,8 @@ class StripColor(Mode):
 			else:
 				okchans.append(chan)
 		data["targetchan"] = okchans
-		user.handleCommand(cmd, None, [",".join(stripchans), self.strip_colors(data["message"])])
+		if stripchans:
+			user.handleCommand(cmd, None, [",".join(stripchans), self.strip_colors(data["message"])])
 		return data
 
 class Spawner(object):
