@@ -294,7 +294,7 @@ class IRCD(Factory):
 		# Cleanly disconnect all clients
 		log.msg("Disconnecting clients...")
 		for u in self.users.values():
-			u.sendMessage("ERROR", ":Closing Link: {} [Server shutting down]".format(u.hostname))
+			u.sendMessage("ERROR", ":Closing Link: {} [Server shutting down]".format(u.hostname), to=None, prefix=None)
 			u.socket.transport.loseConnection()
 			deferreds.append(u.disconnected)
 		log.msg("Unloading modules...")
