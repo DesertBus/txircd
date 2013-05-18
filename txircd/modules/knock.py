@@ -13,7 +13,7 @@ class KnockCommand(Command):
 		user.cache["knocks"].append(cdata.name)
 		reason = data["reason"]
 		for u in cdata.users.itervalues():
-			if u.hasAccess(cdata.name, self.ircd.channel_invite_rank):
+			if u.hasAccess(cdata.name, self.ircd.servconfig["channel_minimum_level"]["INVITE"] if "channel_minimum_level" in self.ircd.servconfig and "INVITE" in self.ircd.servconfig["channel_minimum_level"] else "o"):
 				u.sendMessage(irc.RPL_KNOCK, cdata.name, user.prefix(), ":{}".format(reason))
 		user.sendMessage(irc.RPL_KNOCKDLVR, cdata.name, ":Your KNOCK has been delivered")
 	

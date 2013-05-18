@@ -33,7 +33,7 @@ class InviteCommand(Command):
 		if cdata.name not in user.channels:
 			user.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not on that channel")
 			return {}
-		if "i" in cdata.mode and not user.hasAccess(cdata.name, self.ircd.servconfig["channel_invite_rank"]):
+		if "i" in cdata.mode and not user.hasAccess(cdata.name, self.ircd.servconfig["channel_minimum_level"]["INVITE"]):
 			user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You're not a channel operator")
 			return {}
 		return {
@@ -53,8 +53,10 @@ class Spawner(object):
 		self.inviteCmd = None
 	
 	def spawn(self):
-		if "channel_invite_rank" not in self.ircd.servconfig:
-			self.ircd.servconfig["channel_invite_rank"] = "o"
+		if "channel_minimum_level" not in self.ircd.servconfig:
+			self.ircd.servconfig["channel_minimum_level"] = {}
+		if "INVITE" not in self.ircd.servconfig["channel_minimum_level"]:
+			self.ircd.servconfig["channel_minimum_level"]["INVITE"] = "o"
 		self.inviteCmd = InviteCommand()
 		return {
 			"commands": {
