@@ -195,20 +195,6 @@ class IRCD(Factory):
 			self.serialized_data = {}
 		self.serialize_timer = LoopingCall(self.save_serialized)
 		self.isupport = {}
-		self.stats = None
-		self.stats_timer = LoopingCall(self.flush_stats)
-		self.stats_data = {
-			"bytes_in": 0,
-			"bytes_out": 0,
-			"lines_in": 0,
-			"lines_out": 0,
-			"total_bytes_in": 0,
-			"total_bytes_out": 0,
-			"total_lines_in": 0,
-			"total_lines_out": 0,
-			"connections": 0,
-			"total_connections": 0
-		}
 		self.usercount = {
 			"localmax": 0,
 			"globalmax": 0
@@ -228,23 +214,7 @@ class IRCD(Factory):
 		self.isupport["PREFIX"] = "({}){}".format("".join(self.prefix_order), "".join([self.prefixes[mode][0] for mode in self.prefix_order]))
 		self.isupport["STATUSMSG"] = "".join([self.prefixes[mode][0] for mode in self.prefix_order])
 		self.isupport["TOPICLEN"] = "316"
-		"""
-		if self.app_ip_log:
-			try:
-				with open(self.app_ip_log) as f:
-					self.unique_ips = set(json.loads(f.read()))
-					self.stats_data["total_connections"] = len(self.unique_ips)
-			except:
-				self.unique_ips = set()
-		else:
-			self.unique_ips = set()
 		
-		logfile = "{}/{}".format(self.app_log_dir,"stats")
-		if not os.path.exists(logfile):
-			os.makedirs(logfile)
-		self.stats_log = DailyLogFile("log",logfile)
-		self.stats_timer.start(1)
-		"""
 		self.serialize_timer.start(300, now=False) # run every 5 minutes
 	
 	def all_module_load(self):
@@ -307,26 +277,6 @@ class IRCD(Factory):
 		self.all_module_load()
 	
 	def save_options(self):
-		# Serialize xlines
-		"""
-		for key, lines in self.xlines.iteritems():
-			xlines = {}
-			for user, data in lines.iteritems():
-				xlines[user] = {
-					"created": str(data["created"]),
-					"duration": build_duration(data["duration"]),
-					"setter": data["setter"],
-					"reason": data["reason"]
-				}
-			setattr(self, "server_xlines_{}".format(key.lower()), xlines)
-		# Load old options
-		options = {}
-		try:
-			with open(self.config) as f:
-				options = yaml.safe_load(f)
-		except:
-			return False
-		"""
 		# Overwrite with the new stuff
 		options = self.servconfig
 		for var, value in default_options.iteritems():
@@ -349,14 +299,6 @@ class IRCD(Factory):
 			u.sendMessage("ERROR", ":Closing Link: {} [Server shutting down]".format(u.hostname))
 			u.socket.transport.loseConnection()
 			deferreds.append(u.disconnected)
-		# Without any clients, all channels should be gone
-		# But make sure the logs are closed, just in case
-		"""
-		log.msg("Closing logs...")
-		for c in self.channels.itervalues():
-			c.log.close()
-		"""
-		#self.stats_log.close()
 		log.msg("Unloading modules...")
 		for name, spawner in self.modules.iteritems():
 			spawner.cleanup()
@@ -542,51 +484,7 @@ class IRCD(Factory):
 		if self.dead:
 			return None
 		ip = addr.host
-		"""
-		self.unique_ips.add(ip)
-		self.stats_data["total_connections"] = len(self.unique_ips)
-		if self.app_ip_log:
-			with open(self.app_ip_log,"w") as f:
-				f.write(json.dumps(list(self.unique_ips), separators=(',',':')))
-		conn = self.peerConnections.get(ip,0)
-		max = self.client_peer_exempt[ip] if ip in self.client_peer_exempt else self.client_peer_connections
-		if max and conn >= max:
-			return None
-		self.stats_data["connections"] += 1
-		self.peerConnections[ip] = conn + 1
-		"""
 		return Factory.buildProtocol(self, addr)
 
 	def unregisterProtocol(self, p):
-		"""
-		self.stats_data["connections"] -= 1
-		peerHost = p.transport.getPeer().host
-		self.peerConnections[peerHost] -= 1
-		if self.peerConnections[peerHost] == 0:
-			del self.peerConnections[peerHost]
-		"""
 		pass
-	
-	def flush_stats(self):
-		users = {}
-		countries = {}
-		uptime = now() - self.created
-		for u in self.users.itervalues():
-			users[u.nickname] = [u.latitude, u.longitude]
-			if u.country not in countries:
-				countries[u.country] = 0
-			countries[u.country] += 1
-		line = json.dumps({
-			"io":self.stats_data,
-			"users":users,
-			"countries":countries,
-			"uptime": "{}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime))
-		}, separators=(',',':'))
-		self.stats_data["bytes_in"] = 0
-		self.stats_data["bytes_out"] = 0
-		self.stats_data["lines_in"] = 0
-		self.stats_data["lines_out"] = 0
-		#if not self.stats_log.closed:
-		#    self.stats_log.write(line+"\n")
-		if self.stats:
-			self.stats.broadcast(line+"\r\n")
