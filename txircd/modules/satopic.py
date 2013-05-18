@@ -5,9 +5,7 @@ from txircd.utils import now
 class SatopicCommand(Command):
 	def onUse(self, user, data):
 		cdata = data["targetchan"]
-		cdata.topic = data["topic"]
-		cdata.topicSetter = user.nickname
-		cdata.topicTime = now()
+		cdata.setTopic(data["topic"], user.nickname)
 		for u in cdata.users:
 			u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=user.prefix())
 	
