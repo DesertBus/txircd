@@ -1258,7 +1258,7 @@ class Spawner(object):
 		except AttributeError:
 			return "fail"
 		self.saslUsers[user] = { "mechanism": mechanism }
-		setupfunc(user)
+		return setupfunc(user)
 	
 	def saslSetup_PLAIN(self, user):
 		user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
