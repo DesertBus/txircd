@@ -29,9 +29,9 @@ class WhoCommand(Command):
 				user.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 			else:
 				for u in self.ircd.users.itervalues():
-					if fnmatch(irc_lower(u.nickname), irc_lower(params[0])) or fnmatch(irc_lower(u.hostname), irc_lower(params[0])):
-						self.sendWhoLine(user, u, params[0], None, data["filters"], data["fields"])
-				user.sendMessage(irc.RPL_ENDOFWHO, params[0], ":End of /WHO list.") # params[0] is used here for the target so that the original glob pattern is returned
+					if fnmatch(irc_lower(u.nickname), irc_lower(data["target"])) or fnmatch(irc_lower(u.hostname), irc_lower(data["target"])):
+						self.sendWhoLine(user, u, data["target"], None, data["filters"], data["fields"])
+				user.sendMessage(irc.RPL_ENDOFWHO, data["target"], ":End of /WHO list.") # params[0] is used here for the target so that the original glob pattern is returned
 	
 	def processParams(self, user, params):
 		if user.registered > 0:
@@ -65,7 +65,7 @@ class WhoCommand(Command):
 					displayChannel = chan
 					break
 			else:
-				if "i" in user.mode:
+				if "i" in targetUser.mode or not targetUser.channels:
 					displayChannel = "*"
 				else:
 					displayChannel = targetUser.channels.keys()[0]
