@@ -27,6 +27,8 @@ class MultiPrefix(Module):
 	def whoStatus(self, cmd, data):
 		if cmd != "WHO":
 			return
+		if not data["data"]: # some other module already suppressed this line; operating on it won't be super useful
+			return
 		user = data["user"]
 		target = data["targetuser"]
 		if data["channel"]:
