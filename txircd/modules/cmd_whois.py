@@ -4,6 +4,7 @@ from txircd.utils import epoch, now
 
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_WHOISSECURE  = "671"
+irc.RPL_WHOISCERTFP = "276"
 
 class WhoisCommand(Command):
 	def onUse(self, user, data):
@@ -27,6 +28,9 @@ class WhoisCommand(Command):
 				user.sendMessage(irc.RPL_WHOISACCOUNT, u.nickname, u.metadata["ext"]["accountname"], ":is logged in as")
 			if u.socket.secure:
 				user.sendMessage(irc.RPL_WHOISSECURE, u.nickname, ":is using a secure connection")
+				certfp = u.certfp()
+				if certfp:
+					user.sendMessage(irc.RPL_WHOISCERTFP, u.nickname, ":has client certificate fingerprint {}".format(certfp))
 			if "o" in u.mode:
 				user.sendMessage(irc.RPL_WHOISOPERATOR, u.nickname, ":is an IRC operator")
 			user.commandExtraHook("WHOIS", { "user": user, "targetuser": u })
