@@ -254,7 +254,7 @@ class NSLoginCommand(Command):
 	
 	def processParams(self, user, params):
 		if not params or len(params) < 2:
-			user.sendMessage("NOTICE", ":Usage: \x02LOGIN \x1Femail password", prefix=self.nickserv.prefix())
+			user.sendMessage("NOTICE", ":Usage: \x02LOGIN \x1Femail\x1F \x1Fpassword", prefix=self.nickserv.prefix())
 			return {}
 		return {
 			"user": user,
