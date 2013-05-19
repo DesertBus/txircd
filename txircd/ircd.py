@@ -236,10 +236,11 @@ class IRCD(Factory):
 		            # user modes
 		            "umode_i", "umode_s"
 		            ]
-		ircv3_spec = [
+		ircv3_spec = [ # http://ircv3.atheme.org/
 		              "ircv3_cap", # capability mechanism which essentially serves as the base for everything else
-		              "ircv3_multi-prefix", "ircv3_sasl", "ircv3_account-notify", "ircv3_away-notify", "ircv3_extended-join", # IRC 3.1 extensions
-		              "ircv3_monitor", "ircv3_metadata" # IRC 3.2 extensions
+		              "ircv3_multi-prefix", "ircv3_sasl", # other IRC 3.1 base extensions
+		              "ircv3_account-notify", "ircv3_away-notify", "ircv3_extended-join", # IRC 3.1 optional extensions
+		              "ircv3_monitor", "ircv3_metadata" # IRC 3.2 base extensions
 		             ]
 		for module in rfc_spec:
 			check = self.load_module(module)
