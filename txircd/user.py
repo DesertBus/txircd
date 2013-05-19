@@ -249,6 +249,14 @@ class IRCUser(object):
 			return ""
 		return self.channels[channel]["status"]
 	
+	def getCertFP(self):
+		if not self.socket.secure:
+			return None
+		certificate = self.socket.transport.getPeerCertificate()
+		if certificate is None:
+			return None
+		return certificate.digest("md5").lower().replace(":", "")
+	
 	def modeString(self, user):
 		modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
 		params = []
