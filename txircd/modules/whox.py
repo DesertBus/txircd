@@ -42,7 +42,7 @@ class WhoX(Module):
 		if "r" in fields:
 			responses.append(":{}".format(whoData["gecos"]))
 		data["data"] = {}
-		user.sendMessage(irc.RPL_WHOSPCRPL, *responses)
+		data["user"].sendMessage(irc.RPL_WHOSPCRPL, *responses)
 
 class Spawner(object):
 	def __init__(self, ircd):
