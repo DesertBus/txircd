@@ -59,9 +59,9 @@ if __name__ == "__main__":
 	# Finally launch the app with the options
 	if options["app_verbose"] or args.verbose:
 		log.startLogging(args.log_file)
-	ircd = IRCD(args.config, options)
 	ssl_cert = ChainedOpenSSLContextFactory(options["app_ssl_key"],options["app_ssl_pem"])
 	ssl_cert.getContext().set_verify(SSL.VERIFY_PEER, lambda connection, x509, errnum, errdepth, ok: True)
+	ircd = IRCD(args.config, options, ssl_cert)
 	# We can ignore the validity of certs to get what we need
 	if options["server_port_tcp"]:
 		if isinstance(options["server_port_tcp"], collections.Sequence):
