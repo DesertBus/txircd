@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from fnmatch import fnmatch
 
 class WhoCommand(Command):
 	def onUse(self, user, data):
@@ -27,7 +28,7 @@ class WhoCommand(Command):
 				user.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
 			else:
 				for u in self.ircd.users.itervalues():
-					if fnmatch.fnmatch(irc_lower(u.nickname), irc_lower(params[0])) or fnmatch.fnmatch(irc_lower(u.hostname), irc_lower(params[0])):
+					if fnmatch(irc_lower(u.nickname), irc_lower(params[0])) or fnmatch(irc_lower(u.hostname), irc_lower(params[0])):
 						self.sendWhoLine(user, u, params[0], None, data["filters"])
 				user.sendMessage(irc.RPL_ENDOFWHO, params[0], ":End of /WHO list.") # params[0] is used here for the target so that the original glob pattern is returned
 	
