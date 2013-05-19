@@ -482,7 +482,6 @@ class IRCD(Factory):
 	def buildProtocol(self, addr):
 		if self.dead:
 			return None
-		ip = addr.host
 		return Factory.buildProtocol(self, addr)
 
 	def unregisterProtocol(self, p):
