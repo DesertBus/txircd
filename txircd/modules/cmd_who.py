@@ -10,7 +10,7 @@ class WhoCommand(Command):
 				if "i" in u.mode:
 					continue
 				common_channel = False
-				for c in self.channels.iterkeys():
+				for c in user.channels.iterkeys():
 					if c in u.channels:
 						common_channel = True
 						break
