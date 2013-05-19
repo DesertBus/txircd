@@ -90,9 +90,9 @@ class WhoCommand(Command):
 		if not extraData["data"]:
 			return
 		extraData["phase"] = "display" # use a second round to potentially modify output after processing
+		user.commandExtraHook("WHO", extraData)
 		if not extraData["data"]:
 			return # modules in the display phase can suppress normal output
-		user.commandExtraHook("WHO", extraData)
 		data = extraData["data"]
 		user.sendMessage(irc.RPL_WHOREPLY, data["dest"], data["ident"], data["host"], data["server"], data["nick"], "{}{}{}".format("G" if data["away"] else "H", "*" if data["oper"] else "", data["status"]), ":{} {}".format(data["hopcount"], data["gecos"]))
 
