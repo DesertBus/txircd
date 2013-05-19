@@ -145,7 +145,7 @@ class IRCProtocol(irc.IRC):
 class IRCD(Factory):
 	protocol = IRCProtocol
 
-	def __init__(self, config, options = None):
+	def __init__(self, config, options = None, sslCert = None):
 		reactor.addSystemEventTrigger("before", "shutdown", self.cleanup)
 		self.dead = False
 		
@@ -157,6 +157,7 @@ class IRCD(Factory):
 		self.users = CaseInsensitiveDictionary()
 		self.localusers = CaseInsensitiveDictionary()
 		self.channels = CaseInsensitiveDictionary()
+		self.ssl_cert = sslCert
 		self.modules = {}
 		self.actions = {
 			"connect": [],
@@ -239,7 +240,7 @@ class IRCD(Factory):
 		ircv3_spec = [ # http://ircv3.atheme.org/
 		              "ircv3_cap", # capability mechanism which essentially serves as the base for everything else
 		              "ircv3_multi-prefix", "ircv3_sasl", # other IRC 3.1 base extensions
-		              "ircv3_account-notify", "ircv3_away-notify", "ircv3_extended-join", # IRC 3.1 optional extensions
+		              "ircv3_account-notify", "ircv3_away-notify", "ircv3_extended-join", "ircv3_tls", # IRC 3.1 optional extensions
 		              "ircv3_monitor", "ircv3_metadata" # IRC 3.2 base extensions
 		             ]
 		for module in rfc_spec:
