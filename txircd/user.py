@@ -249,7 +249,7 @@ class IRCUser(object):
 			return ""
 		return self.channels[channel]["status"]
 	
-	def getCertFP(self):
+	def certFP(self):
 		if not self.socket.secure:
 			return None
 		certificate = self.socket.transport.getPeerCertificate()
