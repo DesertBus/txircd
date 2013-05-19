@@ -8,6 +8,7 @@ import yaml, collections, sys
 
 # A direct copy of DefaultOpenSSLContext factory as of Twisted 12.2.0
 # The only difference is using ctx.use_certificate_chain_file instead of ctx.use_certificate_file
+# This code remains unchanged in the newer Twisted 13.0.0
 class ChainedOpenSSLContextFactory(ssl.DefaultOpenSSLContextFactory):
 	def cacheContext(self):
 		if self._context is None:
