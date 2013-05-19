@@ -15,7 +15,7 @@ class WhoCommand(Command):
 						common_channel = True
 						break
 				if not common_channel:
-					self.sendWhoLine(user, u, "*", None, data["filters"], data["fields"])
+					self.sendWhoLine(user, u, "*", None, data["filters"] if "filters" in data else "", data["fields"] if "fields" in data else "")
 			user.sendMessage(irc.RPL_ENDOFWHO, self.nickname, "*", ":End of /WHO list.")
 		else:
 			if data["target"] in self.ircd.channels:
