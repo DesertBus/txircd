@@ -1,6 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
-from txircd.utils import epoch, now
+from txircd.utils import epoch, irc_lower, now
 from fnmatch import fnmatch
 
 class WhoCommand(Command):
@@ -16,7 +16,7 @@ class WhoCommand(Command):
 						break
 				if not common_channel:
 					self.sendWhoLine(user, u, "*", None, data["filters"] if "filters" in data else "", data["fields"] if "fields" in data else "")
-			user.sendMessage(irc.RPL_ENDOFWHO, self.nickname, "*", ":End of /WHO list.")
+			user.sendMessage(irc.RPL_ENDOFWHO, "*", ":End of /WHO list.")
 		else:
 			if data["target"] in self.ircd.channels:
 				cdata = self.ircd.channels[data["target"]]
