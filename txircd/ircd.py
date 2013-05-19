@@ -157,7 +157,6 @@ class IRCD(Factory):
 		self.users = CaseInsensitiveDictionary()
 		self.localusers = CaseInsensitiveDictionary()
 		self.channels = CaseInsensitiveDictionary()
-		self.peerConnections = {}
 		self.modules = {}
 		self.actions = {
 			"connect": [],
