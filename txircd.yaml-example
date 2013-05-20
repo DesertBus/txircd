@@ -212,7 +212,8 @@
 # MODULE CONFIGURATION
 # 
 # Modules: In addition to those loaded by the IRC spec, you can specify
-# additional modules to enable additional features.
+# additional modules to enable additional features.  Any uncommented
+# module below will be loaded.
 #server_modules: # Uncomment this line if you enable any modules below
 # 
 # All modules in this list prefixed with 'ircv3_' are modules that are loaded
