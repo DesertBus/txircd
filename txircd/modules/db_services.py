@@ -895,7 +895,7 @@ class BSCurrentAuctionCommand(Command):
 		self.bidserv = service
 	
 	def onUse(self, user, data):
-		user.sendMessage("NOTICE", ":The item currently up for auction is lot #{} ({})".format(self.bidserv.cache["auction"]["item"], self.bidserv.cache["auction"]["name"]), prefix=self.bidserv.prefix())
+		user.sendMessage("NOTICE", ":The item currently up for auction is lot #{} ({}).  http://desertbus.org/live-auction/{}".format(self.bidserv.cache["auction"]["item"], self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["item"]), prefix=self.bidserv.prefix())
 	
 	def processParams(self, user, params):
 		if "auction" not in self.bidserv.cache:
