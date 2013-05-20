@@ -1153,7 +1153,14 @@ class Spawner(object):
 			for bid in auctionDict["bids"]:
 				bid["bidder"] = int(bid["bidder"])
 			outputDict["currentauction"] = auctionDict
-		outputDict["certfp"] = self.nickserv.cache["certfp"]
+		certData = self.nickserv.cache["certfp"]
+		for cert, userid in certData["withcert"].iteritems():
+			certData["withcert"][cert] = int(userid)
+		idDict = certData["withid"]
+		for userid, certlist in idDict.iteritems():
+			del certData["withid"][userid]
+			certData["withid"][int(userid)] = certlist
+		outputDict["certfp"] = certData
 		return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
 	
 	def data_unserialize(self, data):
