@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from twisted.internet import reactor
 from twisted.python import log
 from twisted.words.protocols import irc

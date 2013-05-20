@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from twisted.internet import reactor
 from base64 import b64encode, b64decode
 from collections import MutableMapping

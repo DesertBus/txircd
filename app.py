@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from twisted.internet import reactor, ssl
 from twisted.python import log
 from txircd.ircd import IRCD, default_options
