@@ -32,10 +32,11 @@ class StripColor(Mode):
 		if cmd not in ["PRIVMSG", "NOTICE"]:
 			return data
 		if chr(2) in data["message"] or chr(3) in data["message"] or chr(15) in data["message"] or chr(22) in data["message"] or chr(29) in data["message"] or chr(31) in data["message"]:
+			exempt_chanops = "S" in self.ircd.servconfig["channel_exempt_chanops"]
 			okchans = []
 			stripchans = []
 			for chan in data["targetchan"]:
-				if "S" in chan.mode:
+				if "S" in chan.mode and (not exempt_chanops or not user.hasAccess(chan.name, "o")):
 					stripchans.append(chan.name)
 				else:
 					okchans.append(chan)
