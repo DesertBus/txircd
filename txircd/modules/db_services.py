@@ -1251,7 +1251,7 @@ class Spawner(object):
 		if accid not in self.nickserv.cache["certfp"]:
 			failValidation()
 			return
-		if cert in self.nickserv.cache["certfp"]:
+		if cert in self.nickserv.cache["certfp"][accid]:
 			self.loginUser(result, user)
 		else:
 			failValidation()
