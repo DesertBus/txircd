@@ -27,7 +27,7 @@ class StartTLSCommand(Command):
 		try:
 			user.socket.transport = ITLSTransport(user.socket.transport)
 		except:
-			user.sendMessage(irc.ERR_STARTTLS, ":STARTTLS failed, falling back to plaintext")
+			user.sendMessage(irc.ERR_STARTTLS, ":STARTTLS failed")
 		else:
 			user.sendMessage(irc.RPL_STARTTLS, ":STARTTLS successful, proceed with TLS handshake")
 			user.socket.transport.startTLS(self.ircd.ssl_cert)
@@ -35,6 +35,7 @@ class StartTLSCommand(Command):
 	
 	def processParams(self, user, params):
 		if user.registered == 0:
+			user.sendMessage(irc.ERR_STARTTLS, ":You can't STARTTLS after registration")
 			return {}
 		return {
 			"user": user
