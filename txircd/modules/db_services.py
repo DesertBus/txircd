@@ -617,6 +617,7 @@ class BSStartCommand(Command):
 		}
 		lines = [] # The lines array here serves as a cache for the lines so that the format isn't applied repeatedly on every iteration
 		lines.append(":\x02\x034Starting Auction for Lot #{}: \"{}\"\x02 - Called by {}".format(results[0][0], results[0][1], user.nickname))
+		lines.append(":\x02\x034Item info at http://desertbus.org/live-auction/{}".format(results[0][0]))
 		lines.append(":\x02\x034Make bids with \x1F/bid ###.## [smack talk]")
 		if "services_bidserv_increment" in self.ircd.servconfig:
 			lines.append(":\x02\x034The minimum increment between bids is ${:,.2f}".format(self.ircd.servconfig["services_bidserv_increment"]))
