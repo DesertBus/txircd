@@ -1426,7 +1426,7 @@ class Spawner(object):
 		certfp = user.certFP()
 		if not certfp:
 			return "done"
-		self.authByCert(user, cert, username)
+		self.authByCert(user, certfp, username)
 		return "wait"
 	
 	def saslDone(self, user, success):
