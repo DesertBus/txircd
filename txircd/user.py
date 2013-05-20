@@ -81,9 +81,9 @@ class IRCUser(object):
 		chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
 		usermodelist = "".join(["".join(modedict.keys()) for modedict in self.ircd.user_modes])
 		self.sendMessage(irc.RPL_WELCOME, ":Welcome to the Internet Relay Network {}".format(self.prefix()))
-		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.servconfig["network_name"], self.ircd.version))
+		self.sendMessage(irc.RPL_YOURHOST, ":Your host is {}, running version {}".format(self.ircd.servconfig["server_network_name"], self.ircd.version))
 		self.sendMessage(irc.RPL_CREATED, ":This server was created {}".format(self.ircd.created))
-		self.sendMessage(irc.RPL_MYINFO, self.ircd.servconfig["network_name"], self.ircd.version, usermodelist, chanmodelist) # usermodes & channel modes
+		self.sendMessage(irc.RPL_MYINFO, self.ircd.servconfig["server_network_name"], self.ircd.version, usermodelist, chanmodelist) # usermodes & channel modes
 		self.send_isupport()
 		self.send_lusers()
 		self.send_motd()
@@ -269,7 +269,7 @@ class IRCUser(object):
 	def send_motd(self):
 		if "server_motd" in self.ircd.servconfig and self.ircd.servconfig["server_motd"]:
 			chunks = chunk_message(self.ircd.servconfig["server_motd"], self.ircd.servconfig["server_motd_line_length"])
-			self.sendMessage(irc.RPL_MOTDSTART, ":- {} Message of the day - ".format(self.ircd.servconfig["network_name"]))
+			self.sendMessage(irc.RPL_MOTDSTART, ":- {} Message of the day - ".format(self.ircd.servconfig["server_network_name"]))
 			for chunk in chunks:
 				line = ":- {{:{!s}}} -".format(self.ircd.servconfig["server_motd_line_length"]).format(chunk) # Dynamically inject the line length as a width argument for the line
 				self.sendMessage(irc.RPL_MOTD, line)

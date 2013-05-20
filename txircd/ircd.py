@@ -28,10 +28,9 @@ default_options = {
 	"app_ssl_pem": "test.pem",
 	"app_irc_spec": "rfc1459",
 	"app_log_dir": "logs",
-	# Network details
-	"network_name": "txircd",
 	# Server details
 	"server_name": socket.getfqdn(),
+	"server_network_name": "txircd",
 	"server_motd": "Welcome to txircd",
 	"server_motd_line_length": 80,
 	"server_port_tcp": 6667,
@@ -208,7 +207,7 @@ class IRCD(Factory):
 		self.isupport["CHANNELLEN"] = "64"
 		self.isupport["CHANTYPES"] = "#"
 		self.isupport["MODES"] = 20
-		self.isupport["NETWORK"] = self.servconfig["network_name"]
+		self.isupport["NETWORK"] = self.servconfig["server_network_name"]
 		self.isupport["NICKLEN"] = "32"
 		self.isupport["PREFIX"] = "({}){}".format("".join(self.prefix_order), "".join([self.prefixes[mode][0] for mode in self.prefix_order]))
 		self.isupport["STATUSMSG"] = "".join([self.prefixes[mode][0] for mode in self.prefix_order])
