@@ -156,6 +156,7 @@ class IRCD(Factory):
 		self.users = CaseInsensitiveDictionary()
 		self.localusers = CaseInsensitiveDictionary()
 		self.channels = CaseInsensitiveDictionary()
+		self.peerConnections = {}
 		self.ssl_cert = sslCert
 		self.modules = {}
 		self.actions = {
@@ -465,7 +466,15 @@ class IRCD(Factory):
 	def buildProtocol(self, addr):
 		if self.dead:
 			return None
+		ip = addr.host
+		connections = self.peerConnections.get(ip, 0)
+		maxConnections = self.servconfig["client_peer_exempt"][ip] if ip in self.servconfig["client_peer_exempt"] else self.servconfig["client_peer_connections"]
+		if maxConnections and connections >= maxConnections:
+			log.msg("A client at IP address {} has exceeded the session limit".format(ip))
+			return None
+		self.peerConnections[ip] = connections + 1
 		return Factory.buildProtocol(self, addr)
 
 	def unregisterProtocol(self, p):
-		pass
+		ip = p.transport.getPeer().host
+		self.peerConnections[ip] -= 1
