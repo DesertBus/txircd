@@ -275,20 +275,6 @@ class IRCD(Factory):
 				self.servconfig[var] = value
 		self.all_module_load()
 	
-	def save_options(self):
-		# Overwrite with the new stuff
-		options = self.servconfig
-		for var, value in default_options.iteritems():
-			if var not in options:
-				options[var] = value
-		# Save em
-		try:
-			with open(self.config,"w") as f:
-				yaml.dump(options, f, default_flow_style=False)
-		except:
-			return False
-		return True
-	
 	def cleanup(self):
 		# Track the disconnections so we know they get done
 		deferreds = []
@@ -307,9 +293,6 @@ class IRCD(Factory):
 					self.serialized_data[name] = data_to_save
 			except AttributeError:
 				pass
-		# Finally, save the config. Just in case.
-		log.msg("Saving options...")
-		self.save_options()
 		log.msg("Saving serialized data...")
 		self.save_serialized()
 		# Return deferreds
