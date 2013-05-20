@@ -18,7 +18,7 @@ class OperCommand(Command):
 		if len(params) < 2:
 			user.sendMessage(irc.ERR_NEEDMOREPARAMS, "OPER", ":Not enough parameters")
 			return {}
-		if user.ip not in self.ircd.servconfig["oper_ips"]:
+		if self.ircd.servconfig["oper_ips"] and user.ip not in self.ircd.servconfig["oper_ips"]:
 			user.sendMessage(irc.ERR_NOOPERHOST, ":No O-lines for your host")
 			return {}
 		return {
