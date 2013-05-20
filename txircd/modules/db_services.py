@@ -889,6 +889,22 @@ class BSHighbidderCommand(Command):
 			"user": user
 		}
 
+class BSCurrentAuctionCommand(Command):
+	def __init__(self, module, service):
+		self.module = module
+		self.bidserv = service
+	
+	def onUse(self, user, data):
+		user.sendMessage("NOTICE", ":The item currently up for auction is lot #{} ({})".format(self.bidserv.cache["auction"]["item"], self.bidserv.cache["auction"]["name"]), prefix=self.bidserv.prefix())
+	
+	def processParams(self, user, params):
+		if "auction" not in self.bidserv.cache:
+			user.sendMessage("NOTICE", ":There is not an auction running at this time.", prefix=self.bidserv.prefix())
+			return {}
+		return {
+			"user": user
+		}
+
 
 class Spawner(object):
 	def __init__(self, ircd):
@@ -931,6 +947,7 @@ class Spawner(object):
 		self.helpText["bidserv"][1]["TWICE"] = ["Call \"Going Twice!\"", "Syntax: \x02TWICE\x02\n\nCalls \"Going Twice!\" to the crowd.  Use with caution, as this command is known to make the crowd go crazy and arouse bid snipers.", True]
 		self.helpText["bidserv"][1]["SOLD"] = ["Award the auction to the highest bidder", "Syntax: \x02SOLD\x02\n\nDeclares the auction as complete, awarding the prize to the highest bidder.", True]
 		self.helpText["bidserv"][1]["HIGHBIDDER"] = ["Get the high bidder in the current auction", "Syntax: \x02HIGHBIDDER\x02\n\nDisplays the high bidder in the current auction along with the amount of the current high bid.", False]
+		self.helpText["bidserv"][1]["CURRENTAUCTION"] = ["Shows the item currently up for auction.", "Syntax: \x02CURRENTAUCTION\x02\n\nDisplays the item currently up for auction.", False]
 		
 		self.nickserv = None
 		self.chanserv = None
@@ -1066,7 +1083,8 @@ class Spawner(object):
 				"ONCE": BSOnceCommand(self, self.bidserv),
 				"TWICE": BSTwiceCommand(self, self.bidserv),
 				"SOLD": BSSoldCommand(self, self.bidserv),
-				"HIGHBIDDER": BSHighbidderCommand(self, self.bidserv)
+				"HIGHBIDDER": BSHighbidderCommand(self, self.bidserv),
+				"CURRENTAUCTION": BSCurrentAuctionCommand(self, self.bidserv)
 			},
 			"actions": {
 				"register": [self.onRegister],
@@ -1119,6 +1137,7 @@ class Spawner(object):
 		del self.ircd.commands["TWICE"]
 		del self.ircd.commands["SOLD"]
 		del self.ircd.commands["HIGHBIDDER"]
+		del self.ircd.commands["CURRENTAUCTION"]
 		
 		self.ircd.actions["register"].remove(self.onRegister)
 		self.ircd.actions["join"].remove(self.promote)
