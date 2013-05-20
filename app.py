@@ -49,12 +49,6 @@ if __name__ == "__main__":
 		options["server_motd"] = args.motd
 	if args.client_timeout:
 		options["client_timeout"] = args.client_timeout
-	# Save the set values to the config file (if we can)
-	try:
-		with open(args.config,"w") as f:
-			yaml.dump(options, f, default_flow_style=False)
-	except:
-		pass # Oh well
 	# Finally launch the app with the options
 	if options["app_verbose"] or args.verbose:
 		log.startLogging(args.log_file)
