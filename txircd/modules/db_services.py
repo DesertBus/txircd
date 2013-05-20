@@ -1440,7 +1440,7 @@ class Spawner(object):
 		for channel in user.channels.iterkeys():
 			c = self.ircd.channels[channel]
 			self.promote(user, c, True)
-		self.addCert(user, user.certfp())
+		self.addCert(user, user.certFP())
 	
 	def unregistered(self, user):
 		for channel, data in user.channels.iteritems():
