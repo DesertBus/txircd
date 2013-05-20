@@ -1496,9 +1496,9 @@ class Spawner(object):
 	
 	def addCert(self, user, certfp):
 		accountid = user.metadata["ext"]["accountid"]
+		if accountid not in self.nickserv.cache["certfp"]:
+			self.nickserv.cache["certfp"][accountid] = []
 		if certfp and certfp not in self.nickserv.cache["certfp"][accountid]:
-			if accountid not in self.nickserv.cache["certfp"]:
-				self.nickserv.cache["certfp"][accountid] = []
 			self.nickserv.cache["certfp"][accountid].append(certfp)
 			return True
 		return False
