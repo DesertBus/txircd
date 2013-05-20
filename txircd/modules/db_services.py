@@ -1252,7 +1252,7 @@ class Spawner(object):
 			failValidation()
 			return
 		if cert in self.nickserv.cache["certfp"]:
-			self.loginuser(result, user)
+			self.loginUser(result, user)
 		else:
 			failValidation()
 	
