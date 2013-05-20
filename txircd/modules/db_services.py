@@ -377,6 +377,58 @@ class NSAccountCommand(Command):
 		else:
 			user.sendMessage("NOTICE", ":No such account", prefix=self.nickserv.prefix())
 
+class NSCertCommand(Command):
+	def __init__(self, module, service):
+		self.module = module
+		self.nickserv = service
+	
+	def onUse(self, user, data):
+		accountid = user.metadata["ext"]["accountid"]
+		if data["subcmd"] == "LIST":
+			user.sendMessage("NOTICE", ":Certificate list:", prefix=self.nickserv.prefix())
+			if accountid in self.nickserv.cache["certfp"]["withid"]:
+				for cert in self.nickserv.cache["certfp"]["withid"][accountid]:
+					user.sendMessage("NOTICE", ":{}".format(cert), prefix=self.nickserv.prefix())
+			user.sendMessage("NOTICE", ":*** End of certificate list", prefix=self.nickserv.prefix())
+		elif data["subcmd"] == "ADD":
+			if self.module.addCert(data["certfp"]):
+				user.sendMessage("NOTICE", ":Certificate fingerprint {} added to your account.".format(data["certfp"]), prefix=self.nickserv.prefix())
+			else:
+				user.sendMessage("NOTICE", ":Certificate fingerprint {} could not be added to your account.".format(data["certfp"]), prefix=self.nickserv.prefix())
+		else:
+			certfp = data["certfp"]
+			if certfp in self.nickserv.cache["certfp"]["withcert"] and self.nickserv.cache["certfp"]["withcert"][certfp] == accountid:
+				self.nickserv.cache["certfp"]["withid"][accountid].remove(certfp)
+				del self.nickserv.cache["certfp"]["withcert"][certfp]
+				user.sendMessage("NOTICE", ":Certificate fingerprint {} has been removed from your account.".format(certfp), prefix=self.nickserv.prefix())
+			else:
+				user.sendMessage("NOTICE", ":Certificate fingerprint {} was not associated with your account.".format(certfp), prefix=self.nickserv.prefix())
+	
+	def processParams(self, user, params):
+		if "accountid" not in user.metadata["ext"]:
+			user.sendMessage("NOTICE", ":You must be logged in to use that command.", prefix=self.nickserv.prefix())
+			return {}
+		if not params:
+			user.sendMessage("NOTICE", ":Usage: \x02CERT \x1F{LIST|ADD|DEL}\x1F \x1F[certificate fingerprint]", prefix=self.nickserv.prefix())
+			return {}
+		subcmd = params[0].upper()
+		if subcmd not in ["LIST", "ADD", "DEL"]:
+			user.sendMessage("NOTICE", ":Usage: \x02CERT \x1F{LIST|ADD|DEL}\x1F \x1F[certificate fingerprint]", prefix=self.nickserv.prefix())
+			return {}
+		if subcmd == "LIST":
+			return {
+				"user": user,
+				"subcmd": "LIST"
+			}
+		if len(params) < 2:
+			user.sendMessage("NOTICE", ":Usage: \x02CERT \x1F{}\x1F \x1Fcertificate fingerprint\x1F".format(subcmd), prefix=self.nickserv.prefix())
+			return {}
+		return {
+			"user": user,
+			"subcmd": subcmd,
+			"certfp": params[1].lower()
+		}
+
 
 class CSRegisterCommand(Command):
 	def __init__(self, module, service):
@@ -864,6 +916,7 @@ class Spawner(object):
 		self.helpText["nickserv"][1]["DROP"] = ["Unregisters a givennickname from your account", "Syntax: \x02DROP \x1Fnickname\x1F\x02\n\nUnregisters the given nickname from your account, allowing other people to use it and giving you more space to register other nicknames.", False]
 		self.helpText["nickserv"][1]["NICKLIST"] = ["Lists all the nicknames registered to your account", "Syntax: \x02NICKLIST\x02\n\nLists all the nicknames registered to your account.", False]
 		self.helpText["nickserv"][1]["ACCOUNT"] = ["Gives the account ID or nick provided the other", "Syntax: \x02ACCOUNT \x1Fnick|id\x1F\x02\n\nGives the account ID for the provided nick or the nicks associated with the provided account ID.  This is really only useful for use with ChanServ's access lists.", False]
+		self.helpText["nickserv"][1]["CERT"] = ["Allows you to manage SSL certificate fingerprints for SASL EXTERNAL authentication", "Syntax: \x02CERT \x1F{LIST|ADD|DEL}\x1F \x1F[certificate fingerprint]\x1F\x02\n\nProvides a mechanism to manage SSL certificate fingerprints for SASL EXTERNAL authentication.  SSL certificate fingerprints available on your account when you log in normally are automatically added to this list for later use.  Use the \x02LIST\x02 subcommand to view all certificate fingerprints associated with your account.  If you supply a certificate fingerprint for the \x02ADD\x02 or \x02DEL\x02 subcommands, you can modify the list.  If you are currently connected via SSL with a certificate, you can view your current certificate fingerprint using /WHOIS.", False]
 		
 		self.helpText["chanserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
 		self.helpText["chanserv"][1]["REGISTER"] = ["Registers a channel for your use", "Syntax: \x02REGISTER \x1Fchannel\x1F\x02\n\nRegisters a channel with you as a founder.  You must be a channel op or higher in the specified channel in order to register the channel.", False]
@@ -973,6 +1026,10 @@ class Spawner(object):
 		self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"])
 		
 		self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
+		self.nickserv.cache["certfp"] = {
+			"withcert": {},
+			"withid": {}
+		}
 		
 		self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
 		self.ircd.localusers[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
@@ -1000,6 +1057,7 @@ class Spawner(object):
 				"DROP": NSDropCommand(self, self.nickserv),
 				"NICKLIST": NSNicklistCommand(self, self.nickserv),
 				"ACCOUNT": NSAccountCommand(self, self.nickserv),
+				"CERT": NSCertCommand(self, self.nickserv),
 				
 				"REGISTER": CSRegisterCommand(self, self.chanserv),
 				"ACCESS": CSAccessCommand(self, self.chanserv),
@@ -1051,6 +1109,7 @@ class Spawner(object):
 		del self.ircd.commands["DROP"]
 		del self.ircd.commands["NICKLIST"]
 		del self.ircd.commands["ACCOUNT"]
+		del self.ircd.commands["CERT"]
 		
 		del self.ircd.commands["REGISTER"]
 		del self.ircd.commands["ACCESS"]
@@ -1094,11 +1153,14 @@ class Spawner(object):
 			for bid in auctionDict["bids"]:
 				bid["bidder"] = int(bid["bidder"])
 			outputDict["currentauction"] = auctionDict
+		outputDict["certfp"] = self.nickserv.cache["certfp"]
 		return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
 	
 	def data_unserialize(self, data):
 		if "currentauction" in data:
 			self.bidserv.cache["auction"] = data["currentauction"]
+		if "certfp" in data:
+			self.nickserv.cache["certfp"] = data["certfp"]
 		if "registeredchannels" in data:
 			for key, value in data["registeredchannels"].iteritems():
 				self.chanserv.cache["registered"][key] = value
@@ -1126,8 +1188,14 @@ class Spawner(object):
 		return nick
 	
 	def auth(self, user, username, password):
-		d = self.query("SELECT id, password, display_name FROM donors WHERE email = {0}", username)
+		d = self.query("SELECT id, display_name, password FROM donors WHERE email = {0}", username)
 		d.addCallback(self.verifyPassword, user, password)
+		d.addErrback(self.exclaimServerError, user, self.nickserv)
+		return d
+	
+	def authToID(self, user, id):
+		d = self.query("SELECT id, display_name FROM donors WHERE id = {0}", id)
+		d.addCallback(self.loginUser, user)
 		d.addErrback(self.exclaimServerError, user, self.nickserv)
 		return d
 	
@@ -1155,21 +1223,10 @@ class Spawner(object):
 				self.checkNick(user)
 				user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
 			return
-		hash = result[0][1]
+		hash = result[0][2]
 		check = crypt(password, hash)
 		if check == hash:
-			user.setMetadata("ext", "accountid", result[0][0])
-			user.setMetadata("ext", "accountname", result[0][2].replace(" ", "_"))
-			if user in self.auth_timer:
-				self.auth_timer[user].cancel()
-				del self.auth_timer[user]
-			if user in self.saslUsers:
-				self.saslUsers[user]["success"](user)
-				del self.saslUsers[user]
-			else:
-				user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
-				self.checkNick(user)
-			self.registered(user)
+			self.loginUser(result, user)
 		else:
 			if user in self.saslUsers:
 				self.saslUsers[user]["failure"](user)
@@ -1177,6 +1234,20 @@ class Spawner(object):
 			else:
 				self.checkNick(user)
 				user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
+	
+	def loginUser(self, result, user):
+		user.setMetadata("ext", "accountid", result[0][0])
+		user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
+		if user in self.auth_timer:
+			self.auth_timer[user].cancel()
+			del self.auth_timer[user]
+		if user in self.saslUsers:
+			self.saslUsers[user]["success"](user)
+			del self.saslUsers[user]
+		else:
+			user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
+			self.checkNick(user)
+		self.registered(user)
 	
 	def loadDonorInfo(self, result, user):
 		if not result:
@@ -1211,14 +1282,7 @@ class Spawner(object):
 			self.checkNick(user)
 			self.exclaimServerError(user, self.nickserv)
 			return
-		user.setMetadata("ext", "accountid", result[0][0])
-		user.setMetadata("ext", "accountname", result[0][1])
-		if user in self.auth_timer:
-			self.auth_timer[user].cancel()
-			del self.auth_timer[user]
-		user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
-		self.checkNick(user)
-		self.registered()
+		self.loginUser(result, user)
 	
 	def changeNick(self, user, id, nickname):
 		if user in self.auth_timer:
@@ -1285,6 +1349,11 @@ class Spawner(object):
 		if len(splitOut[-1]) == 400:
 			user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
 	
+	def saslSetup_EXTERNAL(self, user):
+		if "certfp" not in self.nickserv.cache or "withcert" not in self.nickserv.cache["certfp"]:
+			return "fail"
+		user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
+	
 	def saslNext(self, user, data):
 		try:
 			processfunc = getattr(self, "saslProcess_{}".format(self.saslUsers[user]["mechanism"].replace("-", "_")))
@@ -1328,6 +1397,19 @@ class Spawner(object):
 		self.auth(user, username, password)
 		return "wait"
 	
+	def saslProcess_EXTERNAL(self, user, data):
+		try:
+			username = b64decode(data[0])
+		except TypeError:
+			return "done"
+		certfp = user.certFP()
+		if not certfp:
+			return "done"
+		if certfp not in self.nickserv.cache["certfp"]["withcert"]:
+			return "done"
+		self.authToID(user, self.nickserv.cache["certfp"]["withcert"][certfp])
+		return "wait"
+	
 	def saslDone(self, user, success):
 		del self.saslUsers[user]
 	
@@ -1339,6 +1421,7 @@ class Spawner(object):
 		for channel in user.channels.iterkeys():
 			c = self.ircd.channels[channel]
 			self.promote(user, c, True)
+		self.addCert(user)
 	
 	def unregistered(self, user):
 		for channel, data in user.channels.iteritems():
@@ -1391,6 +1474,17 @@ class Spawner(object):
 				modeMsg = "+{} {}".format("".join(flags), " ".join([user.nickname for i in flags]))
 				for u in channel.users:
 					u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
+	
+	def addCert(self, user):
+		certfp = user.certFP()
+		if certfp and certfp not in self.nickserv.cache["certfp"]["withcert"]:
+			accountid = user.metadata["ext"]["accountid"]
+			self.nickserv.cache["certfp"]["withcert"][certfp] = accountid
+			if accountid not in self.nickserv.cache["certfp"]["withid"]:
+				self.nickserv.cache["certfp"]["withid"][accountid] = []
+			self.nickserv.cache["certfp"]["withid"][accountid].append(certfp)
+			return True
+		return False
 	
 	def onRegister(self, user):
 		if user.password:
