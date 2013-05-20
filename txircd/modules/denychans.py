@@ -17,12 +17,12 @@ class DenychansModule(Module):
 		for channel in channels:
 			lowerName = irc_lower(channel.name)
 			safe = False
-			if "server_allowchans" in self.ircd.servconfig:
-				for chanmask in self.ircd.servconfig["server_allowchans"]:
+			if "channel_allowchans" in self.ircd.servconfig:
+				for chanmask in self.ircd.servconfig["channel_allowchans"]:
 					if fnmatch(lowerName, irc_lower(chanmask)):
 						safe = True
 			if not safe:
-				for chanmask in self.ircd.servconfig["server_denychans"]:
+				for chanmask in self.ircd.servconfig["channel_denychans"]:
 					if fnmatch(lowerName, irc_lower(chanmask)):
 						remove.append(channel)
 						user.sendMessage(irc.ERR_CHANNOTALLOWED, channel.name, ":Channel {} is forbidden".format(channel.name))
@@ -41,8 +41,8 @@ class Spawner(object):
 		self.denychans = None
 	
 	def spawn(self):
-		if "server_denychans" not in self.ircd.servconfig:
-			self.ircd.servconfig["server_denychans"] = []
+		if "channel_denychans" not in self.ircd.servconfig:
+			self.ircd.servconfig["channel_denychans"] = []
 		self.denychans = DenychansModule().hook(self.ircd)
 		return {
 			"actions": {
