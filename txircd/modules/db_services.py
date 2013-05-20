@@ -386,20 +386,19 @@ class NSCertCommand(Command):
 		accountid = user.metadata["ext"]["accountid"]
 		if data["subcmd"] == "LIST":
 			user.sendMessage("NOTICE", ":Certificate list:", prefix=self.nickserv.prefix())
-			if accountid in self.nickserv.cache["certfp"]["withid"]:
-				for cert in self.nickserv.cache["certfp"]["withid"][accountid]:
+			if accountid in self.nickserv.cache["certfp"]:
+				for cert in self.nickserv.cache["certfp"][accountid]:
 					user.sendMessage("NOTICE", ":{}".format(cert), prefix=self.nickserv.prefix())
 			user.sendMessage("NOTICE", ":*** End of certificate list", prefix=self.nickserv.prefix())
 		elif data["subcmd"] == "ADD":
-			if self.module.addCert(data["certfp"]):
+			if self.module.addCert(user, data["certfp"]):
 				user.sendMessage("NOTICE", ":Certificate fingerprint {} added to your account.".format(data["certfp"]), prefix=self.nickserv.prefix())
 			else:
 				user.sendMessage("NOTICE", ":Certificate fingerprint {} could not be added to your account.".format(data["certfp"]), prefix=self.nickserv.prefix())
 		else:
 			certfp = data["certfp"]
-			if certfp in self.nickserv.cache["certfp"]["withcert"] and self.nickserv.cache["certfp"]["withcert"][certfp] == accountid:
-				self.nickserv.cache["certfp"]["withid"][accountid].remove(certfp)
-				del self.nickserv.cache["certfp"]["withcert"][certfp]
+			if certfp in self.nickserv.cache["certfp"][accountid]:
+				self.nickserv.cache["certfp"][accountid].remove(certfp)
 				user.sendMessage("NOTICE", ":Certificate fingerprint {} has been removed from your account.".format(certfp), prefix=self.nickserv.prefix())
 			else:
 				user.sendMessage("NOTICE", ":Certificate fingerprint {} was not associated with your account.".format(certfp), prefix=self.nickserv.prefix())
@@ -1026,10 +1025,7 @@ class Spawner(object):
 		self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"])
 		
 		self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
-		self.nickserv.cache["certfp"] = {
-			"withcert": {},
-			"withid": {}
-		}
+		self.nickserv.cache["certfp"] = {}
 		
 		self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
 		self.ircd.localusers[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
@@ -1154,12 +1150,9 @@ class Spawner(object):
 				bid["bidder"] = int(bid["bidder"])
 			outputDict["currentauction"] = auctionDict
 		certData = self.nickserv.cache["certfp"]
-		for cert, userid in certData["withcert"].iteritems():
-			certData["withcert"][cert] = int(userid)
-		idDict = certData["withid"]
-		for userid, certlist in idDict.iteritems():
-			del certData["withid"][userid]
-			certData["withid"][int(userid)] = certlist
+		for userid, certlist in self.nickserv.cache["certfp"].iteritems():
+			del certData[userid]
+			certData[int(userid)] = certlist
 		outputDict["certfp"] = certData
 		return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
 	
@@ -1200,9 +1193,9 @@ class Spawner(object):
 		d.addErrback(self.exclaimServerError, user, self.nickserv)
 		return d
 	
-	def authToID(self, user, id):
-		d = self.query("SELECT id, display_name FROM donors WHERE id = {0}", id)
-		d.addCallback(self.loginUser, user)
+	def authByCert(self, user, cert, username):
+		d = self.query("SELECT id, display_name FROM donors WHERE email = {0}", username)
+		d.addCallback(self.verifyCert, user, cert)
 		d.addErrback(self.exclaimServerError, user, self.nickserv)
 		return d
 	
@@ -1241,6 +1234,27 @@ class Spawner(object):
 			else:
 				self.checkNick(user)
 				user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
+	
+	def verifyCert(self, result, user, cert):
+		def failValidation():
+			if user in self.saslUsers:
+				self.saslUsers[user]["failure"](user)
+				del self.saslUsers[user]
+			else:
+				self.checkNick(user)
+				user.sendMessage("NOTICE", ":The login credentials you provided were incorrect.", prefix=self.nickserv.prefix())
+		
+		if not result:
+			failValidation()
+			return
+		accid = result[0][0]
+		if accid not in self.nickserv.cache["certfp"]:
+			failValidation()
+			return
+		if cert in self.nickserv.cache["certfp"]:
+			self.loginuser(result, user)
+		else:
+			failValidation()
 	
 	def loginUser(self, result, user):
 		user.setMetadata("ext", "accountid", result[0][0])
@@ -1357,7 +1371,7 @@ class Spawner(object):
 			user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
 	
 	def saslSetup_EXTERNAL(self, user):
-		if "certfp" not in self.nickserv.cache or "withcert" not in self.nickserv.cache["certfp"]:
+		if "certfp" not in self.nickserv.cache:
 			return "fail"
 		user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
 	
@@ -1412,9 +1426,7 @@ class Spawner(object):
 		certfp = user.certFP()
 		if not certfp:
 			return "done"
-		if certfp not in self.nickserv.cache["certfp"]["withcert"]:
-			return "done"
-		self.authToID(user, self.nickserv.cache["certfp"]["withcert"][certfp])
+		self.authByCert(user, cert, username)
 		return "wait"
 	
 	def saslDone(self, user, success):
@@ -1428,7 +1440,7 @@ class Spawner(object):
 		for channel in user.channels.iterkeys():
 			c = self.ircd.channels[channel]
 			self.promote(user, c, True)
-		self.addCert(user)
+		self.addCert(user, user.certfp())
 	
 	def unregistered(self, user):
 		for channel, data in user.channels.iteritems():
@@ -1482,14 +1494,12 @@ class Spawner(object):
 				for u in channel.users:
 					u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
 	
-	def addCert(self, user):
-		certfp = user.certFP()
-		if certfp and certfp not in self.nickserv.cache["certfp"]["withcert"]:
-			accountid = user.metadata["ext"]["accountid"]
-			self.nickserv.cache["certfp"]["withcert"][certfp] = accountid
-			if accountid not in self.nickserv.cache["certfp"]["withid"]:
-				self.nickserv.cache["certfp"]["withid"][accountid] = []
-			self.nickserv.cache["certfp"]["withid"][accountid].append(certfp)
+	def addCert(self, user, certfp):
+		accountid = user.metadata["ext"]["accountid"]
+		if certfp and certfp not in self.nickserv.cache["certfp"][accountid]:
+			if accountid not in self.nickserv.cache["certfp"]:
+				self.nickserv.cache["certfp"][accountid] = []
+			self.nickserv.cache["certfp"][accountid].append(certfp)
 			return True
 		return False
 	
