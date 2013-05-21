@@ -1,0 +1,199 @@
+This docment describes the module API of mtxircd at the time of the merge back 
+upstream to txircd.  Please modify or remove this document as it becomes 
+inaccurate.
+
+Modules in txircd are python files in the modules directory containing at least 
+a Spawner class and typically at least one other class.  Modules implementing 
+commands or modes must include another class extending Command or Mode from 
+txircd.modbase.
+
+The Spawner class simply extends object, but there are five methods called by 
+the core:
+
+__init__: The constructor is passed a reference to the server's IRCD instance.  
+It is highly recommended that you keep this.
+
+spawn: [REQUIRED] Returns a dictionary describing what the module supports.  
+More information is below.
+
+cleanup: [REQUIRED] Cleans up any handles left to it in the core.
+
+data_serialize: [OPTIONAL] Returns any data to be kept for the module again as 
+a list of two dictionaries.  The first dictionary should contain only basic 
+Python types suitable for writing to a yaml file.  This dictionary is written 
+to disk in a database file (data.yaml) and kept across multiple sessions.  The 
+second dictionary can contain whatever and is only kept for the purposes of 
+maintaining data across reloads.  If a key is specified in both dictionaries, 
+the one in the persistent (first) dictionary takes priority.
+
+data_unserialize: [OPTIONAL] Is passed a dictionary of data serialized by the 
+module and restores the data to the proper places in the module.
+
+
+SPAWN METHOD RETURN VALUE
+The Spawner.spawn method returns a dictionary containing up to three other 
+dictionaries under the keys "commands", "modes", and "actions".
+
+The commands dictionary maps commands (as keys) to the classes implementing 
+them.  As a simple example,
+"commands": {
+	"RESTART": RestartCommand()
+}
+where RestartCommand is a class in the module that extends 
+txircd.modbase.Command and contains the code that should trigger when the 
+command RESTART is issued by a client.
+
+The modes dictionary maps a mode identifier (key) to a class implementing that 
+mode.  Mode identifiers are 3-character strings as follows:
+The first character is either a 'c', indicating a channel mode, or a 'u', 
+indicating a user mode.
+The second character indicates the type of mode it is:
+'l' => list mode
+'u' => parameter mode (with parameter required on unset)
+'p' => parameter mode (with no parameter on unset)
+'n' => normal mode/boolean mode
+'s' => status mode (channel modes only)
+The third character is the mode letter of the mode being implemented.
+
+Status modes extend the mode identifier syntax:
+The fourth character is the prefix symbol to be assigned to the mode (e.g. '@' 
+for +o).
+All characters starting with the fifth are read in as a number indicating the 
+mode's relative rank level, used to put status modes in order.  Levels used by 
+the RFC modes are 100 for +o and 10 for +v.  Higher numbers give a higher 
+ranking in the channel, and lower numbers give a lower ranking.
+
+The actions dictionary maps some actions (key) to lists of one or more 
+functions to handle that action.  Actions handled by default in the core are as 
+follows:
+"connect": This action is called when a connection is established with a user.  
+It is passed that user's new user object.
+"register": This action is called when a user completes registration.  This 
+action is most useful for checking user data on registration for the purpose of 
+allowing or denying a connection.  It is passed that user's user object and 
+returns either True to indicate that registration is fine and the user should be 
+allowed to finish connecting or False to disconnect the user.
+"welcome": This action is called after registration is fully processed and the 
+user receives the welcome messages after registration.
+"join": This action is called when a user has just joined a channel.  It is 
+called right after the IRCd finishes processing the channel join.  It is passed 
+the user object of the user who just joined and the channel object of the 
+channel that was joined.
+"joinmessage": This action is called during the channel join processing.  It is 
+useful for modifying or hiding the channel join notice for some or all users.  
+It is passed the channel object for the channel being joined, the user object 
+for the joining user, and a list of users who were to see the normal join 
+message, and it returns the same or a modified list of users who are still to 
+see the normal join message from the IRCd.
+"nick": This action is called when a user changes nicks.  It is passed the user 
+object that just changed nicks updated with the new nickname, and a string of 
+the old nickname.
+"quit": This action is called when a user disconnects.  It is passed the user 
+object and the quit reason.  This function is called immediately after quit 
+processing, so messages cannot be sent to the user this way.
+"topic": This action is called when the topic changes in a channel.  It is 
+passed a channel object of the channel whose topic is being changed still with 
+the old topic, the new topic, and the new topic setter.
+"nameslistentry": This action is called as part of processing the NAMES output 
+to allow functions to modify how nicknames appear in the output.  It receives a 
+user object of the user requesting NAMES, channel object of the channel in which 
+NAMES is being requested, a user object of the user being listed, and a string 
+representation of how the user will be shown in output.  The function returns a 
+new representation (or the same one if there's nothing to do).
+"chancreate": This action is called when a channel is created.  It is passed a 
+channel object of the channel being created.
+"chandestroy": This action is called when a channel is being destroyed.  It is 
+passed a channel object of the channel being destroyed.
+"commandextra": This action is called, depending on the command, either after 
+processing of the command has finished, or at some point during command 
+processing, and can be used to do something extra or, in some cases, affect the 
+command's behavior.  The function receives the command that was used and either 
+the command's data dictionary or a dictionary of data generated by the command 
+function (if called during processing).
+"commandunknown": This action is called when an unknown command is received 
+from the client.  It may return True to suppress the normal 421 UNKNOWN COMMAND 
+output.
+"commandpermission": This action is called as a normal part of command 
+processing to determine whether a user may execute a command.  It is called 
+after a command's processParams function completes and receives the command 
+being processed and the resulting data dictionary.  It returns a new data 
+dictionary, which may be empty to indicate that the IRCd should stop processing 
+the command.  The calling user is typically placed in the data dictionary as 
+data["user"].
+"metadataupdate": This action is called whenever a user's or a channel's 
+metadata is updated or deleted.  It receives the user or channel object in 
+which the metadata was updated, the namespace and key of the changed metadata, 
+and the old and new value.  onMetadata(target, namespace, key, oldValue, value)
+"recvdata": This action is called when data is received from a client.  It 
+receives the user object and the line that was received.
+"senddata": This action is called when data is sent to a client.  It receives 
+the user object and the line that was sent.
+
+Modules may also implement their own actions.  Actions returned with keys that 
+are not in this list will be added under the new action given.
+
+
+THE COMMAND CLASS
+The Command class has three important methods.  Most Command implementations 
+will implement two of these.
+
+processParams(self, user, params): This method is the first method called when 
+processing starts.  It processes the parameters (a list of the function's 
+parameters split into IRC tokens) into a dictionary of information (or an empty 
+dictionary to abort processing of the command).  It is recommended that the 
+calling user be inserted into returned useful dictionaries under the "user" 
+key.  Typically this function will perform basic checking of permissions (for 
+example, oper-only modes will check that the user is an oper in this function) 
+and parameters.  If the command is good to trigger, it will return a dictionary 
+with data indicating to continue.
+
+If the dictionary returned by processParams contains data, the 
+commandpermission action is called with the command and returned data 
+dictionary.  The commandpermission action functions may modify the data or 
+abort the command (although they are expected not to delete important keys 
+unless aborting).
+
+onUse(self, user, data): This method is called once commandpermission is 
+complete and receives again the object of the calling user and the final data 
+dictionary.  This function does the actual carrying out of what the command 
+does.
+
+updateActivity(self, user): This method is not typically redefined.  The 
+default implementation is to update the user's last activity time to the time 
+in which the command was issued.  It can be redefined to do nothing (pass) to 
+suppress this updating.
+
+
+THE MODE CLASS
+The Mode class has a five methods called by the core.  These are not all 
+typically useful at once for one mode, but they are all available.
+
+checkSet(self, user, target, param): Checks whether the mode can be set.  Gets 
+the calling user (user), the target (either the user or channel object on which 
+the mode is being set, depending on whether the mode is a user or channel 
+mode), and the parameter given for the mode, if applicable (otherwise None).  
+This method will generally check to make sure the given parameter is valid.  It 
+returns a two-item list; the first item is a boolean value which can be True 
+(indicating all is OK) or False (denying the mode change).  The second value is 
+the new parameter (None is acceptable for parameterless modes).
+
+checkUnset(self, user, target, param): Works as checkSet, but is called to 
+check that the mode with the given parameter (or None) can be unset on the 
+target.  Has the same return value.
+
+showParam(self, user, target, param): This function is called for modes with 
+parameters when the parameter needs to be shown to a user.  It receives the 
+current parameter of the mode as set on target.  This function returns a string 
+being how the parameter should appear to the user.
+This function is called for list modes when the mode list is requested.  It 
+outputs the list for the mode.  There is no required return value.
+
+checkPermission(self, user, cmd, data): This function is called...
+- for channel modes, when "targetchan" is a key in the function's data
+- for user modes, when a command is used
+It is used similarly to the "commandpermission" action.  The "targetchan" key 
+can point to a single channel or a list, depending on the command.
+
+namesListEntry(self, recipient, channel, user, representation): This function 
+is called when NAMES output must be given for a channel and works similarly to 
+the "nameslistentry" action as described above.
