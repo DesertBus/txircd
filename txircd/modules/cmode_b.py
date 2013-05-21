@@ -4,9 +4,6 @@ from txircd.utils import irc_lower, epoch, now, CaseInsensitiveDictionary
 from fnmatch import fnmatch
 
 class BanMode(Mode):
-    def __init__(self):
-        self.banMetadata = CaseInsensitiveDictionary()
-    
     def checkSet(self, user, target, param):
         if " " in param:
             param = param[:param.index(" ")]
@@ -18,9 +15,9 @@ class BanMode(Mode):
             param = "{}@*".format(param)
         elif "!" not in param:
             param = "*!{}".format(param)
-        if target.name not in self.banMetadata:
-            self.banMetadata[target.name] = {}
-        self.banMetadata[target.name][param] = [user.nickname, epoch(now())]
+        if "bandata" not in target.cache:
+            target.cache["bandata"] = {}
+        target.cache["bandata"][param] = [user.nickname, epoch(now())]
         return [True, param]
     
     def checkUnset(self, user, target, param):
@@ -34,8 +31,8 @@ class BanMode(Mode):
             param = "*!{}".format(param)
         for banmask in target.mode["b"]:
             if param == banmask:
-                if param in self.banMetadata[target.name]:
-                    del self.banMetadata[target.name][param]
+                if "bandata" in target.cache and param in target.cache["bandata"]: # Just in case something happened, although bandata shouldn't just disappear
+                    del target.cache["bandata"][param]
                 return [True, param]
         return [False, param]
     
@@ -68,17 +65,17 @@ class BanMode(Mode):
     def showParam(self, user, target):
         if "b" in target.mode:
             for entry in target.mode["b"]:
-                metadata = self.banMetadata[target.name][entry] if target.name in self.banMetadata and entry in self.banMetadata[target.name] else [ self.ircd.servconfig["server_name"], epoch(now()) ]
+                metadata = target.cache["bandata"][entry] if "bandata" in target.cache and entry in target.cache["bandata"] else [ self.ircd.servconfig["server_name"], epoch(now()) ]
                 user.sendMessage(irc.RPL_BANLIST, target.name, entry, metadata[0], str(metadata[1]))
-            if target.name in self.banMetadata:
+            if "bandata" in target.cache:
                 removeMask = []
-                for mask in self.banMetadata[target.name]:
+                for mask in target.cache["bandata"]:
                     if mask not in target.mode["b"]:
                         removeMask.append(mask)
                 for mask in removeMask:
-                    del self.banMetadata[target.name][mask]
-        elif target.name in self.banMetadata:
-            del self.banMetadata[target.name] # clear all saved ban data if no bans are set on channel
+                    del target.cache["bandata"][mask]
+        elif "bandata" in target.cache:
+            del target.cache["bandata"] # clear all saved ban data if no bans are set on channel
         user.sendMessage(irc.RPL_ENDOFBANLIST, target.name, ":End of channel ban list")
 
 class Spawner(object):
@@ -98,10 +95,3 @@ class Spawner(object):
     
     def cleanup(self):
         self.ircd.removeMode("clb")
-    
-    def data_serialize(self):
-        return [{}, self.ban_mode.banMetadata._data]
-    
-    def data_unserialize(self, data):
-        for mask, metadata in data.iteritems():
-            self.ban_mode.banMetadata[mask] = metadata
