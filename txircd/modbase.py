@@ -20,20 +20,10 @@ class Mode(object):
 		return [True, param]
 	def showParam(self, user, target, param):
 		return param
-	def onJoin(self, channel, user, params):
-		return "pass"
 	def checkPermission(self, user, cmd, data):
 		return data
-	def onMessage(self, sender, target, message):
-		return ["pass"]
-	def onPart(self, channel, user, reason):
-		pass
-	def onTopicChange(self, channel, user, topic):
-		pass
 	def namesListEntry(self, recipient, channel, user, representation):
 		return representation
-	def commandData(self, command, *args):
-		pass
 
 class Command(object):
 	def hook(self, base):
