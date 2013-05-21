@@ -271,8 +271,15 @@
 # END IRCv3
 # 
 # userhost-in-names: Enables the userhost-in-names feature, which displays the
-# ident and host of users in NAMES output.
+# ident and host of users in NAMES output.  This is formerly known as UHNAMES
+# and may still be referred to as such in other IRC software.  This requires
+# ircv3_cap (either manually specified or from setting app_irc_spec to 'ircv3')
+# to function.
 #- userhost-in-names
+# 
+# whox: Enables part of the WHOX feature implemented in ircu and other IRCds,
+# which extends the WHO syntax to control which fields are shown.
+#-whox
 # 
 # die: Enables the /die command, which allows opers to shut down the server from
 # IRC.
@@ -331,6 +338,10 @@
 # from users matching the provided mask.  Setting and removing shuns works
 # similarly to g:lines.
 #- shun
+# 
+# badword: Enables the global censoring of certain words or phrases by the
+# /badword command.
+#- badword
 #
 # denychans: Prevents certain channels from being created.  You can configure
 # which channels are denied or allowed below.
