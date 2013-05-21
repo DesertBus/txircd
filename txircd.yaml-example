@@ -279,7 +279,7 @@
 # 
 # whox: Enables part of the WHOX feature implemented in ircu and other IRCds,
 # which extends the WHO syntax to control which fields are shown.
-#-whox
+#- whox
 # 
 # die: Enables the /die command, which allows opers to shut down the server from
 # IRC.
