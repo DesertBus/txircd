@@ -6,35 +6,35 @@
 from txircd.utils import now
 
 class Module(object):
-	def hook(self, base):
-		self.ircd = base
-		return self
+    def hook(self, base):
+        self.ircd = base
+        return self
 
 class Mode(object):
-	def hook(self, base):
-		self.ircd = base
-		return self
-	def checkSet(self, user, target, param):
-		return [True, param]
-	def checkUnset(self, user, target, param):
-		return [True, param]
-	def showParam(self, user, target, param):
-		return param
-	def checkPermission(self, user, cmd, data):
-		return data
-	def namesListEntry(self, recipient, channel, user, representation):
-		return representation
+    def hook(self, base):
+        self.ircd = base
+        return self
+    def checkSet(self, user, target, param):
+        return [True, param]
+    def checkUnset(self, user, target, param):
+        return [True, param]
+    def showParam(self, user, target, param):
+        return param
+    def checkPermission(self, user, cmd, data):
+        return data
+    def namesListEntry(self, recipient, channel, user, representation):
+        return representation
 
 class Command(object):
-	def hook(self, base):
-		self.ircd = base
-		return self
-	def onUse(self, user, data):
-		pass
-	def processParams(self, user, params):
-		return {
-			"user": user,
-			"params": params
-		}
-	def updateActivity(self, user):
-		user.lastactivity = now()
+    def hook(self, base):
+        self.ircd = base
+        return self
+    def onUse(self, user, data):
+        pass
+    def processParams(self, user, params):
+        return {
+            "user": user,
+            "params": params
+        }
+    def updateActivity(self, user):
+        user.lastactivity = now()
