@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.utils import irc_lower
 from fnmatch import fnmatch
 
 # As per the IRCv3.2 METADATA spec, numerics 760-769 must be reserved for
@@ -174,19 +175,21 @@ class MetadataCommand(Command):
             source = self.ircd.servconfig["server_name"]
         else:
             return
-        watcherList = []
-        for modfunc in self.ircd.actions["monitorwatchedby"]:
-            watcherList += modfunc(target.nickname)
+        lowerNick = irc_lower(target.nickname)
+        if "monitorwatchedby" in self.ircd.module_data_cache and lowerNick in self.ircd.module_data_cache["monitorwatchedby"]:
+            watcherList = self.ircd.module_data_cache["monitorwatchedby"][lowerNick]
+        else:
+            watcherList = []
         watchers = set(watcherList)
         watchers.add(target)
         if not value and key not in target.metadata[namespace]:
             for u in watchers:
                 if "cap" in u.cache and "metadata-notify" in u.cache["cap"]:
-                    u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key))
+                    u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key), to=None, prefix=None)
         else:
             for u in watchers:
                 if "cap" in u.cache and "metadata-notify" in u.cache["cap"]:
-                    u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key), ":{}".format(value))
+                    u.sendMessage("METADATA", source, target.nickname, "{}.{}".format(namespace, key), ":{}".format(value), to=None, prefix=None)
 
 class Spawner(object):
     def __init__(self, ircd):
