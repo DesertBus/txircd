@@ -48,6 +48,7 @@ def parse_duration(duration_string):
             except ValueError:
                 pass
     return duration
+
 def build_duration(duration_int):
     timeparts = {}
     for name in ["years","weeks","days","hours","minutes","seconds"]:
@@ -67,19 +68,6 @@ def chunk_message(msg, chunk_size):
         chunks.append(msg[:index])
         msg = msg[index+1:] if msg[index] in " \n" else msg[index:]
     return chunks
-
-def has_CTCP(msg):
-    if chr(1) not in msg:
-        return False
-    findpos = msg.find(chr(1))
-    in_action = False
-    while findpos > -1:
-        if in_action or (msg[findpos+1:findpos+7] == "ACTION" and len(msg) > findpos + 7 and msg[findpos+7] == " "):
-            in_action = not in_action
-            findpos = msg.find(chr(1), findpos + 1)
-        else:
-            return True
-    return False
     
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):

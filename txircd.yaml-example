@@ -305,6 +305,10 @@
 # messages sent to the channel.
 #- stripcolor
 # 
+# blockctcp: Enables the +C channel mode, which blocks CTCP requests and replies
+# sent to the channel.
+#- blockctcp
+# 
 # chanadmin: Enables the channel admin (+a) rank.
 #- chanadmin
 # 
