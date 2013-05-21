@@ -7,9 +7,8 @@ class WhoX(Module):
     def whox(self, cmd, data):
         if cmd != "WHO":
             return
-        if data["phase"] != "display":
-            return
-        if not data["data"]: # Some other module already displayed this specially
+        if "data" not in data or not data["data"] or data["phase"] != "display":
+            # The who request didn't match or some other module already displayed this or it's not the display phase
             return
         fields = data["fields"]
         if not fields:

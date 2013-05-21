@@ -79,7 +79,7 @@ class WhoCommand(Command):
             "away": "away" in targetUser.metadata["ext"],
             "oper": "o" in targetUser.mode,
             "idle": epoch(now()) - epoch(targetUser.lastactivity),
-            "status": targetUser.status(channel.name)[0] if channel and targetUser.status(channel.name) else "",
+            "status": self.ircd.prefixes[targetUser.status(channel.name)[0]][0] if channel and targetUser.status(channel.name) else "",
             "hopcount": 0,
             "gecos": targetUser.realname,
             "account": targetUser.metadata["ext"]["accountname"] if "accountname" in targetUser.metadata["ext"] else "0",

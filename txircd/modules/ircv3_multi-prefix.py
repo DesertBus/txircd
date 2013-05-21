@@ -27,12 +27,13 @@ class MultiPrefix(Module):
     def whoStatus(self, cmd, data):
         if cmd != "WHO":
             return
-        if not data["data"]: # some other module already suppressed this line; operating on it won't be super useful
+        if "data" not in data or not data["data"] or data["phase"] != "detect":
+            # some other module already suppressed this line or the WHO didn't match anyone; operating on it won't be super useful
             return
         user = data["user"]
         target = data["targetuser"]
         if data["channel"]:
-            data["status"] = "".join([self.ircd.prefixes[status][0] for status in target.status(data["channel"].name)])
+            data["data"]["status"] = "".join([self.ircd.prefixes[status][0] for status in target.status(data["channel"].name)])
 
 class Spawner(object):
     def __init__(self, ircd):
