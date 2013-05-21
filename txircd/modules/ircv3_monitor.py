@@ -12,9 +12,6 @@ irc.ERR_MONLISTFULL = "734"
 class MonitorCommand(Command):
     def __init__(self, limit):
         self.limit = limit
-        self.watching = {}
-        self.watched_by = {}
-        self.watch_masks = {} # Keep the case in one of the versions
     
     def onUse(self, user, data):
         modifier = data["modifier"]
@@ -26,23 +23,23 @@ class MonitorCommand(Command):
                     discard.append(target)
             for target in discard:
                 targetlist.remove(target)
-            if user not in self.watch_masks:
-                self.watch_masks[user] = []
-            if user not in self.watching:
-                self.watching[user] = []
-            if self.limit and len(self.watch_masks[user]) + len(targetlist) > self.limit:
+            if "monitormasks" not in user.cache:
+                user.cache["monitormasks"] = []
+            if "monitorwatching" not in user.cache:
+                user.cache["monitorwatching"] = []
+            if self.limit and len(user.cache["monitormasks"]) + len(targetlist) > self.limit:
                 user.sendMessage(irc.ERR_MONLISTFULL, str(self.limit), ",".join(targetlist), ":Monitor list is full")
                 return
             online = []
             offline = []
             for target in targetlist:
                 lowerTarget = irc_lower(target)
-                if lowerTarget not in self.watching[user]:
-                    self.watch_masks[user].append(target)
-                    self.watching[user].append(lowerTarget)
-                    if lowerTarget not in self.watched_by:
-                        self.watched_by[lowerTarget] = []
-                    self.watched_by[lowerTarget].append(user)
+                if lowerTarget not in user.cache["monitorwatching"]:
+                    user.cache["monitormasks"].append(target)
+                    user.cache["monitorwatching"].append(lowerTarget)
+                    if lowerTarget not in self.ircd.module_data_cache["monitorwatchedby"]:
+                        self.ircd.module_data_cache["monitorwatchedby"][lowerTarget] = []
+                    self.ircd.module_data_cache["monitorwatchedby"][lowerTarget].append(user)
                 if target in self.ircd.users:
                     online.append(target)
                 else:
@@ -57,34 +54,36 @@ class MonitorCommand(Command):
                     user.sendMessage(irc.RPL_MONOFFLINE, ":{}".format(line.replace(" ", ",")))
         elif modifier == "-":
             targetlist = data["targetlist"]
-            if user not in self.watch_masks or user not in watching:
+            if "monitormasks" not in user.cache or "monitorwatching" not in user.cache:
                 return
             for target in targetlist:
                 lowerTarget = irc_lower(target)
-                if lowerTarget in self.watching:
-                    self.watching[user].remove(lowerTarget)
-                    watchList = self.watch_masks[user]
+                if lowerTarget in user.cache["monitorwatching"]:
+                    user.cache["monitorwatching"].remove(lowerTarget)
+                    watchList = user.cache["monitormasks"]
                     for mask in watchList:
                         if irc_lower(mask) == lowerTarget:
-                            self.watch_masks[user].remove(mask)
-                if lowerTarget in self.watched_by:
-                    self.watched_by[lowerTarget].remove(user)
+                            user.cache["monitormasks"].remove(mask)
+                if lowerTarget in self.ircd.module_data_cache["monitorwatchedby"]:
+                    self.ircd.module_data_cache["monitorwatchedby"][lowerTarget].remove(user)
         elif modifier == "C":
-            self.watch_masks[user] = []
-            for target in self.watching[user]:
-                self.watched_by[target].remove(user)
-            self.watching[user] = []
+            if "monitormasks" in user.cache:
+                del user.cache["monitormasks"]
+            if "monitorwatching" in user.cache:
+                for target in user.cache["monitorwatching"]:
+                    self.ircd.module_data_cache["monitorwatchedby"][target].remove(user)
+                del user.cache["monitorwatching"]
         elif modifier == "L":
-            if user in self.watch_masks:
-                userlist = chunk_message(" ".join(self.watch_masks[user]), 400)
+            if "monitormasks" in user.cache:
+                userlist = chunk_message(" ".join(user.cache["monitormasks"]), 400)
                 for line in userlist:
                     user.sendMessage(irc.RPL_MONLIST, ":{}".format(line.replace(" ", ",")))
             user.sendMessage(irc.RPL_ENDOFMONLIST, ":End of MONITOR list")
         elif modifier == "S":
-            if user in self.watch_masks:
+            if "monitormasks" in user.cache:
                 online = []
                 offline = []
-                for target in self.watch_masks[user]:
+                for target in user.cache["monitormasks"]:
                     if target in self.ircd.users:
                         online.append(target)
                     else:
@@ -115,39 +114,31 @@ class MonitorCommand(Command):
             }
         return {}
     
-    def listWatching(self, user):
-        if user in self.watching:
-            return self.watching[user]
-        return []
-    
-    def listWatchedBy(self, user):
-        user = irc_lower(user)
-        if user in self.watched_by:
-            return self.watched_by[user]
-        return []
-    
     def notifyConnect(self, user):
         lowerNick = irc_lower(user.nickname)
-        if lowerNick in self.watched_by:
-            for watcher in self.watched_by[lowerNick]:
+        watchedBy = self.ircd.module_data_cache["monitorwatchedby"]
+        if lowerNick in watchedBy:
+            for watcher in watchedBy[lowerNick]:
                 watcher.sendMessage(irc.RPL_MONONLINE, ":{}".format(user.nickname))
         return True
     
     def notifyQuit(self, user, reason):
+        watchedBy = self.ircd.module_data_cache["monitorwatchedby"]
         if user.registered == 0:
             lowerNick = irc_lower(user.nickname)
-            if lowerNick in self.watched_by:
-                for watcher in self.watched_by[lowerNick]:
+            if lowerNick in watchedBy:
+                for watcher in watchedBy[lowerNick]:
                     watcher.sendMessage(irc.RPL_MONOFFLINE, ":{}".format(user.nickname))
     
     def notifyNick(self, user, oldNick):
         lowerNick = irc_lower(user.nickname)
         lowerOldNick = irc_lower(oldNick)
-        if lowerOldNick in self.watched_by:
-            for watcher in self.watched_by[lowerOldNick]:
+        watchedBy = self.ircd.module_data_cache["monitorwatchedby"]
+        if lowerOldNick in watchedBy:
+            for watcher in watchedBy[lowerOldNick]:
                 watcher.sendMessage(irc.RPL_MONOFFLINE, ":{}".format(oldNick))
-        if lowerNick in self.watched_by:
-            for watcher in self.watched_by[lowerNick]:
+        if lowerNick in watchedBy:
+            for watcher in watchedBy[lowerNick]:
                 watcher.sendMessage(irc.RPL_MONONLINE, ":{}".format(user.nickname))
 
 class Spawner(object):
@@ -166,13 +157,12 @@ class Spawner(object):
             mon_limit = None # Invalid arguments go to the default
         self.ircd.isupport["MONITOR"] = mon_limit
         self.monitor_cmd = MonitorCommand(mon_limit)
+        self.ircd.module_data_cache["monitorwatchedby"] = {}
         return {
             "commands": {
                 "MONITOR": self.monitor_cmd
             },
             "actions": {
-                "monitorwatching": [self.monitor_cmd.listWatching],
-                "monitorwatchedby": [self.monitor_cmd.listWatchedBy],
                 "register": [self.monitor_cmd.notifyConnect],
                 "quit": [self.monitor_cmd.notifyQuit],
                 "nick": [self.monitor_cmd.notifyNick]
@@ -181,21 +171,6 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["MONITOR"]
-        self.ircd.actions["monitorwatching"].remove(self.monitor_cmd.listWatching)
-        self.ircd.actions["monitorwatchedby"].remove(self.monitor_cmd.listWatchedBy)
         self.ircd.actions["register"].remove(self.monitor_cmd.notifyConnect)
         self.ircd.actions["quit"].remove(self.monitor_cmd.notifyQuit)
         self.ircd.actions["nick"].remove(self.monitor_cmd.notifyNick)
-    
-    def data_serialize(self):
-        dataToSave = {
-            "watching": self.monitor_cmd.watching,
-            "watched_by": self.monitor_cmd.watched_by,
-            "watch_masks": self.monitor_cmd.watch_masks
-        }
-        return [{}, dataToSave]
-    
-    def data_unserialize(self, data):
-        self.monitor_cmd.watching = data["watching"]
-        self.monitor_cmd.watched_by = data["watched_by"]
-        self.monitor_cmd.watch_masks = data["watch_masks"]
