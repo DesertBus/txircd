@@ -1,18 +1,18 @@
 from txircd.modbase import Mode
 
 class ServerNoticeMode(Mode):
-	pass
+    pass
 
 class Spawner(object):
-	def __init__(self, ircd):
-		self.ircd = ircd
-	
-	def spawn(self):
-		return {
-			"modes": {
-				"uns": ServerNoticeMode()
-			}
-		}
-	
-	def cleanup(self):
-		self.ircd.removeMode("uns")
+    def __init__(self, ircd):
+        self.ircd = ircd
+    
+    def spawn(self):
+        return {
+            "modes": {
+                "uns": ServerNoticeMode()
+            }
+        }
+    
+    def cleanup(self):
+        self.ircd.removeMode("uns")
