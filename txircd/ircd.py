@@ -4,7 +4,6 @@ from twisted.internet.protocol import Factory
 from twisted.internet.task import LoopingCall
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
-from twisted.python.logfile import DailyLogFile
 from twisted.words.protocols import irc
 from txircd.utils import CaseInsensitiveDictionary, now
 from txircd.user import IRCUser
