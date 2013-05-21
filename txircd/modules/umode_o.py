@@ -7,7 +7,8 @@ class OperMode(Mode):
     def checkWhoFilter(self, cmd, data):
         if cmd != "WHO":
             return
-        if not data["data"] or data["phase"] != "detect": # some other module already ate the data or it's the wrong phase
+        if "data" not in data or not data["data"] or data["phase"] != "detect":
+            # the request didn't match anyone or some other module already ate the data or it's the wrong phase
             return
         if "o" in data["filters"] and not data["data"]["oper"]:
             data["data"] = {}
