@@ -307,6 +307,8 @@ class IRCD(Factory):
                 data_to_save, free_data = self.modules[name].data_serialize()
                 if data_to_save:
                     self.serialized_data[name] = data_to_save
+                elif name in self.serialized_data:
+                    del self.serialized_data[name]
                 for key, value in free_data.iteritems():
                     saved_data[key] = value
                 for key, value in data_to_save.iteritems():
