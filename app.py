@@ -1,13 +1,13 @@
-# -*- coding: utf-8 -*-
 from twisted.internet import reactor, ssl
 from twisted.python import log
 from txircd.ircd import IRCD, default_options
 from txsockjs.factory import SockJSFactory
 from OpenSSL import SSL
-import yaml, collections, sys
+import yaml, collections, sys, signal
 
 # A direct copy of DefaultOpenSSLContext factory as of Twisted 12.2.0
 # The only difference is using ctx.use_certificate_chain_file instead of ctx.use_certificate_file
+# This code remains unchanged in the newer Twisted 13.0.0
 class ChainedOpenSSLContextFactory(ssl.DefaultOpenSSLContextFactory):
     def cacheContext(self):
         if self._context is None:
@@ -16,6 +16,9 @@ class ChainedOpenSSLContextFactory(ssl.DefaultOpenSSLContextFactory):
             ctx.use_certificate_chain_file(self.certificateFileName)
             ctx.use_privatekey_file(self.privateKeyFileName)
             self._context = ctx
+
+def createHangupHandler(ircd):
+    return lambda signal, stack: ircd.rehash()
 
 if __name__ == "__main__":
     # Copy the defaults
@@ -49,17 +52,13 @@ if __name__ == "__main__":
         options["server_motd"] = args.motd
     if args.client_timeout:
         options["client_timeout"] = args.client_timeout
-    # Save the set values to the config file (if we can)
-    try:
-        with open(args.config,"w") as f:
-            yaml.dump(options, f, default_flow_style=False)
-    except:
-        pass # Oh well
     # Finally launch the app with the options
     if options["app_verbose"] or args.verbose:
         log.startLogging(args.log_file)
-    ircd = IRCD(args.config, options)
     ssl_cert = ChainedOpenSSLContextFactory(options["app_ssl_key"],options["app_ssl_pem"])
+    ssl_cert.getContext().set_verify(SSL.VERIFY_PEER, lambda connection, x509, errnum, errdepth, ok: True)
+    ircd = IRCD(args.config, options, ssl_cert)
+    # We can ignore the validity of certs to get what we need
     if options["server_port_tcp"]:
         if isinstance(options["server_port_tcp"], collections.Sequence):
             for port in options["server_port_tcp"]:
@@ -96,6 +95,7 @@ if __name__ == "__main__":
                 reactor.listenSSL(int(options["server_port_web"]), SockJSFactory(ircd), ssl_cert)
             except:
                 pass # Wasn't a number
+    # Bind SIGHUP to rehash
+    signal.signal(signal.SIGHUP, createHangupHandler(ircd))
     # And start up the reactor
     reactor.run()
-

@@ -1,11 +1,13 @@
-# -*- coding: utf-8 -*-
-from collections import MutableMapping
 from twisted.internet import reactor
-from pbkdf2 import PBKDF2
-import re, datetime, hashlib, sys
 from base64 import b64encode, b64decode
+from collections import MutableMapping
+from Crypto.Hash import MD5, SHA, SHA224, SHA256, SHA384, SHA512
+from pbkdf2 import PBKDF2
+from struct import pack
+from random import randint
+import re, datetime, sys
 
-VALID_USERNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{0,31}$") # up to 32 char nicks
+VALID_NICKNAME = re.compile(r"[a-zA-Z\[\]\\`_^{}\|][a-zA-Z0-9-\[\]\\`_^{}\|]{0,31}$") # up to 32 char nicks
 DURATION_REGEX = re.compile(r"((?P<years>\d+?)y)?((?P<weeks>\d+?)w)?((?P<days>\d+?)d)?((?P<hours>\d+?)h)?((?P<minutes>\d+?)m)?((?P<seconds>\d+?)s)?")
 
 def irc_lower(str):
@@ -34,7 +36,7 @@ def parse_duration(duration_string):
     """
     try: # attempt to parse as a number of seconds if we get just a number before we go through the parsing process
         return int(duration_string)
-    except:
+    except ValueError:
         pass
     timeparts = DURATION_REGEX.match(duration_string).groupdict()
 
@@ -43,9 +45,10 @@ def parse_duration(duration_string):
         if amount is not None:
             try:
                 duration += int(amount) * time_lengths[unit]
-            except:
+            except ValueError:
                 pass
     return duration
+
 def build_duration(duration_int):
     timeparts = {}
     for name in ["years","weeks","days","hours","minutes","seconds"]:
@@ -65,46 +68,6 @@ def chunk_message(msg, chunk_size):
         chunks.append(msg[:index])
         msg = msg[index+1:] if msg[index] in " \n" else msg[index:]
     return chunks
-
-def strip_colors(msg):
-    while chr(3) in msg:
-        color_pos = msg.index(chr(3))
-        strip_length = 1
-        color_f = 0
-        color_b = 0
-        comma = False
-        for i in range(color_pos + 1, len(msg) if len(msg) < color_pos + 6 else color_pos + 6):
-            if msg[i] == ",":
-                if comma or color_f == 0:
-                    break
-                else:
-                    comma = True
-            elif msg[i].isdigit():
-                if color_b == 2 or (not comma and color_f == 2):
-                    break
-                elif comma:
-                    color_b += 1
-                else:
-                    color_f += 1
-            else:
-                break
-            strip_length += 1
-        msg = msg[:color_pos] + msg[color_pos + strip_length:]
-    msg = msg.replace(chr(2), "").replace(chr(29), "").replace(chr(31), "").replace(chr(15), "").replace(chr(22), "") # bold, italic, underline, plain, reverse
-    return msg
-
-def has_CTCP(msg):
-    if chr(1) not in msg:
-        return False
-    findpos = msg.find(chr(1))
-    in_action = False
-    while findpos > -1:
-        if in_action or (msg[findpos+1:findpos+7] == "ACTION" and len(msg) > findpos + 7 and msg[findpos+7] == " "):
-            in_action = not in_action
-            findpos = msg.find(chr(1), findpos + 1)
-        else:
-            return True
-    return False
     
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
@@ -134,26 +97,6 @@ class CaseInsensitiveDictionary(MutableMapping):
     def __setitem__(self, key, value):
         self._data[irc_lower(key)] = value
 
-
-class DefaultCaseInsensitiveDictionary(CaseInsensitiveDictionary):
-    def __init__(self, default_factory):
-        self._default_factory = default_factory
-        super(DefaultCaseInsensitiveDictionary, self).__init__()
-
-    def __contains__(self, key):
-        try:
-            super(DefaultCaseInsensitiveDictionary, self).__getitem__(key)
-        except KeyError:
-            return False
-        return True
-
-    def __getitem__(self, key):
-        try:
-            return super(DefaultCaseInsensitiveDictionary, self).__getitem__(key)
-        except KeyError:
-            value = self[key] = self._default_factory(key)
-            return value
-
 # Duplicate PBKDF2
 
 # Python 2.1 thru 3.2 compatibility
@@ -170,7 +113,7 @@ else:
     def isbytes(s):
         return isinstance(s, bytes)
     def b(s):
-       return s.encode("latin-1")
+        return s.encode("latin-1")
 
 def crypt(word, salt=None, iterations=1000, algorithm="sha256", bytes=24):
     """PBKDF2-based unix crypt(3) replacement.
@@ -181,12 +124,12 @@ def crypt(word, salt=None, iterations=1000, algorithm="sha256", bytes=24):
     
     # Reserve algorithms
     algos = {
-        "md5": hashlib.md5,
-        "sha1": hashlib.sha1,
-        "sha224": hashlib.sha224,
-        "sha256": hashlib.sha256,
-        "sha384": hashlib.sha384,
-        "sha512": hashlib.sha512,
+        "md5": MD5,
+        "sha1": SHA,
+        "sha224": SHA224,
+        "sha256": SHA256,
+        "sha384": SHA384,
+        "sha512": SHA512
     }
     
     # Generate a (pseudo-)random salt if the user hasn't provided one.

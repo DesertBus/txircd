@@ -1,0 +1,487 @@
+# txircd default/example configuration
+# Copy or rename this file to 'txircd.yaml' before you start!
+# All of the config values are commented out by default and will be given
+# default values in the application.  Remember to uncomment lines when changing
+# the values.  When the comments reference a default value, the default value is
+# the value that option will have if you don't uncomment it (although it is
+# typically also the value shown when commented)!
+# 
+# This configuration file is organized into sections based on what each section
+# overall is related to.
+
+# SERVER INFO
+# This section relates to information on the server, along with some of how it
+# runs.
+
+# Server Name: The server name must appear to be a domain name, but it does not
+# have to resolve (e.g. it can be a domain name you haven't purchased or a
+# subdomain you haven't set up yet if you want).
+# If not given (left commented), it is set to the server's fully-qualified
+# domain name as determined by the server, which will work but is probably not
+# what you want.
+#server_name: irc.example.com
+
+# Network Name: The network name must be a single word (i.e. no spaces) which
+# serves as the name of the network.  The default value is 'txircd'.
+#server_network_name: txircd
+
+# Password: This is the password to get into your server.  Defaults to no
+# password.  If specified, clients will be required to give this password
+# during registration in order to connect.
+#server_password: null
+
+# Ports: The IRCd will listen to one or more ports of each type in order to
+# accept connections.  For each of these, you can specify a single value to
+# listen to one port or a list of values to listen to more than one.
+# 
+# tcp: This is the normal plaintext connection.  Most servers listen for this
+# on port 6667, so it's recommended that it's included, if possible.  The
+# default value is 6667.
+#server_port_tcp: 6667
+
+# ssl: This is a secure connection with the client over SSL.  Many servers
+# listen for this on port 6697, although some servers choose to listen
+# elsewhere.  The default value is 6697.
+#server_port_ssl: 6697
+
+# web: This is a secure connection with a webclient over websockets with SSL.
+# The default value is 8080.
+#server_port_web: 8080
+
+# MOTD
+# 1. Maximum line length.  The default of 80 characters is recommended.
+#server_motd_line_length: 80
+# 2. Message of the day.
+# This value is the MOTD sent to clients.  Lines will be wrapped at
+# server_motd_line_length characters.  Just put the entirety of your MOTD as
+# this value.
+#server_motd: Welcome to txircd!
+
+# STATS options
+# The /stats command can contain data which is sensitive and therefore
+# restricted to opers.  However, not all /stats data is so confidential, and
+# some of it may even be more helpful to share with everyone.  This value is a
+# string containing all of the stats characters that should not be restricted to
+# just opered users.  The default value is 'ou'.
+#server_stats_public: ou
+
+
+# APP OPTIONS
+# This section relates to some application details.
+
+# Verbose: Determines whether the application will give lots of verbose output
+# or not.  The default value is false.  You can override a false value on
+# startup by passing the -v flag as an argument to the program.
+#app_verbose: false
+
+# Log dir: Where the server should write logs.  Defaults to 'logs' (the logs
+# subdirectory of the program's working directory).
+#app_log_dir: logs
+
+# SSL Certificate: The key and PEM (cert) files containing the SSL certificate
+# to use with connections.
+#app_ssl_key: test.key
+#app_ssl_pem: test.pem
+
+# IRC spec: Which level of IRC spec to conform to.  This determines what is the
+# base set of modules to load.  Valid values are 'rfc1459' and 'ircv3'.  The
+# default value is rfc1459.
+# The rfc1459 level will provide by default all of the basic features required
+# by the RFC.  The ircv3 level provides all the required RFC features along with
+# additional features that make it fully IRCv3.1 (base and optional extensions)
+# and partially IRCv3.2 compliant.
+#app_irc_spec: rfc1459
+
+
+# ADMIN OPTIONS
+# This section contains information about the server administrators.
+# 
+# admin_info_*: These three options are used as the output for the ADMIN
+# command.
+#admin_info_server: Host Corp: 123 Example Street, Seattle, WA, USA
+#admin_info_organization: Umbrella Corp: 123 Example Street, Seattle, WA, USA
+#admin_info_person: Lazy Admin <admin@example.com>
+
+
+# CHANNEL OPTIONS
+# This section contains options that control channel behavior.
+# 
+# Channel ban list size: The maximum number of bans that can be set in a
+# channel.  The default value is 60.
+#channel_ban_list_size: 60
+
+# Default channel modes: The default mode set for a channel.  This is a
+# dictionary of modes -> parameters.  If a mode does not take a parameter, set
+# its parameter as null.  The default modes are +nt.
+#channel_default_mode:
+#  n: null
+#  t: null
+
+# Default channel status: The status a user receives upon creating a channel.
+# The default value is 'o'.
+#channel_default_status: o
+
+# Exempt chanops: A string containing channel modes whose effects should not
+# apply to channel operators.  The default value is none.  Possible modes depend
+# on the set of modules loaded (see below).
+#channel_exempt_chanops: ''
+
+# Minimum level: The minimum level one must have to use certain commands on a
+# channel.  The default level is 'o' for everything.  You may add more commands
+# to this list provided in additional modules that you load (below).
+#channel_minimum_level:
+#  INVITE: o
+#  METADATA: o
+#  MODE: o
+#  TOPIC: o
+
+
+# CLIENT OPTIONS
+# This section contains options that affect management of clients.
+# 
+# Ban msg: This is the message sent to users when they are disconnected for
+# being banned from the server.  It is accompanied by the ban reason.
+#client_ban_msg: You're banned! Email abuse@xyz.com for help.
+
+# Max data: This is the maximum number of bytes we can receive from a client in
+# a five-second period before the client is disconnected for flooding.  The
+# default value is 5000.
+#client_max_data: 5000
+
+# Peer connections: The maximum number of clients that can connect from a single
+# IP address.  The default value is 3.  Set to 0 for unlimited.
+#client_peer_connections: 3
+
+# Peer exemptions: The maximum number of clients that can connect from a given
+# IP address.  This is a dictionary mapping IP addresses to their maximum
+# values.  Set a value to 0 for unlimited.  The default value is localhost
+# (127.0.0.1) having unlimited connections.
+#client_peer_exempt:
+#  127.0.0.1: 0
+
+# Ping interval: How often to send a PING message to a client in seconds.  The
+# default value is 60.
+#client_ping_interval: 60
+
+# Ping timeout delay: How long to wait after last activity before disconnecting
+# a client if the client doesn't respond to pings.  The default value is 120.
+#client_timeout_delay: 120
+
+# VHosts: Virtual hosts to set on clients instead of the normal cloaked hosts.
+# This is a dictionary of IP addresses to the cloaked host.  The default value
+# sets 127.0.0.1 to localhost.
+#client_vhosts:
+#  127.0.0.1: localhost
+
+# WHOWAS expiry: Amount of time after disconnection that the related WHOWAS
+# entry should expire.  Accept durations in 1y2w3d4h5m6s format or in a raw
+# number of seconds.  The default value is '1d'.
+#client_whowas_expire: 1d
+
+# WHOWAS limit: The maximum number of WHOWAS entries to keep for one nickname.
+# The default value is 10.
+#client_whowas_limit: 10
+
+
+# OPER OPTIONS
+# This section contains options controlling oper-up info and who can do so.
+# 
+# Oper IPs: Only IP addresses listed here can oper up.  If this list is empty,
+# opers can oper from any IP address (this is highly discouraged).  It is
+# recommended that you put the IP addresses of your opers here and keep them
+# updated.  The default value is just 127.0.0.1.
+#oper_ips:
+#- 127.0.0.1
+
+# Oper logins: This is a dictionary mapping oper usernames to oper passwords.
+# You'll use the username on the left and the hash value on the right to oper
+# up.  The password is a hashed password.  A utility is provided to generate
+# these for you; from the txircd base directory, run the following:
+# python passcrypt.py password
+# where 'python' is the appropriate command to run the python interpreter on
+# your server, and 'password' is the password you're trying to hash.  The
+# program will output a hash suitable for use in this configuration as the
+# oper password.
+# The default value is NO LOGINS, so make sure you specify some.
+# The value shown below (username: admin, password: password) is incredibly
+# insecure and should not be used.
+#oper_logins:
+#  admin: sha256:1000:abc:e/+7RSuHvTHideDuZkpvFXtq65+oHM9x
+
+
+# MODULE CONFIGURATION
+# 
+# Modules: In addition to those loaded by the IRC spec, you can specify
+# additional modules to enable additional features.  Any uncommented
+# module below will be loaded.
+#server_modules: # Uncomment this line if you enable any modules below
+# 
+# All modules in this list prefixed with 'ircv3_' are modules that are loaded
+# automatically when app_irc_spec is set to ircv3, and you should not need to
+# load them again here when they are already specified by the IRC spec.  They
+# are listed here to allow selective addition of features to the rfc1459 spec.
+# 
+# IRCv3.1 Base Extensions
+# ircv3_cap: Enables the IRCv3 client capability negotiation mechanism.  This
+# module is required for most of the other IRCv3 features to function, as these
+# features need to be enabled for each client that supports it to prevent
+# breaking older clients, and this enabling is done through the CAP command
+# provided by this module.
+#- ircv3_cap
+# 
+# ircv3_multi-prefix: Enables the multi-prefix extension on the server, which
+# allows clients to receive all of a channel member's status ranks in the NAMES
+# or WHO reply rather than just the first one.  This capability is formerly
+# known as NAMESX and may still be referred to as such in other IRC software.
+#- ircv3_multi-prefix
+# 
+# ircv3_sasl: Enables the SASL mechanism of identifying to an account during
+# connection registration.  This is now supported by most IRC services.
+#- ircv3_sasl
+# 
+# IRCv3.1 Optional Extensions
+# ircv3_account-notify: Enables the account-notify feature, which notifies users
+# when other channel members have identified to or logged out of an account.
+#- ircv3_account-notify
+# 
+# ircv3_away-notify: Enables the away-notify feature, which notifies users when
+# other channel members have changed their away status.
+#- ircv3_away-notify
+# 
+# ircv3_extended-join: Enables the extended-join feature, which adds information
+# to the JOIN message when a user joins a channel, giving extended-join enabled
+# clients information on the joining user's account name and gecos.
+#- ircv3_extended-join
+# 
+# ircv3_tls: Enables the STARTTLS feature, which allows clients to negotiate a
+# TLS connection during IRC connection registration on a plaintext port.
+#- ircv3_tls
+# 
+# IRCv3.2 Base Extensions (some of them)
+# ircv3_monitor: Enables the monitor feature, which allows clients to be
+# notified when certain users connect to or disconnect from the network.
+# This also ties into some 3.1 extensions to make subscribed users also
+# receive some of those notifications.
+#- ircv3_monitor
+# 
+# ircv3_metadata: Enables users to edit certain metadata pertaining to user or
+# client info, and adds a feature allowing clients to be notified of changes to
+# same.
+#- ircv3_metadata
+# END IRCv3
+# 
+# userhost-in-names: Enables the userhost-in-names feature, which displays the
+# ident and host of users in NAMES output.  This is formerly known as UHNAMES
+# and may still be referred to as such in other IRC software.  This requires
+# ircv3_cap (either manually specified or from setting app_irc_spec to 'ircv3')
+# to function.
+#- userhost-in-names
+# 
+# whox: Enables part of the WHOX feature implemented in ircu and other IRCds,
+# which extends the WHO syntax to control which fields are shown.
+#- whox
+# 
+# die: Enables the /die command, which allows opers to shut down the server from
+# IRC.
+#- die
+# 
+# restart: Enables the /restart command, which allows opers to restart the
+# server from IRC.
+#- restart
+# 
+# globops: Enables the /globops command, which sends a notice to all online
+# opers.
+#- globops
+# 
+# modules: Enables the /modules command, which lists all modules loaded on the
+# server.
+#- modules
+# 
+# knock: Enables the /knock command, which serves as a mechanism for users to
+# request an invite to a channel.
+#- knock
+# 
+# stripcolor: Enables the +S channel mode, which strips color codes from
+# messages sent to the channel.
+#- stripcolor
+# 
+# blockctcp: Enables the +C channel mode, which blocks CTCP requests and replies
+# sent to the channel.
+#- blockctcp
+# 
+# chanadmin: Enables the channel admin (+a) rank.
+#- chanadmin
+# 
+# chanowner: Enables the channel founder (+q) rank.
+#- chanowner
+# 
+# halfop: Enables the chanel halfop (+h) rank.
+#- halfop
+# 
+# sajoin: Enables the /sajoin command, which enables opers to join other users
+# to channels.
+#- sajoin
+# 
+# sakick: Enables the /sakick command, which enables opers to kick users from
+# any channel.
+#- sakick
+# 
+# samode: Enables the /samode command, which enables opers to set modes on any
+# user or channel.
+#- samode
+# 
+# sanick: Enables the /sanick command, which enables opers to change the nick of
+# any user.
+#- sanick
+# 
+# satopic: Enables the /satopic command, which enables opers to set the topic of
+# any channel.
+#- satopic
+# 
+# shun: Enables the shun feature, which ignores all but a few certain commands
+# from users matching the provided mask.  Setting and removing shuns works
+# similarly to g:lines.
+#- shun
+# 
+# badword: Enables the global censoring of certain words or phrases by the
+# /badword command.
+#- badword
+#
+# denychans: Prevents certain channels from being created.  You can configure
+# which channels are denied or allowed below.
+#- denychans
+# 
+# conn_join: Forces clients to join one or more channels on connect.
+#- conn_join
+# 
+# db_services: Implements the Desert Bus services suite.
+#- db_services
+
+
+# shun config
+# command_list: A list of all the commands allowed to shunned users.  This list
+# does not apply to registration (i.e. you can leave out NICK and the client
+# will still be able to complete registration).
+# The default value is JOIN, PART, QUIT, PING, PONG.
+#shun_command_list:
+#- JOIN
+#- PART
+#- QUIT
+#- PING
+#- PONG
+
+
+# ircv3_sasl config
+# sasl_agent: The SASL agent for this server.  If left as an empty string, uses
+# an internal agent provided by another module (e.g. db_services).  The default
+# value is ''.
+#sasl_agent: ''
+
+
+# denychans config
+# denychans: Allows you to choose which channels cannot be joined by normal
+# users.  Opers will still be able to join these channels.  This is a list of
+# channels; the * and ? wildcards may be used.
+#server_denychans:
+#- '*'
+
+# allowchans: This serves as a whitelist; channels in this list will be
+# available even if they match a channel in denychans.  This list of channels
+# also supports the * and ? wildcards.
+#server_allowchans:
+#- '#desertbus'
+#- '#help'
+
+
+# conn_join config
+# join_on_connect: A list of channels all users will join automatically upon
+# connection to the server.
+#client_join_on_connect:
+#- '#desertbus'
+
+
+# monitor config
+# monitor_limit: The maximum number of entries one client can have in their
+# monitor list.  Set to null for unlimited.  The default value is null.
+#client_monitor_limit: null
+
+
+# db_services config
+# servdb options: Information for the database connection.  If any of these are
+# not given (except servdb_marker), db_services will not connect to the
+# database.
+# servdb_library: The python library to use for MySQL functions.  pymysql is
+# installed as part of txircd setup and works fine, so you shouldn't need to
+# change this (just uncomment it) unless you have a preferred library installed.
+#servdb_library: pymysql
+
+# servdb_host: The host of the MySQL server.
+#servdb_host: localhost
+
+# servdb_port: The port the MySQL server is listening on.
+#servdb_port: 3306
+
+# servdb_username: The username of txircd's database user.
+#servdb_username: txircd
+
+# servdb_password: The password of txircd's database user.
+#servdb_password: txircd
+
+# servdb_database: The name of txircd's database.
+#servdb_database: txircd
+
+# servdb_marker: The marker used by the given MySQL library to place parameters
+# in prepared statements.  This shouldn't be changed unless you changed the
+# servdb_library value.  The default value is '%s'.
+#servdb_marker: '%s'
+
+# BidServ client: BidServ needs a nick, ident, host, and gecos.
+#services_bidserv_nick: BidServ
+#services_bidserv_ident: BidServ
+#services_bidserv_host: services.desertbus.org
+#services_bidserv_gecos: Bidding Service
+
+# NickServ client: NickServ needs a nick, ident, host, and gecos.
+services_nickserv_nick: NickServ
+services_nickserv_ident: NickServ
+services_nickserv_host: services.desertbus.org
+services_nickserv_gecos: Nickname Service
+
+# ChanServ client: ChanServ needs a nick, ident, host, and gecos.
+services_chanserv_nick: ChanServ
+services_chanserv_ident: ChanServ
+services_chanserv_host: services.desertbus.org
+services_chanserv_gecos: Channel Service
+
+# BidServ configuration
+# increment: The minimum increment between bids.  If not given, bids can be any
+# amount over the previous high bid.
+#services_bidserv_increment: 5.0
+
+# Madness levels: The madness levels to display when they are passed in bid
+# amount.
+#services_bidserv_madness_levels:
+#  1000: Myth Busted
+
+# Show all madness: Whether to show all madness levels passed by a bid (true) or
+# just the highest one (false).  The default value is false.
+#services_bidserv_madness_show_all: false
+
+# Space Bid: The text to show when the current highest bidder in an auction bids
+# a higher amount.
+#services_bidserv_space_bid: SPACE BID
+
+# NickServ configuration
+# guest prefix: The prefix of nicks given to users who try to use nicks that
+# belong to accounts to which they are not identified if they don't change away
+# in time.  The default value is 'Guest'.
+#services_nickserv_guest_prefix: Guest
+
+# Nick limit: The maximum number of nicknames that can be registered to an
+# account.  Use 0 for unlimited.  The default value is unlimited.
+#services_nickserv_nick_limit: 5
+
+# Timeout: The amount of time in seconds until NickServ changes a user's nick
+# when the user is not identfied to the account that nick belongs to.  The
+# default value is 60.
+#services_nickserv_timeout: 60
