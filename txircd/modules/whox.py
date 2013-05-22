@@ -4,44 +4,37 @@ from txircd.modbase import Module
 irc.RPL_WHOSPCRPL = "354"
 
 class WhoX(Module):
-    def whox(self, cmd, data):
-        if cmd != "WHO":
-            return
-        if "data" not in data or not data["data"] or data["phase"] != "display":
-            # The who request didn't match or some other module already displayed this or it's not the display phase
-            return
-        fields = data["fields"]
+    def whox(self, user, targetUser, filters, fields, channel, udata):
         if not fields:
-            return
+            return False
         responses = []
-        whoData = data["data"]
         if "c" in fields:
-            responses.append(whoData["channel"])
+            responses.append(udata["channel"])
         if "u" in fields:
-            responses.append(whoData["ident"])
+            responses.append(udata["ident"])
         if "i" in fields:
-            if "o" in data["user"].mode:
-                responses.append(whoData["ip"])
+            if "o" in user.mode:
+                responses.append(udata["ip"])
             else:
                 responses.append("0.0.0.0")
         if "h" in fields:
-            responses.append(whoData["host"])
+            responses.append(udata["host"])
         if "s" in fields:
-            responses.append(whoData["server"])
+            responses.append(udata["server"])
         if "n" in fields:
-            responses.append(whoData["nick"])
+            responses.append(udata["nick"])
         if "f" in fields:
-            responses.append("{}{}{}".format("G" if whoData["away"] else "H", "*" if whoData["oper"] else "", whoData["status"]))
+            responses.append("{}{}{}".format("G" if udata["away"] else "H", "*" if udata["oper"] else "", udata["status"]))
         if "d" in fields:
-            responses.append(str(whoData["hopcount"]))
+            responses.append(str(udata["hopcount"]))
         if "l" in fields:
-            responses.append(str(whoData["idle"]))
+            responses.append(str(udata["idle"]))
         if "a" in fields:
-            responses.append(whoData["account"])
+            responses.append(udata["account"])
         if "r" in fields:
-            responses.append(":{}".format(whoData["gecos"]))
-        data["data"] = {}
-        data["user"].sendMessage(irc.RPL_WHOSPCRPL, *responses)
+            responses.append(":{}".format(udata["gecos"]))
+        user.sendMessage(irc.RPL_WHOSPCRPL, *responses)
+        return True
 
 class Spawner(object):
     def __init__(self, ircd):
@@ -52,9 +45,9 @@ class Spawner(object):
         self.whox = WhoX().hook(self.ircd)
         return {
             "actions": {
-                "commandextra": [self.whox.whox]
+                "wholinedisplay": [self.whox.whox]
             }
         }
     
     def cleanup(self):
-        self.ircd.actions["commandextra"].remove(self.whox.whox)
+        self.ircd.actions["wholinedisplay"].remove(self.whox.whox)

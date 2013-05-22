@@ -6,25 +6,20 @@ class InvisibleMode(Mode):
             return ""
         return representation
     
-    def checkWhoVisible(self, cmd, data):
-        if cmd != "WHO":
-            return
-        if "data" not in data or not data["data"] or data["phase"] != "detect":
-            # the request didn't match anyone or some other module already ate the data or it's not the right phase
-            return
-        destination = data["data"]["dest"]
+    def checkWhoVisible(self, user, targetUser, filters, fields, channel, udata):
+        destination = udata["dest"]
         if destination[0] == "#":
-            if destination not in data["user"].channels and "i" in data["targetuser"].mode:
-                data["data"] = {}
-        elif "i" in data["targetuser"].mode:
-            target = data["targetuser"]
+            if destination not in user.channels and "i" in targetUser.mode:
+                return {}
+        if "i" in targetUser.mode:
             share_channel = False
-            for chan in data["user"].channels:
-                if chan in target.channels:
+            for chan in user.channels:
+                if chan in targetUser.channels:
                     share_channel = True
                     break
             if not share_channel:
-                data["data"] = {}
+                return {}
+        return udata
 
 class Spawner(object):
     def __init__(self, ircd):
@@ -38,10 +33,10 @@ class Spawner(object):
                 "uni": self.invisible_mode
             },
             "actions": {
-                "commandextra": [self.invisible_mode.checkWhoVisible]
+                "wholinemodify": [self.invisible_mode.checkWhoVisible]
             }
         }
     
     def cleanup(self):
         self.ircd.removeMode("uni")
-        self.ircd.actions["commandextra"].remove(self.invisible_mode.checkWhoVisible)
+        self.ircd.actions["wholinemodify"].remove(self.invisible_mode.checkWhoVisible)

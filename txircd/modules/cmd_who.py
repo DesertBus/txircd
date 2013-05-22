@@ -85,16 +85,25 @@ class WhoCommand(Command):
             "account": targetUser.metadata["ext"]["accountname"] if "accountname" in targetUser.metadata["ext"] else "0",
             "channel": displayChannel
         }
-        extraData = { "phase": "detect", "user": user, "targetuser": targetUser, "filters": filters, "fields": fields, "channel": channel, "data": udata }
-        user.commandExtraHook("WHO", extraData)
-        if not extraData["data"]:
-            return
-        extraData["phase"] = "display" # use a second round to potentially modify output after processing
-        user.commandExtraHook("WHO", extraData)
-        if not extraData["data"]:
-            return # modules in the display phase can suppress normal output
-        data = extraData["data"]
-        user.sendMessage(irc.RPL_WHOREPLY, data["dest"], data["ident"], data["host"], data["server"], data["nick"], "{}{}{}".format("G" if data["away"] else "H", "*" if data["oper"] else "", data["status"]), ":{} {}".format(data["hopcount"], data["gecos"]))
+        if "wholinemodify" in self.ircd.actions:
+            tryagain = []
+            for action in self.ircd.actions["wholinemodify"]:
+                newdata = action(user, targetUser, filters, fields, channel, udata)
+                if newdata == "again":
+                    tryagain.append(action)
+                elif not newdata:
+                    return
+                udata = newdata
+            for action in tryagain:
+                udata = action(user, targetUser, filters, fields, channel, udata)
+                if not udata:
+                    return
+        if "wholinedisplay" in self.ircd.actions:
+            for action in self.ircd.actions["wholinedisplay"]:
+                handled = action(user, targetUser, filters, fields, channel, udata)
+                if handled:
+                    return
+        user.sendMessage(irc.RPL_WHOREPLY, udata["dest"], udata["ident"], udata["host"], udata["server"], udata["nick"], "{}{}{}".format("G" if udata["away"] else "H", "*" if udata["oper"] else "", udata["status"]), ":{} {}".format(udata["hopcount"], udata["gecos"]))
 
 class Spawner(object):
     def __init__(self, ircd):

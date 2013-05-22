@@ -4,14 +4,10 @@ class OperMode(Mode):
     def checkSet(self, target, param):
         return False # Should only be set by the OPER command; hence, reject any normal setting of the mode
     
-    def checkWhoFilter(self, cmd, data):
-        if cmd != "WHO":
-            return
-        if "data" not in data or not data["data"] or data["phase"] != "detect":
-            # the request didn't match anyone or some other module already ate the data or it's the wrong phase
-            return
-        if "o" in data["filters"] and not data["data"]["oper"]:
-            data["data"] = {}
+    def checkWhoFilter(self, user, targetUser, filters, fields, channel, udata):
+        if "o" in filters and not udata["oper"]:
+            return {}
+        return udata
 
 class Spawner(object):
     def __init__(self, ircd):
@@ -25,10 +21,10 @@ class Spawner(object):
                 "uno": self.oper_mode
             },
             "actions": {
-                "commandextra": [self.oper_mode.checkWhoFilter]
+                "wholinemodify": [self.oper_mode.checkWhoFilter]
             }
         }
     
     def cleanup(self):
         self.ircd.removeMode("uno")
-        self.ircd.actions["commandextra"].remove(self.oper_mode.checkWhoFilter)
+        self.ircd.actions["wholinemodify"].remove(self.oper_mode.checkWhoFilter)

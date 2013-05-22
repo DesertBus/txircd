@@ -24,16 +24,9 @@ class MultiPrefix(Module):
         statusModes = listingUser.status(channel.name)
         return "{}{}".format("".join([self.ircd.prefixes[status][0] for status in statusModes]), representation)
     
-    def whoStatus(self, cmd, data):
-        if cmd != "WHO":
-            return
-        if "data" not in data or not data["data"] or data["phase"] != "detect":
-            # some other module already suppressed this line or the WHO didn't match anyone; operating on it won't be super useful
-            return
-        user = data["user"]
-        target = data["targetuser"]
-        if data["channel"]:
-            data["data"]["status"] = "".join([self.ircd.prefixes[status][0] for status in target.status(data["channel"].name)])
+    def whoStatus(self, user, targetUser, filters, fields, channel, udata):
+        if channel:
+            udata["status"] = "".join([self.ircd.prefixes[status][0] for status in targetUser.status(channel.name)])
 
 class Spawner(object):
     def __init__(self, ircd):
@@ -48,11 +41,11 @@ class Spawner(object):
         return {
             "actions": {
                 "nameslistentry": [self.multi_prefix.namesListEntry],
-                "commandextra": [self.multi_prefix.whoStatus]
+                "wholinemodify": [self.multi_prefix.whoStatus]
             }
         }
     
     def cleanup(self):
         self.ircd.actions["nameslistentry"].remove(self.multi_prefix.namesListEntry)
-        self.ircd.actions["commandextra"].remove(self.multi_prefix.whoStatus)
+        self.ircd.actions["wholinemodify"].remove(self.multi_prefix.whoStatus)
         del self.ircd.module_data_cache["cap"]["multi-prefix"]
