@@ -27,6 +27,7 @@ class MultiPrefix(Module):
     def whoStatus(self, user, targetUser, filters, fields, channel, udata):
         if channel:
             udata["status"] = "".join([self.ircd.prefixes[status][0] for status in targetUser.status(channel.name)])
+        return udata
 
 class Spawner(object):
     def __init__(self, ircd):
