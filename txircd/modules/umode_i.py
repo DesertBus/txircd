@@ -7,9 +7,8 @@ class InvisibleMode(Mode):
         return representation
     
     def checkWhoVisible(self, user, targetUser, filters, fields, channel, udata):
-        destination = udata["dest"]
-        if destination[0] == "#":
-            if destination not in user.channels and "i" in targetUser.mode:
+        if channel:
+            if channel.name not in user.channels and "i" in targetUser.mode:
                 return {}
         if "i" in targetUser.mode:
             share_channel = False
