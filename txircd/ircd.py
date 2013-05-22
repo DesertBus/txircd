@@ -258,6 +258,7 @@ class IRCD(Factory):
             self.load_module(module)
     
     def rehash(self):
+        log.msg("Rehashing config file and reloading modules")
         try:
             with open(self.config) as f:
                 self.load_options(yaml.safe_load(f))

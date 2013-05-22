@@ -3,7 +3,7 @@ from twisted.python import log
 from txircd.ircd import IRCD, default_options
 from txsockjs.factory import SockJSFactory
 from OpenSSL import SSL
-import yaml, collections, sys
+import yaml, collections, sys, signal
 
 # A direct copy of DefaultOpenSSLContext factory as of Twisted 12.2.0
 # The only difference is using ctx.use_certificate_chain_file instead of ctx.use_certificate_file
@@ -16,6 +16,9 @@ class ChainedOpenSSLContextFactory(ssl.DefaultOpenSSLContextFactory):
             ctx.use_certificate_chain_file(self.certificateFileName)
             ctx.use_privatekey_file(self.privateKeyFileName)
             self._context = ctx
+
+def createHangupHandler(ircd):
+    return lambda signal, stack: ircd.rehash()
 
 if __name__ == "__main__":
     # Copy the defaults
@@ -92,5 +95,7 @@ if __name__ == "__main__":
                 reactor.listenSSL(int(options["server_port_web"]), SockJSFactory(ircd), ssl_cert)
             except:
                 pass # Wasn't a number
+    # Bind SIGHUP to rehash
+    signal.signal(signal.SIGHUP, createHangupHandler(ircd))
     # And start up the reactor
     reactor.run()
