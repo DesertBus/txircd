@@ -28,8 +28,8 @@ class Sasl(Command):
     
     def onUse(self, user, data):
         if "sasl_authenticating" not in user.cache:
-            mechanism = data["authentication"][0].upper()
-            user.cache["sasl_authenticating"] = data["authentication"][0].upper()
+            mechanism = data["authentication"].upper()
+            user.cache["sasl_authenticating"] = mechanism
             if "server_sasl_agent" in self.ircd.servconfig and self.ircd.servconfig["server_sasl_agent"]:
                 pass # TODO after s2s
             elif "sasl_agent" in self.ircd.module_data_cache:
