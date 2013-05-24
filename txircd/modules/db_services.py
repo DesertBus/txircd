@@ -5,6 +5,7 @@ from txircd.modbase import Command
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 from base64 import b64decode, b64encode
 from Crypto.Random.random import getrandbits
+from Crypto.Cipher import AES
 from Crypto.Cipher import Blowfish
 from random import choice
 import math, os, random, yaml
@@ -1389,6 +1390,9 @@ class Spawner(object):
         if len(splitOut[-1]) == 400:
             user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
     
+    def saslSetup_DH_AES(self, user):
+        return self.saslSetup_DH_BLOWFISH(user)
+    
     def saslSetup_EXTERNAL(self, user):
         if "certfp" not in self.nickserv.cache:
             return "fail"
@@ -1438,6 +1442,38 @@ class Spawner(object):
         
         blowfishKey = Blowfish.new(sharedSecret)
         password = blowfishKey.decrypt(encryptedData)
+        self.auth(user, username, password)
+        return "wait"
+    
+    def saslProcess_DH_AES(self, user, data):
+        try:
+            encryptedData = b64decode(data)
+        except TypeError:
+            return "done"
+        if len(encryptedData) < 2:
+            return "done"
+        pubkeyLen = int(encryptedData[:2].encode("hex"), 16)
+        encryptedData = encryptedData[2:]
+        if pubkeyLen > len(encryptedData):
+            return "done"
+        pubkey = int(encryptedData[:pubkeyLen].encode("hex"), 16)
+        encryptedData = encryptedData[pubkeyLen:]
+        
+        if len(encryptedData) < AES.block_size * 2:
+            return "done" # The remaining data is too short to be valid for AES
+        
+        iv = encryptedData[:AES.block_size]
+        encryptedData = encryptedData[AES.block_size:]
+        sharedSecret = self.binaryString(pow(pubkey, self.dh_params["privkey"], self.dh_params["prime"]))
+        
+        aesCipher = AES.new(sharedSecret, mode=AES.MODE_CBC, IV=iv)
+        decryptedData = aesCipher.decrypt(encryptedData)
+        
+        try:
+            username, password, padding = decryptedData.split("\0", 2)
+        except ValueError:
+            return "done"
+        
         self.auth(user, username, password)
         return "wait"
     
