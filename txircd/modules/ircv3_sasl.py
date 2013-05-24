@@ -66,7 +66,7 @@ class Sasl(Command):
             return {}
         return {
             "user": user,
-            "authentication": params
+            "authentication": params[0]
         }
     
     def checkInProgress(self, user):
