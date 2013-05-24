@@ -67,7 +67,6 @@ class IRCProtocol(irc.IRC):
         self.data = 0
         self.data_checker = LoopingCall(self.checkData)
         self.pinger = LoopingCall(self.ping)
-        self.last_message = None
     
     def connectionMade(self):
         self.type = IRCUser(self)
@@ -89,7 +88,6 @@ class IRCProtocol(irc.IRC):
         if self.type:
             self.secure = ISSLTransport(self.transport, None) is not None
             self.data_checker.start(5)
-            self.last_message = now()
             self.pinger.start(self.factory.servconfig["client_ping_interval"], now=False)
 
     def dataReceived(self, data):
@@ -98,7 +96,6 @@ class IRCProtocol(irc.IRC):
         for modfunc in self.factory.actions["recvdata"]:
             modfunc(self.type, data)
         self.data += len(data)
-        self.last_message = now()
         if self.pinger.running:
             self.pinger.reset()
         irc.IRC.dataReceived(self, data)
@@ -109,9 +106,11 @@ class IRCProtocol(irc.IRC):
         self.data = 0
     
     def ping(self):
-        if (now() - self.last_message).total_seconds() > self.factory.servconfig["client_timeout_delay"]:
+        if (now() - self.type.lastpong).total_seconds() > self.factory.servconfig["client_timeout_delay"]:
             self.transport.loseConnection()
             self.connectionLost(None)
+        elif self.type.lastactivity > self.type.lastpong:
+            self.type.lastpong = now()
         else:
             self.sendMessage("PING",":{}".format(self.factory.servconfig["server_name"]))
     
