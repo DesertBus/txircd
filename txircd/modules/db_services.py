@@ -1,6 +1,7 @@
 from twisted.enterprise import adbapi
 from twisted.internet import reactor
 from twisted.internet.defer import Deferred
+from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 from base64 import b64decode, b64encode
@@ -99,7 +100,7 @@ class Service(object):
                             for line in helpOut:
                                 user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
                             user.sendMessage("NOTICE", ":*** End of \x02{}\x02 help".format(helpCmd), prefix=self.prefix())
-            elif serviceCommand in self.help[1]:
+            elif serviceCommand in self.help[1] and (not self.help[1][serviceCommand][2] or "o" in user.mode):
                 self.ircd.users[nick].handleCommand(serviceCommand, None, params)
             else:
                 self.ircd.users[nick].sendMessage("NOTICE", ":Unknown command \x02{}\x02.  Use \x1F/msg {} HELP\x1F for help.".format(serviceCommand, self.nickname), prefix=self.prefix())
@@ -581,7 +582,7 @@ class BSStartCommand(Command):
     
     def processParams(self, user, params):
         if "o" not in user.mode:
-            user.sendMessage("NOTICE", ":Unknown command \x02START\x02.  Use \x1F/msg {} HELP\x1F for help.".format(self.bidserv.nickname), prefix=self.bidserv.prefix())
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" in self.bidserv.cache:
             user.sendMessage("NOTICE", ":You cannot start an auction when one is currently in progress.", prefix=self.bidserv.prefix())
@@ -652,7 +653,7 @@ class BSStopCommand(Command):
     
     def processParams(self, user, params):
         if "o" not in user.mode:
-            user.sendMessage("NOTICE", ":Unknown command \x02STOP\x02.  Use \x1F/msg {} HELP\x1F for help.".format(self.bidserv.nickname), prefix=self.bidserv.prefix())
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
             user.sendMessage("NOTICE", ":There is not an auction going on now.", prefix=self.bidserv.prefix())
@@ -763,7 +764,7 @@ class BSRevertCommand(Command):
     
     def processParams(self, user, params):
         if "o" not in user.mode:
-            user.sendMessage("NOTICE", ":Unknown command \x02REVERT\x02.  Use \x1F/msg {} HELP\x1F for help.".format(self.bidserv.nickname), prefix=self.bidserv.prefix())
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
             user.sendMessage("NOTICE", ":There is not an auction going on right now.", prefix=self.bidserv.prefix())
@@ -789,7 +790,7 @@ class BSOnceCommand(Command):
     
     def processParams(self, user, params):
         if "o" not in user.mode:
-            user.sendMessage("NOTICE", ":Unknown command \x02ONCE\x02.  Use \x1F/msg {} HELP\x1F for help.".format(self.bidserv.nickname), prefix=self.bidserv.prefix())
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
             user.sendMessage("NOTICE", ":There is not an auction going on right now.", prefix=self.bidserv.prefix())
@@ -815,7 +816,7 @@ class BSTwiceCommand(Command):
     
     def processParams(self, user, params):
         if "o" not in user.mode:
-            user.sendMessage("NOTICE", ":Unknown command \x02TWICE\x02.  Use \x1F/msg {} HELP\x1F for help.".format(self.bidserv.nickname), prefix=self.bidserv.prefix())
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
             user.sendMessage("NOTICE", ":There is not an auction going on right now.", prefix=self.bidserv.prefix())
@@ -852,7 +853,7 @@ class BSSoldCommand(Command):
     
     def processParams(self, user, params):
         if "o" not in user.mode:
-            user.sendMessage("NOTICE", ":Unknown command \x02SOLD\x02.  Use \x1F/msg {} HELP\x1F for help.".format(self.bidserv.nickname), prefix=self.bidserv.prefix())
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
             user.sendMessage("NOTICE", ":There is not an auction going on right now.", prefix=self.bidserv.prefix())
