@@ -1362,7 +1362,7 @@ class Spawner(object):
             setupfunc = getattr(self, "saslSetup_{}".format(mechanism.replace("-", "_")))
         except AttributeError:
             return "fail"
-        self.saslUsers[user] = { "mechanism": mechanism, "data": "" }
+        self.saslUsers[user] = { "mechanism": mechanism }
         return setupfunc(user)
     
     def saslSetup_PLAIN(self, user):
@@ -1399,15 +1399,11 @@ class Spawner(object):
         user.sendMessage("AUTHENTICATE", "+", to=None, prefix=None)
     
     def saslNext(self, user, data):
-        if data != "+": # A single + sign indicates an empty SASL packet
-            self.saslUsers[user]["data"] += data
-        if len(data) == 400:
-            return "more" # wait for the next packet of data
         try:
             processfunc = getattr(self, "saslProcess_{}".format(self.saslUsers[user]["mechanism"].replace("-", "_")))
         except AttributeError:
             return "done"
-        return processfunc(user, self.saslUsers[user]["data"])
+        return processfunc(user, data)
     
     def saslProcess_PLAIN(self, user, data):
         try:

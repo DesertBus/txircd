@@ -29,7 +29,7 @@ class Sasl(Command):
     def onUse(self, user, data):
         if "sasl_authenticating" not in user.cache:
             mechanism = data["authentication"].upper()
-            user.cache["sasl_authenticating"] = mechanism
+            user.cache["sasl_authenticating"] = [mechanism, ""]
             if "server_sasl_agent" in self.ircd.servconfig and self.ircd.servconfig["server_sasl_agent"]:
                 pass # TODO after s2s
             elif "sasl_agent" in self.ircd.module_data_cache:
@@ -43,7 +43,11 @@ class Sasl(Command):
             if "server_sasl_agent" in self.ircd.servconfig and self.ircd.servconfig["server_sasl_agent"]:
                 pass # TODO after s2s
             else:
-                result = self.ircd.module_data_cache["sasl_agent"].saslNext(user, data["authentication"])
+                if data["authentication"] != "+": # A single plus sign as input indicates an empty SASL packet that we shouldn't append to data
+                    user.cache["sasl_authenticating"][1] += data["authentication"]
+                if len(data["authentication"]) == 400:
+                    return # A string of length 400 means another line is coming with additional data, so don't process any more yet
+                result = self.ircd.module_data_cache["sasl_agent"].saslNext(user, user.cache["sasl_authenticating"][1])
                 if result == "done":
                     if "accountname" in user.metadata["ext"]:
                         self.sendSuccess(user)
