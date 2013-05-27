@@ -61,9 +61,6 @@ class Service(object):
     def disconnect(self, reason):
         pass
     
-    def checkData(self, data):
-        pass
-    
     def connectionLost(self, reason):
         pass
     
