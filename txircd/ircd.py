@@ -15,10 +15,6 @@ irc.RPL_LOCALUSERS = "265"
 irc.RPL_GLOBALUSERS = "266"
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_TOPICWHOTIME = "333"
-irc.ERR_CHANNOTALLOWED = "926" # I had to make this one up, too.
-# Fix twisted being silly
-irc.RPL_ADMINLOC1 = "257"
-irc.RPL_ADMINLOC2 = "258"
 
 default_options = {
     # App details
