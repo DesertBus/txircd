@@ -248,6 +248,12 @@ class IRCUser(object):
         return self.channels[channel]["status"]
     
     def certFP(self):
+        # TODO: move this to metadata storage once twisted lets us
+        # There's already a key defined for it (server.certfp): http://ircv3.atheme.org/specification/metadata-3.2
+        # and it makes sharing the key across servers easier (we already have to sync metadata)
+        # Issues: getting the certificate always returns None in connectionMade, and I don't want to add a performance
+        # hit to dataReceived if I can help it.  Unfortunately, twisted does not currently provide a hook to process
+        # data when the SSL handshake is complete; see http://twistedmatrix.com/trac/ticket/6024
         if not self.socket.secure:
             return None
         certificate = self.socket.transport.getPeerCertificate()
