@@ -31,6 +31,8 @@ default_options = {
     "server_port_tcp": 6667,
     "server_port_ssl": 6697,
     "server_port_web": 8080,
+    "serverlink_port_tcp": None,
+    "serverlink_port_ssl": None,
     "server_stats_public": "ou",
     "server_modules": [],
     "server_password": None,

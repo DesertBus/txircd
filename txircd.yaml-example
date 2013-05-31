@@ -48,6 +48,16 @@
 # The default value is 8080.
 #server_port_web: 8080
 
+# serverlink tcp: This is a normal unencrypted connection between two txircd
+# servers.  The default value is none, so if you want to link servers, you will
+# need to specify this or the encrypted SSL one (below).
+#serverlink_port_tcp: null
+
+# serverlink ssl: This is an SSL-encrypted connection between txircd servers.
+# The default value is none, so if you want to link servers, you will need to
+# specify this or the plain TCP one (above).
+#serverlink_port_ssl: null
+
 # MOTD
 # 1. Maximum line length.  The default of 80 characters is recommended.
 #server_motd_line_length: 80
