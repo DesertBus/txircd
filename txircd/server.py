@@ -207,7 +207,8 @@ class ServerProtocol(AMP):
     
     def connectionLost(self, reason):
         # TODO: remove all data from this server originating from remote
-        del self.ircd.servers[self.name]
+        if self.name:
+            del self.ircd.servers[self.name]
         AMP.connectionLost(self, reason)
 
 class ServerFactory(Factory):
