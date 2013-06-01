@@ -125,7 +125,13 @@ class RemoteUser(object):
 class ServerAlreadyConnected(Exception):
     pass
 
+class ServerMismatchedIP(Exception):
+    pass
+
 class ServerPasswordIncorrect(Exception):
+    pass
+
+class ServerNoLink(Exception):
     pass
 
 class ModuleMismatch(Exception):
@@ -138,13 +144,14 @@ class IntroduceServer(Command):
         ("name", String()), # server name
         ("password", String()), # server password specified in configuration
         ("description", String()), # server description
-        ("hopcount", Integer()), # number of hops to new server from THIS (local) server
         ("version", Integer()), # protocol version
         ("commonmodules", ListOf(String()))
     ]
     errors = {
         ServerAlreadyConnected: "SERVER_ALREADY_CONNECTED",
+        ServerMismatchedIP: "SERVER_MISMATCHED_IP",
         ServerPasswordIncorrect: "SERVER_PASS_INCORRECT",
+        ServerNoLink: "SERVER_NO_LINK",
         ModuleMismatch: "MODULE_MISMATCH"
     }
 
@@ -164,12 +171,20 @@ class ServerProtocol(AMP):
         self.ircd = self.factory # Let's stick to convention here.
         self.burstComplete = []
     
-    def newServer(self, name, password, description, hopcount, version, commonmodules):
+    def newServer(self, name, password, description, version, commonmodules):
         if version not in compatible_versions:
             raise IncompatibleVersions ("Protocol version {} is not compatible with this version".format(version))
         commonModDiff = commonmodules ^ self.ircd.common_modules
         if commonModDiff:
             raise ModuleMismatch ("Common modules are not matched between servers: {}".format(", ".join(commonModDiff)))
+        if name not in self.ircd.servconfig["serverlinks"]:
+            raise ServerNoLink ("There is no link data in the configuration file for the server trying to link.")
+        linkData = self.ircd.servconfig["serverlinks"][name]
+        ip = self.transport.getPeer().host
+        if "ip" not in linkData or ip != linkData["ip"]:
+            raise ServerMismatchedIP ("The IP address for this server does not match the one in the configuration.")
+        if "password" not in linkData or password != linkData["password"]:
+            raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
         # TODO
     IntroduceServer.responder(newServer)
     

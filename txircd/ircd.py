@@ -36,6 +36,7 @@ default_options = {
     "server_stats_public": "ou",
     "server_modules": [],
     "server_password": None,
+    "serverlinks": [],
     # Client details
     "client_vhosts": {"127.0.0.1":"localhost"},
     "client_max_data": 5000, # Bytes per 5 seconds

@@ -58,6 +58,15 @@
 # specify this or the plain TCP one (above).
 #serverlink_port_ssl: null
 
+# serverlinks: This is where you specify data for servers that can link to this
+# one.  Servers not specified here will be denied linking.  The default value is
+# none; the value listed here is to illustrate the values used for linking
+# servers.
+#serverlinks:
+#  servername.example.com:
+#    ip: 12.34.56.78
+#    password: lolol
+
 # MOTD
 # 1. Maximum line length.  The default of 80 characters is recommended.
 #server_motd_line_length: 80
