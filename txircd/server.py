@@ -189,8 +189,10 @@ class ServerProtocol(AMP):
             raise ServerMismatchedIP ("The IP address for this server does not match the one in the configuration.")
         if "incoming_password" not in linkData or password != linkData["incoming_password"]:
             raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
-        
-        # TODO
+        if "handshake" not in self.burstStatus:
+            self.callRemote(IntroduceServer, name=self.ircd.servconfig["server_name"], password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
+        self.burstStatus.append("handshake")
+        # TODO: add server to self.ircd.servers
     IntroduceServer.responder(newServer)
     
     def burstUsers(self, users):
