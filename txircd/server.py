@@ -147,7 +147,7 @@ class IntroduceServer(Command):
         ("version", Integer()), # protocol version
         ("commonmodules", ListOf(String()))
     ]
-    errors = {
+    fatalErrors = {
         ServerAlreadyConnected: "SERVER_ALREADY_CONNECTED",
         ServerMismatchedIP: "SERVER_MISMATCHED_IP",
         ServerPasswordIncorrect: "SERVER_PASS_INCORRECT",
