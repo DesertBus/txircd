@@ -200,6 +200,10 @@ class ServerProtocol(AMP):
     def burstChannels(self, channels):
         pass # TODO
     BurstChannels.responder(burstChannels)
+    
+    def connectionLost(self, reason):
+        # TODO: remove all data from this server originating from remote
+        AMP.connectionLost(self, reason)
 
 class ServerFactory(Factory):
     protocol = ServerProtocol
