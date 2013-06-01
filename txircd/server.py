@@ -172,7 +172,8 @@ class BurstChannels(Command):
 class ServerProtocol(AMP):
     def __init__(self):
         self.ircd = self.factory # Let's stick to convention here.
-        self.burstComplete = []
+        self.burstComplete = False
+        self.burstStatus = []
     
     def newServer(self, name, password, description, version, commonmodules):
         if version not in compatible_versions:
