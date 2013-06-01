@@ -25,6 +25,7 @@ default_options = {
     "app_log_dir": "logs",
     # Server details
     "server_name": socket.getfqdn(),
+    "server_description": "A txircd server",
     "server_network_name": "txircd",
     "server_motd": "Welcome to txircd",
     "server_motd_line_length": 80,

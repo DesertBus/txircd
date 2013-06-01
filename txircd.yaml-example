@@ -21,6 +21,10 @@
 # what you want.
 #server_name: irc.example.com
 
+# Server Description: A description of the server; can be any text of reasonable
+# length.
+#server_description: A txircd server
+
 # Network Name: The network name must be a single word (i.e. no spaces) which
 # serves as the name of the network.  The default value is 'txircd'.
 #server_network_name: txircd
