@@ -1461,7 +1461,10 @@ class Spawner(object):
         sharedSecret = self.binaryString(pow(pubkey, self.dh_params["privkey"], self.dh_params["prime"]))
         
         aesCipher = AES.new(sharedSecret, mode=AES.MODE_CBC, IV=iv)
-        decryptedData = aesCipher.decrypt(encryptedData)
+        try:
+            decryptedData = aesCipher.decrypt(encryptedData)
+        except ValueError:
+            return "done"
         
         try:
             username, password, padding = decryptedData.split("\0", 2)
