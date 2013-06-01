@@ -53,7 +53,16 @@ class StatsCommand(Command):
                     caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
             else:
                 caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.servconfig["server_port_web"]))
-            # Add server ports here when we get s2s
+            if isinstance(self.ircd.servconfig["serverlink_port_tcp"], collections.Sequence):
+                for port in self.ircd.servconfig["serverlink_port_tcp"]:
+                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(port))
+            else:
+                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(self.ircd.servconfig["serverlink_port_tcp"]))
+            if isinstance(self.ircd.servconfig["serverlink_port_ssl"], collections.Sequence):
+                for port in self.ircd.servconfig["serverlink_port_ssl"]:
+                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(port))
+            else:
+                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(self.ircd.servconfig["serverlink_port_ssl"]))
         elif statschar == "u":
             uptime = now() - self.ircd.created
             caller.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
