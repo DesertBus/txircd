@@ -11,7 +11,8 @@ class Spawner(object):
         return {
             "modes": {
                 "uns": ServerNoticeMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

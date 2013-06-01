@@ -41,7 +41,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cni": InviteOnlyMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

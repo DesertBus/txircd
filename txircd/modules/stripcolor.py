@@ -53,7 +53,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnS": StripColor()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

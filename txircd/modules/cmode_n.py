@@ -32,7 +32,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnn": NoExternalMessagesMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

@@ -34,7 +34,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnC": BlockCTCP()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

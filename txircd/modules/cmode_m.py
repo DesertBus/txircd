@@ -28,7 +28,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnm": ModeratedMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

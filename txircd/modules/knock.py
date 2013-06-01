@@ -83,7 +83,8 @@ class Spawner(object):
             },
             "modes": {
                 "cnK": NoknockMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

@@ -90,7 +90,8 @@ class Spawner(object):
         return {
             "modes": {
                 "clb": self.ban_mode
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

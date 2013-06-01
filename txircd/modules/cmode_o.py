@@ -35,7 +35,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cso@100": OpMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

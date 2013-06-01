@@ -22,7 +22,8 @@ class Spawner(object):
             },
             "actions": {
                 "wholinemodify": [self.oper_mode.checkWhoFilter]
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

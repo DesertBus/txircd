@@ -35,7 +35,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cpl": LimitMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

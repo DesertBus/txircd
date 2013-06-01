@@ -43,7 +43,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cuk": PasswordMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

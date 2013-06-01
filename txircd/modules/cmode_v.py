@@ -29,7 +29,8 @@ class Spawner(object):
         return {
             "modes": {
                 "csv+10": VoiceMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

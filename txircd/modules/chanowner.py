@@ -34,7 +34,8 @@ class Spawner(object):
         return {
             "modes": {
                 "csq~200": OwnerMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

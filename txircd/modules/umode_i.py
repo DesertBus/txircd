@@ -33,7 +33,8 @@ class Spawner(object):
             },
             "actions": {
                 "wholinemodify": [self.invisible_mode.checkWhoVisible]
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

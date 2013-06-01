@@ -184,6 +184,7 @@ class IRCD(Factory):
         self.prefix_symbols = {}
         self.prefix_order = []
         self.module_data_cache = {}
+        self.common_modules = set()
         try:
             with open("data.yaml", "r") as dataFile:
                 self.serialized_data = yaml.safe_load(dataFile)
@@ -418,6 +419,8 @@ class IRCD(Factory):
                         self.actions[actiontype].append(func)
                 else:
                     self.actions[actiontype] = actionfuncs
+        if "common" in mod_contains and mod_contains["common"]:
+            self.common_modules.add(name)
         if not saved_data and name in self.serialized_data:
             saved_data = self.serialized_data[name] # present serialized data on first load of session
         if saved_data:

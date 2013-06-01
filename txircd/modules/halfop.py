@@ -36,7 +36,8 @@ class Spawner(object):
         return {
             "modes": {
                 "csh%50": HalfopMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

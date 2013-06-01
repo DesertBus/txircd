@@ -25,7 +25,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnt": TopiclockMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

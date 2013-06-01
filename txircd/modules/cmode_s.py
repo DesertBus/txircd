@@ -35,7 +35,8 @@ class Spawner(object):
             },
             "actions": {
                 "commandextra": [self.mode_s.listOutput]
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

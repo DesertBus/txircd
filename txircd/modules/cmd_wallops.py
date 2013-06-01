@@ -38,7 +38,8 @@ class Spawner(object):
             },
             "modes": {
                 "unw": WallopsMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

@@ -34,7 +34,8 @@ class Spawner(object):
         return {
             "modes": {
                 "csa&150": AdminMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):
