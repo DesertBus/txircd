@@ -183,8 +183,9 @@ class ServerProtocol(AMP):
         ip = self.transport.getPeer().host
         if "ip" not in linkData or ip != linkData["ip"]:
             raise ServerMismatchedIP ("The IP address for this server does not match the one in the configuration.")
-        if "password" not in linkData or password != linkData["password"]:
+        if "incoming_password" not in linkData or password != linkData["incoming_password"]:
             raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
+        
         # TODO
     IntroduceServer.responder(newServer)
     

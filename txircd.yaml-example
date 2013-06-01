@@ -65,7 +65,12 @@
 #serverlinks:
 #  servername.example.com:
 #    ip: 12.34.56.78
-#    password: lolol
+#    incoming_password: lolol
+#    outgoing_password: whateven
+
+# serverlink_autoconnect: This is a list of server names specified above to
+# automatically connect to.
+#serverlink_autoconnect: []
 
 # MOTD
 # 1. Maximum line length.  The default of 80 characters is recommended.
