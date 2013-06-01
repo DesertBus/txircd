@@ -154,16 +154,19 @@ class IntroduceServer(Command):
         ServerNoLink: "SERVER_NO_LINK",
         ModuleMismatch: "MODULE_MISMATCH"
     }
+    requiresAnswer = False
 
 class BurstUsers(Command):
     arguments = [
         ("users", ListOf(AmpBox()))
     ]
+    requiresAnswer = False
 
 class BurstChannels(Command):
     arguments = [
         ("channels", ListOf(AmpBox()))
     ]
+    requiresAnswer = False
 
 
 class ServerProtocol(AMP):
