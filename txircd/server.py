@@ -174,6 +174,7 @@ class ServerProtocol(AMP):
         self.ircd = self.factory.ircd
         self.burstComplete = False
         self.burstStatus = []
+        self.name = None
     
     def newServer(self, name, password, description, version, commonmodules):
         if version not in compatible_versions:
@@ -192,7 +193,8 @@ class ServerProtocol(AMP):
         if "handshake" not in self.burstStatus:
             self.callRemote(IntroduceServer, name=self.ircd.servconfig["server_name"], password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
         self.burstStatus.append("handshake")
-        # TODO: add server to self.ircd.servers
+        self.name = name
+        self.ircd.servers[name] = self
     IntroduceServer.responder(newServer)
     
     def burstUsers(self, users):
@@ -205,6 +207,7 @@ class ServerProtocol(AMP):
     
     def connectionLost(self, reason):
         # TODO: remove all data from this server originating from remote
+        del self.ircd.servers[self.name]
         AMP.connectionLost(self, reason)
 
 class ServerFactory(Factory):
