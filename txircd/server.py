@@ -122,6 +122,9 @@ class RemoteUser(object):
 
 
 # ERRORS
+class HandshakeAlreadyComplete:
+    pass
+
 class ServerAlreadyConnected(Exception):
     pass
 
@@ -147,6 +150,9 @@ class IntroduceServer(Command):
         ("version", Integer()), # protocol version
         ("commonmodules", ListOf(String()))
     ]
+    errors = {
+        HandshakeAlreadyComplete: "HANDSHAKE_ALREADY_COMPLETE"
+    }
     fatalErrors = {
         ServerAlreadyConnected: "SERVER_ALREADY_CONNECTED",
         ServerMismatchedIP: "SERVER_MISMATCHED_IP",
@@ -177,6 +183,8 @@ class ServerProtocol(AMP):
         self.name = None
     
     def newServer(self, name, password, description, version, commonmodules):
+        if "handshake" in self.burstStatus:
+            raise HandshakeAlreadyComplete ("The server handshake has already been completed between these servers.")
         if version not in compatible_versions:
             raise IncompatibleVersions ("Protocol version {} is not compatible with this version".format(version))
         commonModDiff = commonmodules ^ self.ircd.common_modules
@@ -192,7 +200,7 @@ class ServerProtocol(AMP):
             raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
         if "handshake" not in self.burstStatus:
             self.callRemote(IntroduceServer, name=self.ircd.servconfig["server_name"], password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
-        self.burstStatus.append("handshake")
+            self.burstStatus.append("handshake")
         self.name = name
         self.ircd.servers[name] = self
     IntroduceServer.responder(newServer)
