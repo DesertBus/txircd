@@ -205,6 +205,7 @@ class ServerProtocol(AMP):
             self.burstStatus.append("handshake")
         self.name = name
         self.ircd.servers[name] = self
+        return {}
     IntroduceServer.responder(newServer)
     
     def burstUsers(self, users):
