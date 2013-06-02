@@ -204,8 +204,9 @@ class ServerProtocol(AMP):
         self.name = None
     
     def newServer(self, name, password, description, version, commonmodules):
-        if "handshake" in self.burstStatus:
+        if "handshake-recv" in self.burstStatus:
             raise HandshakeAlreadyComplete ("The server handshake has already been completed between these servers.")
+        self.burstStatus.append("handshake-recv")
         if version not in compatible_versions:
             raise IncompatibleVersions ("Protocol version {} is not compatible with this version".format(version))
         commonModDiff = commonmodules ^ self.ircd.common_modules
@@ -221,9 +222,9 @@ class ServerProtocol(AMP):
             raise ServerMismatchedIP ("The IP address for this server does not match the one in the configuration.")
         if "incoming_password" not in linkData or password != linkData["incoming_password"]:
             raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
-        if "handshake" not in self.burstStatus:
+        if "handshake-send" not in self.burstStatus:
             self.callRemote(IntroduceServer, name=self.ircd.servconfig["server_name"], password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
-            self.burstStatus.append("handshake")
+            self.burstStatus.append("handshake-send")
         else:
             self.sendUsers()
         self.name = name
@@ -236,6 +237,8 @@ class ServerProtocol(AMP):
     BurstUsers.responder(burstUsers)
     
     def sendUsers(self):
+        if "users-send" in self.burstStatus:
+            return
         userList = []
         for u in self.ircd.users.itervalues():
             modes = []
@@ -257,6 +260,7 @@ class ServerProtocol(AMP):
                 "ts": epoch(u.signon)
             })
         self.callRemote(burstUsers, users=userList)
+        self.burstStatus.append("users-send")
     
     def burstChannels(self, channels):
         pass # TODO
