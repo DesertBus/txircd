@@ -143,6 +143,9 @@ class ModuleMismatch(Exception):
 class BurstIncomplete(Exception):
     pass
 
+class AlreadyBursted(Exception):
+    pass
+
 # TODO: errbacks to handle all of these
 
 
@@ -182,7 +185,8 @@ class BurstUsers(Command):
         ]))
     ]
     errors = {
-        BurstIncomplete: "BURST_INCOMPLETE"
+        BurstIncomplete: "BURST_INCOMPLETE",
+        AlreadyBursted: "ALREADY_BURSTED"
     }
     requiresAnswer = False
 
@@ -193,7 +197,8 @@ class BurstChannels(Command):
         ]))
     ]
     errors = {
-        BurstIncomplete: "BURST_INCOMPLETE"
+        BurstIncomplete: "BURST_INCOMPLETE",
+        AlreadyBursted: "ALREADY_BURSTED"
     }
     requiresAnswer = False
 
@@ -235,7 +240,11 @@ class ServerProtocol(AMP):
     IntroduceServer.responder(newServer)
     
     def burstUsers(self, users):
-        pass # TODO
+        if "handshake-send" not in self.burstStatus or "handshake-recv" not in self.burstStatus:
+            raise BurstIncomplete ("The handshake was not completed before attempting to burst data.")
+        if "users-recv" in self.burstStatus:
+            raise AlreadyBursted ("Users have already been bursted to this server.")
+        # TODO
     BurstUsers.responder(burstUsers)
     
     def sendUsers(self):
@@ -265,7 +274,13 @@ class ServerProtocol(AMP):
         self.burstStatus.append("users-send")
     
     def burstChannels(self, channels):
-        pass # TODO
+        if "handshake-send" not in self.burstStatus or "handshake-recv" not in self.burstStatus:
+            raise BurstIncomplete ("The handshake was not completed before attempting to burst data.")
+        if "users-recv" not in self.burstStatus or "users-send" not in self.burstStatus:
+            raise BurstIncomplete ("Users must be bursted before channel data may be bursted.")
+        if "channels-recv" in self.burstStatus:
+            raise AlreadyBursted ("Channels have already been bursted to this server.")
+        # TODO
     BurstChannels.responder(burstChannels)
     
     def connectionLost(self, reason):
