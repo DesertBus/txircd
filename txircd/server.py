@@ -1,5 +1,5 @@
 from twisted.internet.protocol import Factory
-from twisted.protocols.amp import AMP, Command, Integer, String, AmpBox, ListOf, IncompatibleVersions
+from twisted.protocols.amp import AMP, Command, Integer, String, AmpList, ListOf, IncompatibleVersions
 from txircd.utils import CaseInsensitiveDictionary, epoch, now
 
 current_version = 200 # Protocol version 0.2.0
@@ -167,7 +167,17 @@ class IntroduceServer(Command):
 
 class BurstUsers(Command):
     arguments = [
-        ("users", ListOf(AmpBox()))
+        ("users", AmpList([
+            ("nickname", String()),
+            ("ident", String()),
+            ("host", String()),
+            ("gecos", String()),
+            ("ip", String()),
+            ("server", String()),
+            ("secure", Boolean()),
+            ("mode", ListOf(String())),
+            ("ts", Integer())
+        ]))
     ]
     errors = {
         BurstIncomplete: "BURST_INCOMPLETE"
@@ -176,7 +186,9 @@ class BurstUsers(Command):
 
 class BurstChannels(Command):
     arguments = [
-        ("channels", ListOf(AmpBox()))
+        ("channels", AmpList([
+            # TODO
+        ]))
     ]
     errors = {
         BurstIncomplete: "BURST_INCOMPLETE"
@@ -215,21 +227,23 @@ class ServerProtocol(AMP):
         else:
             userList = []
             for u in self.ircd.users.itervalues():
-                listModes = []
-                for mode in self.ircd.channel_modes[0].iterkeys():
-                    if mode in u.mode:
-                        listModes.append("{}{}".format(mode, " ".join(u.mode[mode])))
-                userList.append({ # AmpBoxes are str:str dictionaries, so make sure everything is str
+                modes = []
+                for mode, param in u.mode.iteritems:
+                    if self.ircd.user_mode_type[mode] == 0:
+                        for item in param:
+                            modes.append("{}{}".format(mode, item))
+                    else:
+                        modes.append("{}{}".format(mode, param))
+                userList.append({
                     "nickname": u.nickname,
                     "ident": u.username,
                     "host": u.hostname,
                     "gecos": u.realname,
                     "ip": u.ip,
                     "server": u.server,
-                    "secure": "1" if u.socket.secure else "0",
-                    "mode": u.modeString(None),
-                    "listmodes": "\n".join(listModes), # serialize list modes into an unserializable string format
-                    "ts": str(epoch(u.signon))
+                    "secure": u.socket.secure,
+                    "mode": modes,
+                    "ts": epoch(u.signon)
                 })
             self.callRemote(burstUsers, users=userList)
         self.name = name
