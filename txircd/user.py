@@ -41,6 +41,7 @@ class IRCUser(object):
         self.ip = ip
         self.server = parent.factory.servconfig["server_name"]
         self.signon = now()
+        self.nicktime = now()
         self.lastactivity = now()
         self.lastpong = now()
         self.mode = {}
@@ -403,5 +404,6 @@ class IRCUser(object):
             u.sendMessage("NICK", to=newNick, prefix=prefix)
         oldNick = self.nickname
         self.nickname = newNick
+        self.nicktime = now()
         for modfunc in self.ircd.actions["nick"]:
             modfunc(self, oldNick)
