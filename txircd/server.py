@@ -206,7 +206,7 @@ class BurstChannels(Command):
 class ServerProtocol(AMP):
     def __init__(self):
         self.ircd = self.factory.ircd
-        self.burstComplete = False
+        self.burstComplete = False # TODO: set this to True somewhere
         self.burstStatus = []
         self.name = None
     
