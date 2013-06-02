@@ -181,6 +181,7 @@ class BurstUsers(Command):
             ("server", String()),
             ("secure", Boolean()),
             ("mode", ListOf(String())),
+            ("channels", AmpList([("name", String()), ("status", String())])),
             ("ts", Integer())
         ]))
     ]
@@ -259,6 +260,13 @@ class ServerProtocol(AMP):
                         modes.append("{}{}".format(mode, item))
                 else:
                     modes.append("{}{}".format(mode, param))
+            channels = []
+            for name, data in u.channels:
+                status = data["status"]
+                channels.append({
+                    "name": name,
+                    "status": status
+                })
             userList.append({
                 "nickname": u.nickname,
                 "ident": u.username,
@@ -268,6 +276,7 @@ class ServerProtocol(AMP):
                 "server": u.server,
                 "secure": u.socket.secure,
                 "mode": modes,
+                "channels": channels,
                 "ts": epoch(u.signon)
             })
         self.callRemote(burstUsers, users=userList)
