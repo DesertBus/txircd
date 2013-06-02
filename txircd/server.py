@@ -1,6 +1,6 @@
 from twisted.internet.protocol import Factory
 from twisted.protocols.amp import AMP, Command, Integer, String, AmpBox, ListOf, IncompatibleVersions
-from txircd.utils import CaseInsensitiveDictionary, now
+from txircd.utils import CaseInsensitiveDictionary, epoch, now
 
 current_version = 200 # Protocol version 0.2.0
 # The protocol version should be incremented with changes of the protocol
@@ -203,6 +203,26 @@ class ServerProtocol(AMP):
         if "handshake" not in self.burstStatus:
             self.callRemote(IntroduceServer, name=self.ircd.servconfig["server_name"], password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
             self.burstStatus.append("handshake")
+        else:
+            userList = []
+            for u in self.ircd.users.itervalues():
+                listModes = []
+                for mode in self.ircd.channel_modes[0].iterkeys():
+                    if mode in u.mode:
+                        listModes.append("{}{}".format(mode, " ".join(u.mode[mode])))
+                userList.append({ # AmpBoxes are str:str dictionaries, so make sure everything is str
+                    "nickname": u.nickname,
+                    "ident": u.username,
+                    "host": u.hostname,
+                    "gecos": u.realname,
+                    "ip": u.ip,
+                    "server": u.server,
+                    "secure": "1" if u.socket.secure else "0",
+                    "mode": u.modeString(None),
+                    "listmodes": "\n".join(listModes), # serialize list modes into an unserializable string format
+                    "ts": str(epoch(u.signon))
+                })
+            self.callRemote(burstUsers, users=userList)
         self.name = name
         self.ircd.servers[name] = self
         return {}
