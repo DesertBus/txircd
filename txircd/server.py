@@ -225,27 +225,7 @@ class ServerProtocol(AMP):
             self.callRemote(IntroduceServer, name=self.ircd.servconfig["server_name"], password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
             self.burstStatus.append("handshake")
         else:
-            userList = []
-            for u in self.ircd.users.itervalues():
-                modes = []
-                for mode, param in u.mode.iteritems:
-                    if self.ircd.user_mode_type[mode] == 0:
-                        for item in param:
-                            modes.append("{}{}".format(mode, item))
-                    else:
-                        modes.append("{}{}".format(mode, param))
-                userList.append({
-                    "nickname": u.nickname,
-                    "ident": u.username,
-                    "host": u.hostname,
-                    "gecos": u.realname,
-                    "ip": u.ip,
-                    "server": u.server,
-                    "secure": u.socket.secure,
-                    "mode": modes,
-                    "ts": epoch(u.signon)
-                })
-            self.callRemote(burstUsers, users=userList)
+            self.sendUsers()
         self.name = name
         self.ircd.servers[name] = self
         return {}
@@ -254,6 +234,29 @@ class ServerProtocol(AMP):
     def burstUsers(self, users):
         pass # TODO
     BurstUsers.responder(burstUsers)
+    
+    def sendUsers(self):
+        userList = []
+        for u in self.ircd.users.itervalues():
+            modes = []
+            for mode, param in u.mode.iteritems():
+                if self.ircd.user_mode_type[mode] == 0:
+                    for item in param:
+                        modes.append("{}{}".format(mode, item))
+                else:
+                    modes.append("{}{}".format(mode, param))
+            userList.append({
+                "nickname": u.nickname,
+                "ident": u.username,
+                "host": u.hostname,
+                "gecos": u.realname,
+                "ip": u.ip,
+                "server": u.server,
+                "secure": u.socket.secure,
+                "mode": modes,
+                "ts": epoch(u.signon)
+            })
+        self.callRemote(burstUsers, users=userList)
     
     def burstChannels(self, channels):
         pass # TODO
