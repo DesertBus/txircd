@@ -194,7 +194,13 @@ class BurstUsers(Command):
 class BurstChannels(Command):
     arguments = [
         ("channels", AmpList([
-            # TODO
+            ("name", String()),
+            ("topic", String()),
+            ("topicsetter", String()),
+            ("topicts", Integer()),
+            ("mode", ListOf(String())),
+            ("users", ListOf(String())),
+            ("ts": Integer())
         ]))
     ]
     errors = {
@@ -293,6 +299,35 @@ class ServerProtocol(AMP):
             raise AlreadyBursted ("Channels have already been bursted to this server.")
         # TODO
     BurstChannels.responder(burstChannels)
+    
+    def sendChannels(self):
+        if "channels-send" in self.burstStatus:
+            return
+        channelList = []
+        for chan in self.ircd.channels.itervalues():
+            modes = []
+            for mode, param in chan.mode.iteritems():
+                if self.ircd.channel_mode_type[mode] == 0:
+                    for item in param:
+                        modes.append("{}{}".format(mode, item))
+                elif param is None:
+                    modes.append(mode)
+                else:
+                    modes.append("{}{}".format(mode, param))
+            users = []
+            for u in chan.users:
+                users.append(u.nickname)
+            channelList.append({
+                "name": chan.name,
+                "topic": chan.topic,
+                "topicsetter": chan.topicSetter,
+                "topicts": epoch(chan.topicTime),
+                "mode": modes,
+                "users": users,
+                "ts": epoch(chan.created)
+            })
+        self.callRemote(burstChannels, channels=channelList)
+        self.burstStatus.append("channels-send")
     
     def connectionLost(self, reason):
         # TODO: remove all data from this server originating from remote
