@@ -170,7 +170,7 @@ class IntroduceServer(Command):
     }
     requiresAnswer = False
 
-class BurstUsers(Command):
+class BurstData(Command):
     arguments = [
         ("users", AmpList([
             ("nickname", String()),
@@ -183,16 +183,7 @@ class BurstUsers(Command):
             ("mode", ListOf(String())),
             ("channels", AmpList([("name", String()), ("status", String())])),
             ("ts", Integer())
-        ]))
-    ]
-    errors = {
-        BurstIncomplete: "BURST_INCOMPLETE",
-        AlreadyBursted: "ALREADY_BURSTED"
-    }
-    requiresAnswer = False
-
-class BurstChannels(Command):
-    arguments = [
+        ])),
         ("channels", AmpList([
             ("name", String()),
             ("topic", String()),
@@ -204,7 +195,6 @@ class BurstChannels(Command):
         ]))
     ]
     errors = {
-        BurstIncomplete: "BURST_INCOMPLETE",
         AlreadyBursted: "ALREADY_BURSTED"
     }
     requiresAnswer = False
@@ -216,6 +206,7 @@ class ServerProtocol(AMP):
         self.burstComplete = False # TODO: set this to True somewhere
         self.burstStatus = []
         self.name = None
+        self.remoteServers = []
     
     def newServer(self, name, password, description, version, commonmodules):
         if "handshake-recv" in self.burstStatus:
@@ -246,16 +237,23 @@ class ServerProtocol(AMP):
         return {}
     IntroduceServer.responder(newServer)
     
-    def burstUsers(self, users):
+    def burstData(self, users, channels):
         if "handshake-send" not in self.burstStatus or "handshake-recv" not in self.burstStatus:
             raise BurstIncomplete ("The handshake was not completed before attempting to burst data.")
-        if "users-recv" in self.burstStatus:
-            raise AlreadyBursted ("Users have already been bursted to this server.")
-        # TODO
-    BurstUsers.responder(burstUsers)
+        if "burst-recv" in self.burstStatus:
+            raise AlreadyBursted ("Data has already been bursted to this server.")
+        for udata in users:
+            if udata["nickname"] in self.ircd.users: # a user with the same nickname is already connected
+                ourudata = self.ircd.users[udata["nickname"]]
+                if epoch(ourudata.nicktime) >= udata["ts"]: # older user wins; if same, they both die
+                    ourudata.disconnect("Nickname collision")
+            newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"])
+            for mode in udata["mode"]:
+                # TODO
+    BurstData.responder(burstData)
     
-    def sendUsers(self):
-        if "users-send" in self.burstStatus:
+    def sendBurstData(self):
+        if "burst-send" in self.burstStatus:
             return
         userList = []
         for u in self.ircd.users.itervalues():
@@ -285,24 +283,8 @@ class ServerProtocol(AMP):
                 "secure": u.socket.secure,
                 "mode": modes,
                 "channels": channels,
-                "ts": epoch(u.signon)
+                "ts": epoch(u.nicktime)
             })
-        self.callRemote(burstUsers, users=userList)
-        self.burstStatus.append("users-send")
-    
-    def burstChannels(self, channels):
-        if "handshake-send" not in self.burstStatus or "handshake-recv" not in self.burstStatus:
-            raise BurstIncomplete ("The handshake was not completed before attempting to burst data.")
-        if "users-recv" not in self.burstStatus or "users-send" not in self.burstStatus:
-            raise BurstIncomplete ("Users must be bursted before channel data may be bursted.")
-        if "channels-recv" in self.burstStatus:
-            raise AlreadyBursted ("Channels have already been bursted to this server.")
-        # TODO
-    BurstChannels.responder(burstChannels)
-    
-    def sendChannels(self):
-        if "channels-send" in self.burstStatus:
-            return
         channelList = []
         for chan in self.ircd.channels.itervalues():
             modes = []
@@ -326,8 +308,8 @@ class ServerProtocol(AMP):
                 "users": users,
                 "ts": epoch(chan.created)
             })
-        self.callRemote(burstChannels, channels=channelList)
-        self.burstStatus.append("channels-send")
+        self.callRemote(burstData, users=userList, channels=channelList)
+        self.burstStatus.append("burst-send")
     
     def connectionLost(self, reason):
         # TODO: remove all data from this server originating from remote
@@ -340,5 +322,3 @@ class ServerFactory(Factory):
     
     def __init__(self, ircd):
         self.ircd = ircd
-    
-    # TODO: extend Factory to form ServerFactory as the base for all this; see app.py
