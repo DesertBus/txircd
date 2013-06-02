@@ -1,6 +1,7 @@
 from twisted.internet.protocol import Factory
 from twisted.protocols.amp import AMP, Command, Integer, String, AmpList, ListOf, IncompatibleVersions
 from txircd.utils import CaseInsensitiveDictionary, epoch, now
+from datetime import datetime
 
 current_version = 200 # Protocol version 0.2.0
 # The protocol version should be incremented with changes of the protocol
@@ -20,7 +21,7 @@ class RemoteUser(object):
             self.transport = self.RemoteTransport()
             self.secure = secure
     
-    def __init__(self, ircd, nick, ident, host, gecos, ip, server, secure):
+    def __init__(self, ircd, nick, ident, host, gecos, ip, server, secure, signonTime, nickTime):
         self.ircd = ircd
         self.socket = self.RemoteSocket(secure)
         self.password = None
@@ -30,7 +31,8 @@ class RemoteUser(object):
         self.hostname = host
         self.ip = ip
         self.server = server
-        self.signon = now()
+        self.signon = signonTime
+        self.nicktime = nickTime
         self.lastactivity = now()
         self.mode = {}
         self.channels = CaseInsensitiveDictionary()
@@ -182,6 +184,7 @@ class BurstData(Command):
             ("secure", Boolean()),
             ("mode", ListOf(String())),
             ("channels", AmpList([("name", String()), ("status", String())])),
+            ("signon", Integer()),
             ("ts", Integer())
         ])),
         ("channels", AmpList([
@@ -253,7 +256,7 @@ class ServerProtocol(AMP):
                     ourudata.disconnect("Nickname collision")
                 else:
                     continue # skip adding the remote user since they'll die on the remote server
-            newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"])
+            newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"], datetime.utcfromtimestamp(udata["signon"]), datetime.utcfromtimestamp(udata["ts"]))
             for mode in udata["mode"]:
                 modetype = self.ircd.user_mode_type[mode[0]]
                 if modetype == 0:
@@ -299,6 +302,7 @@ class ServerProtocol(AMP):
                 "secure": u.socket.secure,
                 "mode": modes,
                 "channels": channels,
+                "signon": epoch(u.signon),
                 "ts": epoch(u.nicktime)
             })
         channelList = []
