@@ -140,6 +140,9 @@ class ServerNoLink(Exception):
 class ModuleMismatch(Exception):
     pass
 
+class BurstIncomplete(Exception):
+    pass
+
 
 # COMMANDS
 class IntroduceServer(Command):
@@ -166,12 +169,18 @@ class BurstUsers(Command):
     arguments = [
         ("users", ListOf(AmpBox()))
     ]
+    errors = {
+        BurstIncomplete: "BURST_INCOMPLETE"
+    }
     requiresAnswer = False
 
 class BurstChannels(Command):
     arguments = [
         ("channels", ListOf(AmpBox()))
     ]
+    errors = {
+        BurstIncomplete: "BURST_INCOMPLETE"
+    }
     requiresAnswer = False
 
 
