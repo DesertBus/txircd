@@ -258,6 +258,8 @@ class ServerProtocol(AMP):
                 if self.ircd.user_mode_type[mode] == 0:
                     for item in param:
                         modes.append("{}{}".format(mode, item))
+                elif param is None:
+                    modes.append(mode)
                 else:
                     modes.append("{}{}".format(mode, param))
             channels = []
