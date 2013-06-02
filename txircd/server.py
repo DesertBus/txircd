@@ -143,6 +143,8 @@ class ModuleMismatch(Exception):
 class BurstIncomplete(Exception):
     pass
 
+# TODO: errbacks to handle all of these
+
 
 # COMMANDS
 class IntroduceServer(Command):
