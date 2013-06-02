@@ -245,11 +245,27 @@ class ServerProtocol(AMP):
         for udata in users:
             if udata["nickname"] in self.ircd.users: # a user with the same nickname is already connected
                 ourudata = self.ircd.users[udata["nickname"]]
-                if epoch(ourudata.nicktime) >= udata["ts"]: # older user wins; if same, they both die
+                ourts = epoch(ourudata.nicktime)
+                if ourts == udata["ts"]: # older user wins; if same, they both die
                     ourudata.disconnect("Nickname collision")
+                    continue
+                elif ourts > udata["ts"]:
+                    ourudata.disconnect("Nickname collision")
+                else:
+                    continue # skip adding the remote user since they'll die on the remote server
             newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"])
             for mode in udata["mode"]:
-                # TODO
+                modetype = self.ircd.user_mode_type[mode[0]]
+                if modetype == 0:
+                    if mode[0] not in newUser.mode:
+                        newUser.mode[mode[0]] = []
+                    newUser[mode[0]].append(mode[1:])
+                elif modetype == 3:
+                    newUser.mode[mode[0]] = None
+                else:
+                    newUser.mode[mode[0]] = mode[1:]
+            
+        return {}
     BurstData.responder(burstData)
     
     def sendBurstData(self):
