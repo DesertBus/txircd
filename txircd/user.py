@@ -269,7 +269,10 @@ class IRCUser(object):
             if modetype > 0:
                 modes.append(mode)
                 if param:
-                    params.append(self.ircd.user_modes[modetype][mode].showParam(user, self, param))
+                    if user:
+                        params.append(self.ircd.user_modes[modetype][mode].showParam(user, self, param))
+                    else:
+                        params.append(param)
         return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
     
     def send_motd(self):
