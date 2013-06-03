@@ -187,6 +187,7 @@ class IRCD(Factory):
         self.prefix_symbols = {}
         self.prefix_order = []
         self.module_data_cache = {}
+        self.server_factory = None
         self.common_modules = set()
         try:
             with open("data.yaml", "r") as dataFile:

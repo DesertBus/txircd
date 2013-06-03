@@ -1,4 +1,4 @@
-from twisted.internet.protocol import Factory
+from twisted.internet.protocol import Factory, ClientFactory
 from twisted.protocols.amp import AMP, Command, Integer, String, AmpList, ListOf, IncompatibleVersions
 from txircd.utils import CaseInsensitiveDictionary, epoch, now
 from datetime import datetime
@@ -210,6 +210,7 @@ class ServerProtocol(AMP):
         self.burstStatus = []
         self.name = None
         self.remoteServers = []
+        self.localOrigin = False
     
     def newServer(self, name, password, description, version, commonmodules):
         if "handshake-recv" in self.burstStatus:
@@ -337,8 +338,26 @@ class ServerProtocol(AMP):
             del self.ircd.servers[self.name]
         AMP.connectionLost(self, reason)
 
+# ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
+# This is to allow differentiating between a connection we initiated and a connection we received
+# which is used to break ties in bursting when we absolutely cannot break the tie any other way.
+# Failure to use this class as the factory when connecting to a remote server may lead to desyncs!
+class ClientServerFactory(ClientFactory):
+    protocol = ServerProtocol
+    
+    def __init__(self, parent, ircd):
+        self.parent = parent
+        self.ircd = ircd
+    
+    def buildProtocol(self, addr):
+        proto = ClientFactory.buildProtocol(self, addr)
+        proto.localOrigin = True
+        return proto
+
 class ServerFactory(Factory):
     protocol = ServerProtocol
     
     def __init__(self, ircd):
         self.ircd = ircd
+        self.client_factory = ClientServerFactory(self, ircd)
+        self.ircd.server_factory = self
