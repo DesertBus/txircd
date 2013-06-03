@@ -235,7 +235,7 @@ class ServerProtocol(AMP):
             self.callRemote(IntroduceServer, name=self.ircd.servconfig["server_name"], password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
             self.burstStatus.append("handshake-send")
         else:
-            self.sendUsers()
+            self.sendBurstData()
         self.name = name
         self.ircd.servers[name] = self
         return {}
@@ -246,6 +246,7 @@ class ServerProtocol(AMP):
             raise BurstIncomplete ("The handshake was not completed before attempting to burst data.")
         if "burst-recv" in self.burstStatus:
             raise AlreadyBursted ("Data has already been bursted to this server.")
+        self.sendBurstData() # Respond by sending our own burst data if we haven't yet
         incomingChannels = []
         for chan in channels:
             newChannel = IRCChannel(self.ircd, chan["name"])
@@ -434,6 +435,7 @@ class ServerProtocol(AMP):
                         self.justSendJoin(user, mergeChanData)
                     for user in channel.users: # Use a second loop so remote users don't get extra JOIN messages about users already in that channel
                         mergeChanData.users.add(user)
+        self.burstStatus.append("burst-recv")
         return {}
     BurstData.responder(burstData)
     
