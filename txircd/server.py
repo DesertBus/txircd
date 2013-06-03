@@ -436,6 +436,7 @@ class ServerProtocol(AMP):
                     for user in channel.users: # Use a second loop so remote users don't get extra JOIN messages about users already in that channel
                         mergeChanData.users.add(user)
         self.burstStatus.append("burst-recv")
+        self.burstComplete = True
         return {}
     BurstData.responder(burstData)
     
