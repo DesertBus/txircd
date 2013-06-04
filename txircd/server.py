@@ -1,5 +1,5 @@
 from twisted.internet.protocol import Factory, ClientFactory
-from twisted.protocols.amp import AMP, Command, Integer, String, AmpList, ListOf, IncompatibleVersions
+from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
 from txircd.utils import CaseInsensitiveDictionary, epoch, now
 from datetime import datetime
 
@@ -194,7 +194,7 @@ class BurstData(Command):
             ("topicts", Integer()),
             ("mode", ListOf(String())),
             ("users", ListOf(String())),
-            ("ts": Integer())
+            ("ts", Integer())
         ]))
     ]
     errors = {
