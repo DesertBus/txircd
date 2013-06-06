@@ -168,18 +168,17 @@ class IRCUser(object):
                     return data
                 if not data:
                     return {}
-        if "targetchan" in data:
-            for modeset in self.ircd.channel_modes:
-                for implementation in modeset.itervalues():
-                    permData = implementation.checkPermission(self, command, data)
-                    if permData == "again":
-                        tryagain.add(implementation.checkPermission)
-                    else:
-                        data = permData
-                        if "force" in data and data["force"]:
-                            return data
-                        if not data:
-                            return {}
+        for modeset in self.ircd.channel_modes:
+            for implementation in modeset.itervalues():
+                permData = implementation.checkPermission(self, command, data)
+                if permData == "again":
+                    tryagain.add(implementation.checkPermission)
+                else:
+                    data = permData
+                    if "force" in data and data["force"]:
+                        return data
+                    if not data:
+                        return {}
         for modeset in self.ircd.user_modes:
             for implementation in modeset.itervalues():
                 permData = implementation.checkPermission(self, command, data)
