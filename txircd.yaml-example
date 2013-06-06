@@ -345,6 +345,10 @@
 # knock: Enables the /knock command, which serves as a mechanism for users to
 # request an invite to a channel.
 #- knock
+#
+# blockcolor: Enables the +c channel mode, which blocks messages with color from
+# being sent to the channel.
+#- blockcolor
 # 
 # stripcolor: Enables the +S channel mode, which strips color codes from
 # messages sent to the channel.
