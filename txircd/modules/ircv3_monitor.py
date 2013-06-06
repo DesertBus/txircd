@@ -171,6 +171,7 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["MONITOR"]
+        del self.ircd.isupport["MONITOR"]
         self.ircd.actions["register"].remove(self.monitor_cmd.notifyConnect)
         self.ircd.actions["quit"].remove(self.monitor_cmd.notifyQuit)
         self.ircd.actions["nick"].remove(self.monitor_cmd.notifyNick)

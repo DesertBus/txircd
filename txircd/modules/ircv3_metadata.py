@@ -205,6 +205,7 @@ class Spawner(object):
         if "cap" not in self.ircd.module_data_cache:
             self.ircd.module_data_cache["cap"] = {}
         self.ircd.module_data_cache["cap"]["metadata-notify"] = self.metadata_cmd
+        self.ircd.isupport["METADATA"] = None
         return {
             "commands": {
                 "METADATA": self.metadata_cmd
@@ -216,5 +217,6 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["METADATA"]
+        del self.ircd.isupport["METADATA"]
         del self.ircd.module_data_cache["cap"]["metadata-notify"]
         self.ircd.actions["metadataupdate"].remove(self.metadata_cmd.notify)
