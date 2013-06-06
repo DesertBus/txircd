@@ -62,6 +62,8 @@ class KnockCommand(Command):
 
 class NoknockMode(Mode):
     def checkPermission(self, user, cmd, data):
+        if "targetchan" not in data:
+            return data
         cdata = data["targetchan"]
         if cmd == "KNOCK" and "K" in cdata.mode:
             user.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Channel is +K")
