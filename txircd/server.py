@@ -90,9 +90,6 @@ class RemoteUser(object):
             return ""
         return self.channels[channel]["status"]
     
-    def certFP(self):
-        pass # TODO
-    
     def modeString(self, user):
         modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
         params = []

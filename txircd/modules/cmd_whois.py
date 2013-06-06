@@ -28,9 +28,8 @@ class WhoisCommand(Command):
                 user.sendMessage(irc.RPL_WHOISACCOUNT, u.nickname, u.metadata["ext"]["accountname"], ":is logged in as")
             if u.socket.secure:
                 user.sendMessage(irc.RPL_WHOISSECURE, u.nickname, ":is using a secure connection")
-                certfp = u.certFP()
-                if certfp:
-                    user.sendMessage(irc.RPL_WHOISCERTFP, u.nickname, ":has client certificate fingerprint {}".format(certfp))
+                if "certfp" in u.metadata["server"]:
+                    user.sendMessage(irc.RPL_WHOISCERTFP, u.nickname, ":has client certificate fingerprint {}".format(u.metadata["server"]["certfp"]))
             if "o" in u.mode:
                 user.sendMessage(irc.RPL_WHOISOPERATOR, u.nickname, ":is an IRC operator")
             user.commandExtraHook("WHOIS", { "user": user, "targetuser": u })

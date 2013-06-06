@@ -95,6 +95,15 @@ class IRCProtocol(irc.IRC):
     def dataReceived(self, data):
         if self.dead:
             return
+        # Get and store the peer certificate if the client is using SSL and providing a client certificate
+        # I don't like handling this here, but twisted does not provide a hook to process it in a better place (e.g.
+        # when the SSL handshake is complete); see http://twistedmatrix.com/trac/ticket/6024
+        # This will be moved in the future when we can.
+        if self.secure:
+            certificate = self.socket.transport.getPeerCertificate()
+            if certificate is not None:
+                self.type.setMetadata["server"]["certfp"] = certificate.digest("md5").lower().replace(":", "")
+        # Handle the received data
         for modfunc in self.factory.actions["recvdata"]:
             modfunc(self.type, data)
         self.data += len(data)

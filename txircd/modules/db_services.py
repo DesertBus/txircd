@@ -1479,10 +1479,9 @@ class Spawner(object):
             username = b64decode(data[0])
         except TypeError:
             return "done"
-        certfp = user.certFP()
-        if not certfp:
+        if "certfp" not in user.metadata["server"]:
             return "done"
-        self.authByCert(user, certfp, username)
+        self.authByCert(user, user.metadata["server"]["certfp"], username)
         return "wait"
     
     def saslDone(self, user, success):
@@ -1496,7 +1495,8 @@ class Spawner(object):
         for channel in user.channels.iterkeys():
             c = self.ircd.channels[channel]
             self.promote(user, c, True)
-        self.addCert(user, user.certFP())
+        if "certfp" in user.metadata["server"]:
+            self.addCert(user, user.metadata["server"]["certfp"])
     
     def unregistered(self, user):
         for channel, data in user.channels.iteritems():
@@ -1554,7 +1554,7 @@ class Spawner(object):
         accountid = user.metadata["ext"]["accountid"]
         if accountid not in self.nickserv.cache["certfp"]:
             self.nickserv.cache["certfp"][accountid] = []
-        if certfp and certfp not in self.nickserv.cache["certfp"][accountid]:
+        if certfp not in self.nickserv.cache["certfp"][accountid]:
             self.nickserv.cache["certfp"][accountid].append(certfp)
             return True
         return False
