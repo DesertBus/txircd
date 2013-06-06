@@ -845,7 +845,7 @@ class BSSoldCommand(Command):
             if "accountid" in udata.metadata["ext"] and udata.metadata["ext"]["accountid"] == self.bidserv.cache["auction"]["highbidderid"]:
                 udata.sendMessage("NOTICE", ":Congratulations!  You won \"{}\"!  Please log into your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["item"]), prefix=self.bidserv.prefix())
         d = self.module.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}", self.bidserv.cache["auction"]["highbidderid"], self.bidserv.cache["auction"]["highbid"], self.bidserv.cache["auction"]["item"])
-        d.addErrback(self.reportError, user)
+        d.addErrback(self.reportError, user, self.bidserv.cache["auction"])
         del self.bidserv.cache["auction"]
     
     def processParams(self, user, params):
@@ -870,8 +870,8 @@ class BSSoldCommand(Command):
             count += 1
         return log
     
-    def reportError(self, results, user):
-        user.sendMessage("NOTICE", ":An error occurred updating the database with the winner ({} with ID {} for amount ${:,.2f}).".format(self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbidderid"], self.bidserv.cache["auction"]["highbid"]), prefix=self.bidserv.prefix())
+    def reportError(self, results, user, auctionData):
+        user.sendMessage("NOTICE", ":An error occurred updating the database with the winner ({} with ID {} for amount ${:,.2f}).".format(auctionData["highbidder"], auctionData["highbidderid"], auctionData["highbid"]), prefix=self.bidserv.prefix())
 
 class BSHighbidderCommand(Command):
     def __init__(self, module, service):
