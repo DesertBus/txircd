@@ -54,6 +54,7 @@ default_options = {
     "channel_default_mode": {"n": None, "t": None},
     "channel_default_status": "o",
     "channel_exempt_chanops": "", # list of modes from which channel operators are exempt
+    "channel_status_minimum_change": {},
     # Admin details
     "admin_info_server": "Host Corp: 123 Example Street, Seattle, WA, USA",
     "admin_info_organization": "Umbrella Corp: 123 Example Street, Seattle, WA, USA",

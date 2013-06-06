@@ -163,6 +163,23 @@
 #  MODE: o
 #  TOPIC: o
 
+# Minimum status set: The minimum status one must have in order to set or unset
+# a given prefix on a channel.  Defaults to the same level as the status.
+# Note that despite the presence of all modes, some levels may not be able to
+# change based on restrictions on channel commands in channel_minimum_level (see
+# above).  If you don't want someone at a mode level to be able to give or take
+# that level from others (e.g. halfops giving/removing halfops), set the value
+# to something higher than the level in the key.
+# The q, a, and h levels in this example will have no effect without the
+# chanowner, chanadmin, and halfop modules loaded (see module configuration
+# below) and are here as an example and/or to remind you to set them.
+#channel_status_minimum_change:
+#  q: q
+#  a: a
+#  o: o
+#  h: h
+#  v: v
+
 
 # CLIENT OPTIONS
 # This section contains options that affect management of clients.
