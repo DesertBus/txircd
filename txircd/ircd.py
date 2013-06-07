@@ -186,7 +186,9 @@ class IRCD(Factory):
             "commandpermission": [],
             "metadataupdate": [],
             "recvdata": [],
-            "senddata": []
+            "senddata": [],
+            "netmerge": [],
+            "netsplit": []
         }
         self.commands = {}
         self.channel_modes = [{}, {}, {}, {}]

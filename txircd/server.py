@@ -434,6 +434,8 @@ class ServerProtocol(AMP):
                         mergeChanData.users.add(user)
         self.burstStatus.append("burst-recv")
         self.burstComplete = True
+        for action in self.ircd.actions["netmerge"]:
+            action()
         return {}
     BurstData.responder(burstData)
     
@@ -515,6 +517,8 @@ class ServerProtocol(AMP):
         # TODO: remove all data from this server originating from remote
         if self.name:
             del self.ircd.servers[self.name]
+        for action in self.ircd.actions["netsplit"]:
+            action()
         AMP.connectionLost(self, reason)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
