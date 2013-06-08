@@ -120,11 +120,13 @@ class RemoteUser(object):
         pass # TODO
 
 class RemoteServer(object):
-    def __init__(self, nearestServer):
+    def __init__(self, ircd, nearestServer):
+        self.ircd = ircd
         self.firstHop = nearestServer
     
     def callRemote(self, command, *args):
-        pass # TODO
+        if self.firstHop in self.ircd.servers:
+            self.ircd.servers[self.firstHop].callRemote(command, *args) # If the parameters are such that they indicate the target properly, this will be forwarded to the proper server.
 
 
 # ERRORS
