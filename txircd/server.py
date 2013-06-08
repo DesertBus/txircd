@@ -119,6 +119,13 @@ class RemoteUser(object):
     def nick(self, newNick):
         pass # TODO
 
+class RemoteServer(object):
+    def __init__(self, nearestServer):
+        self.firstHop = nearestServer
+    
+    def callRemote(self, command, *args):
+        pass # TODO
+
 
 # ERRORS
 class HandshakeAlreadyComplete:
@@ -208,6 +215,7 @@ class ServerProtocol(AMP):
         self.name = None
         self.remoteServers = []
         self.localOrigin = False
+        self.firstHop = None
     
     def newServer(self, name, password, description, version, commonmodules):
         if "handshake-recv" in self.burstStatus:
@@ -234,6 +242,7 @@ class ServerProtocol(AMP):
         else:
             self.sendBurstData()
         self.name = name
+        self.firstHop = name
         self.ircd.servers[name] = self
         return {}
     IntroduceServer.responder(newServer)
