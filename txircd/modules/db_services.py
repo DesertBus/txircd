@@ -1092,7 +1092,8 @@ class Spawner(object):
                 "nick": [self.onNickChange],
                 "topic": [self.onTopicChange],
                 "chancreate": [self.onChanCreate],
-                "commandpermission": [self.commandPermission]
+                "commandpermission": [self.commandPermission],
+                "netmerge": [self.onNetmerge]
             }
         }
     
@@ -1145,6 +1146,7 @@ class Spawner(object):
         self.ircd.actions["topic"].remove(self.onTopicChange)
         self.ircd.actions["chancreate"].remove(self.onChanCreate)
         self.ircd.actions["commandpermission"].remove(self.commandPermission)
+        self.ircd.actions["netmerge"].remove(self.onNetmerge)
     
     def data_serialize(self):
         outputDict = {}
@@ -1590,6 +1592,10 @@ class Spawner(object):
             topicData = self.chanserv.cache["registered"][channel.name]["topic"]
             channel.setTopic(topicData[0], topicData[1])
             channel.topicTime = topicData[2]
+    
+    def onNetmerge(self):
+        for user in self.ircd.users.itervalues(): # check the nicks of all users
+            self.checkNick(user)
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
