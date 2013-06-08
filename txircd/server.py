@@ -210,7 +210,7 @@ class BurstData(Command):
 class ServerProtocol(AMP):
     def __init__(self, *args, **kwargs):
         self.ircd = self.factory.ircd
-        self.burstComplete = False # TODO: set this to True somewhere
+        self.burstComplete = False
         self.burstStatus = []
         self.name = None
         self.remoteServers = []
