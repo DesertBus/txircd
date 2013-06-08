@@ -440,7 +440,7 @@ class ServerProtocol(AMP):
     BurstData.responder(burstData)
     
     def justSendJoin(self, user, channel):
-        joinShowUsers = set(mergeChanData.users) # copy the channel.users set to prevent accidental modification of the users list
+        joinShowUsers = set(channel.users) # copy the channel.users set to prevent accidental modification of the users list
         tryagain = []
         for modfunc in self.ircd.actions["joinmessage"]:
             result = modfunc(channel, user, joinShowUsers)
