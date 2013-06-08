@@ -156,6 +156,15 @@ class BurstIncomplete(Exception):
 class AlreadyBursted(Exception):
     pass
 
+class NotYetBursted(Exception):
+    pass
+
+class ServerNotConnected(Exception):
+    pass
+
+class RemoteDataInconsistent(Exception):
+    pass
+
 # TODO: errbacks to handle all of these
 
 
@@ -207,6 +216,53 @@ class BurstData(Command):
     ]
     errors = {
         AlreadyBursted: "ALREADY_BURSTED"
+    }
+    requiresAnswer = False
+
+class AddNewServer(Command):
+    arguments = [
+        ("name", String()),
+        ("description", String()),
+        ("hopcount", Integer()),
+        ("users", AmpList([
+            ("nickname", String()),
+            ("ident", String()),
+            ("host", String()),
+            ("gecos", String()),
+            ("ip", String()),
+            ("server", String()),
+            ("secure", Boolean()),
+            ("mode", ListOf(String())),
+            ("channels", AmpList([("name", String()), ("status", String())])),
+            ("signon", Integer()),
+            ("ts", Integer())
+        ])),
+        ("channels", AmpList([
+            ("name", String()),
+            ("topic", String()),
+            ("topicsetter", String()),
+            ("topicts", Integer()),
+            ("mode", ListOf(String())),
+            ("users", ListOf(String())),
+            ("ts", Integer())
+        ]))
+    ]
+    errors = {
+        NotYetBursted: "NOT_YET_BURSTED"
+    }
+    fatalErrors = {
+        ServerAlreadyConnected: "SERVER_ALREADY_CONNECTED", # If this error is present, the servers are already desynced, so have them fully disconnect and try again
+        RemoteDataInconsistent: "REMOTE_DATA_IS_INCONSISTENT" # This is a more serious desync of data; disconnect this serious of a desync
+    }
+    requiresAnswer = False
+
+class DisconnectServer(Command):
+    arguments = [
+        ("name", String())
+    ]
+    errors = {
+        NotYetBursted: "NOT_YET_BURSTED",
+        ServerNotConnected: "NO_SUCH_SERVER"
     }
     requiresAnswer = False
 
@@ -529,6 +585,14 @@ class ServerProtocol(AMP):
             })
         self.callRemote(burstData, users=userList, channels=channelList)
         self.burstStatus.append("burst-send")
+    
+    def newServer(self, name, description, hopcount, users, channels):
+        pass # TODO
+    AddNewServer.responder(newServer)
+    
+    def splitServer(self, name):
+        pass # TODO
+    DisconnectServer.responder(splitServer)
     
     def connectionLost(self, reason):
         # TODO: remove all data from this server originating from remote
