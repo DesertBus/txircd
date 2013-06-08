@@ -123,6 +123,8 @@ class RemoteServer(object):
     def __init__(self, ircd, nearestServer):
         self.ircd = ircd
         self.firstHop = nearestServer
+        self.burstComplete = True
+        self.remoteServers = []
     
     def callRemote(self, command, *args):
         if self.firstHop in self.ircd.servers:
