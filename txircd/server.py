@@ -348,6 +348,10 @@ class ServerProtocol(AMP):
                     # channel lists are already fine, just notify users
                     for user in channel.users:
                         self.justSendJoin(user, mergeChanData)
+                        if user.channels[mergeChanData.name]["status"]:
+                            modestr = "+{} {}".format(user.channels[mergeChanData.name]["status"], " ".join([user.nickname for i in len(user.channels[mergeChanData.name]["status"])]))
+                            for u in mergeChanData.users:
+                                u.sendMessage("MODE", modestr, to=mergeChanData.name)
                     for user in channel.users: # Run this as a separate loop so that remote users don't get repeat join messages for users already in that channel
                         mergeChanData.users.add(user)
                 elif channel.created < mergeChanData.created: # theirs is older, so discard any changes ours made
