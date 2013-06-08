@@ -223,7 +223,7 @@ class ServerProtocol(AMP):
         self.burstStatus.append("handshake-recv")
         if version not in compatible_versions:
             raise IncompatibleVersions ("Protocol version {} is not compatible with this version".format(version))
-        commonModDiff = commonmodules ^ self.ircd.common_modules
+        commonModDiff = set(commonmodules) ^ self.ircd.common_modules
         if commonModDiff:
             raise ModuleMismatch ("Common modules are not matched between servers: {}".format(", ".join(commonModDiff)))
         if name not in self.ircd.servconfig["serverlinks"]:
