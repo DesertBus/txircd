@@ -33,7 +33,7 @@ class Service(object):
         self.hostname = host
         self.realname = gecos
         self.ip = "127.0.0.1"
-        self.server = self.ircd.servconfig["server_name"]
+        self.server = self.ircd.name
         self.signon = now()
         self.lastactivity = now()
         self.lastpong = now()

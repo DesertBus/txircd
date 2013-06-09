@@ -89,7 +89,7 @@ class KlineCommand(Command):
     def match_kline(self, user):
         if "o" in user.mode:
             return None # don't allow bans to affect opers
-        if user.server != self.ircd.servconfig["server_name"]:
+        if user.server != self.ircd.name:
             return None # only match users on this server
         if "except_line" not in user.cache:
             if "kline_match" in user.cache:

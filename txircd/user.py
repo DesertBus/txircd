@@ -39,7 +39,7 @@ class IRCUser(object):
         self.realname = None
         self.hostname = hostname
         self.ip = ip
-        self.server = parent.factory.servconfig["server_name"]
+        self.server = parent.factory.name
         self.signon = now()
         self.nicktime = now()
         self.lastactivity = now()
@@ -98,7 +98,7 @@ class IRCUser(object):
                 isupport.append(key)
             else:
                 isupport.append("{}={}".format(key, value))
-        prevar_len = len(" ".join([self.ircd.servconfig["server_name"], irc.RPL_ISUPPORT, self.nickname])) + 31 # including ":are supported by this server"
+        prevar_len = len(" ".join([self.ircd.name, irc.RPL_ISUPPORT, self.nickname])) + 31 # including ":are supported by this server"
         thisline = []
         while isupport:
             if len(" ".join(thisline)) + len(isupport[0]) + prevar_len > 509:
@@ -205,7 +205,7 @@ class IRCUser(object):
     
     def sendMessage(self, command, *parameter_list, **kw):
         if "prefix" not in kw:
-            kw["prefix"] = self.ircd.servconfig["server_name"]
+            kw["prefix"] = self.ircd.name
         if not kw["prefix"]:
             del kw["prefix"]
         if "to" not in kw:
@@ -391,7 +391,7 @@ class IRCUser(object):
             if newRepresentation:
                 userlist.append(newRepresentation)
         # Copy of irc.IRC.names
-        prefixLength = len(self.ircd.servconfig["server_name"]) + len(irc.RPL_NAMREPLY) + len(channel.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
+        prefixLength = len(self.ircd.name) + len(irc.RPL_NAMREPLY) + len(channel.name) + len(self.nickname) + 10 # 10 characters for CRLF, =, : and spaces
         namesLength = 512 - prefixLength # May get messed up with unicode
         lines = chunk_message(" ".join(userlist), namesLength)
         for l in lines:

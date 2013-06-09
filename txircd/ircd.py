@@ -125,7 +125,7 @@ class IRCProtocol(irc.IRC):
         elif self.type.lastactivity > self.type.lastpong:
             self.type.lastpong = now()
         else:
-            self.sendMessage("PING",":{}".format(self.factory.servconfig["server_name"]))
+            self.sendMessage("PING",":{}".format(self.factory.name))
     
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
@@ -216,6 +216,7 @@ class IRCD(Factory):
         if not options:
             options = {}
         self.load_options(options)
+        self.name = self.servconfig["server_name"]
         # Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
         self.isupport["CASEMAPPING"] = "rfc1459"
         self.isupport["CHANMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.channel_modes])

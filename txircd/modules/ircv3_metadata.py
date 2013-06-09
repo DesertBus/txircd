@@ -172,7 +172,7 @@ class MetadataCommand(Command):
         if namespace in ["client", "user"]:
             source = target.nickname
         elif namespace in ["server", "ext"]:
-            source = self.ircd.servconfig["server_name"]
+            source = self.ircd.name
         else:
             return
         lowerNick = irc_lower(target.nickname)
