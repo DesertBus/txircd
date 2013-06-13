@@ -1405,7 +1405,7 @@ class Spawner(object):
     
     def saslProcess_PLAIN(self, user, data):
         try:
-            authorizationID, authenticationID, password = b64decode(data[0]).split("\0")
+            authorizationID, authenticationID, password = b64decode(data).split("\0")
         except (TypeError, ValueError):
             return "done"
         self.auth(user, authenticationID, password)
