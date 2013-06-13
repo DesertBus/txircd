@@ -66,7 +66,7 @@ class IRCProtocol(irc.IRC):
         self.secure = False
         self.data = 0
         self.data_checker = LoopingCall(self.checkData)
-        self.pinger = LoopingCall(self.ping)
+        self.pinger = LoopingCall.withCount(self.ping)
     
     def connectionMade(self):
         self.type = IRCUser(self)
@@ -105,8 +105,10 @@ class IRCProtocol(irc.IRC):
             self.type.checkData(self.data)
         self.data = 0
     
-    def ping(self):
-        if (now() - self.type.lastpong).total_seconds() > self.factory.servconfig["client_timeout_delay"]:
+    def ping(self, intervals):
+        timeout = self.factory.servconfig["client_timeout_delay"] + self.factory.servconfig["client_ping_interval"] * (intervals - 1)
+        if (now() - self.type.lastpong).total_seconds() > timeout:
+            log.msg("Client has stopped responding to PING and is now disconnecting.")
             self.transport.loseConnection()
             self.connectionLost(None)
         elif self.type.lastactivity > self.type.lastpong:
