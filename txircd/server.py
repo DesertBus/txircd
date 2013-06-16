@@ -271,7 +271,9 @@ class DisconnectServer(Command):
         ("name", String())
     ]
     errors = {
-        NotYetBursted: "NOT_YET_BURSTED",
+        NotYetBursted: "NOT_YET_BURSTED"
+    }
+    fatalErrors = {
         ServerNotConnected: "NO_SUCH_SERVER"
     }
     requiresAnswer = False
@@ -714,7 +716,20 @@ class ServerProtocol(AMP):
     AddNewServer.responder(newServer)
     
     def splitServer(self, name):
-        pass # TODO
+        if not self.burstComplete:
+            raise NotYetBursted ("The initial burst has not yet occurred on this connection.")
+        if name not in self.ircd.servers:
+            raise ServerNotConnected ("The server splitting from the network was not connected to the network.")
+        servinfo = self.ircd.servers[name]
+        leavingServers = servinfo.remoteServers
+        leavingServers.append(name)
+        userList = self.ircd.users.values()
+        for user in userList:
+            if user.server in leavingServers:
+                user.disconnect("Server disconnected from network")
+        for servname in leavingServers:
+            del self.ircd.servers[servname]
+        return {}
     DisconnectServer.responder(splitServer)
     
     def connectionLost(self, reason):
