@@ -507,6 +507,10 @@ services_chanserv_gecos: Channel Service
 # amount over the previous high bid.
 #services_bidserv_increment: 5.0
 
+# limit: The maximum amount allowed to be bid.  If not given, a maximum limit on
+# bids is not enforced.
+#services_bidserv_limit: 1000000.0
+
 # Madness levels: The madness levels to display when they are passed in bid
 # amount.
 #services_bidserv_madness_levels:
