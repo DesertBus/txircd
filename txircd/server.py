@@ -120,8 +120,9 @@ class RemoteUser(object):
         pass # TODO
 
 class RemoteServer(object):
-    def __init__(self, ircd, desc, nearestServer, hopCount):
+    def __init__(self, ircd, name, desc, nearestServer, hopCount):
         self.ircd = ircd
+        self.name = name
         self.description = desc
         self.firstHop = nearestServer
         self.burstComplete = True
@@ -214,6 +215,13 @@ class BurstData(Command):
             ("mode", ListOf(String())),
             ("users", ListOf(String())),
             ("ts", Integer())
+        ])),
+        ("servers", AmpList([
+            ("name", String()),
+            ("description", String()),
+            ("hopcount", Integer()),
+            ("nearhop", String()),
+            ("remoteservers", ListOf(String()))
         ]))
     ]
     errors = {
@@ -285,6 +293,7 @@ class ServerProtocol(AMP):
         self.burstComplete = False
         self.burstStatus = []
         self.name = None
+        self.description = None
         self.remoteServers = set()
         self.localOrigin = False
         self.firstHop = None
@@ -315,12 +324,12 @@ class ServerProtocol(AMP):
         else:
             self.sendBurstData()
         self.name = name
+        self.description = description
         self.firstHop = name
-        self.ircd.servers[name] = self
         return {}
     IntroduceServer.responder(newServer)
     
-    def burstData(self, users, channels):
+    def burstData(self, users, channels, servers):
         if "handshake-send" not in self.burstStatus or "handshake-recv" not in self.burstStatus:
             raise BurstIncomplete ("The handshake was not completed before attempting to burst data.")
         if "burst-recv" in self.burstStatus:
@@ -522,6 +531,12 @@ class ServerProtocol(AMP):
                         mergeChanData.users.add(user)
         self.burstStatus.append("burst-recv")
         self.burstComplete = True
+        self.ircd.servers[name] = self
+        for server in servers:
+            newServer = RemoteServer(self.ircd, server["name"], server["description"], server["nearhop"], server["hopcount"])
+            for servname in server["remoteservers"]:
+                newServer.remoteServers.add(servname)
+            self.ircd.servers[server["name"]] = newServer
         for action in self.ircd.actions["netmerge"]:
             action()
         # TODO: propagate
@@ -598,10 +613,17 @@ class ServerProtocol(AMP):
                 "mode": modes,
                 "users": users,
                 "ts": epoch(chan.created)
-        self.callRemote(burstData, users=userList, channels=channelList)
+        serverList = []
+        for server in self.ircd.servers.itervalues():
+            serverList.append({
+                "name": server.name,
+                "description": server.desc
+        self.callRemote(burstData, users=userList, channels=channelList, servers=serverList)
         self.burstStatus.append("burst-send")
     
     def newServer(self, name, description, hopcount, nearhop, remoteservers, users, channels):
+        if not self.burstComplete:
+            raise NotYetBursted ("The remote server has not yet bursted.")
         # check for server-related desyncs
         if name in self.ircd.servers:
             raise ServerAlreadyConnected ("The server trying to connect to the network is already connected to the network.")
@@ -618,7 +640,7 @@ class ServerProtocol(AMP):
             if u["nickname"] in self.ircd.users:
                 raise RemoteDataInconsistent ("A user on a connecting remote server matches a user here.")
         # Set up the new server(s)
-        newServer = RemoteServer(name, description, self.name, hopcount)
+        newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount)
         for server in self.ircd.servers.itervalues():
             if nearhop in server.remoteServers:
                 server.remoteServers.add(name)
