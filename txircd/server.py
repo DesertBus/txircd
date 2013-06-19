@@ -621,7 +621,7 @@ class ServerProtocol(AMP):
         self.callRemote(burstData, users=userList, channels=channelList, servers=serverList)
         self.burstStatus.append("burst-send")
     
-    def newServer(self, name, description, hopcount, nearhop, remoteservers, users, channels):
+    def newServer(self, name, description, hopcount, nearhop, linkedservers, users, channels):
         if not self.burstComplete:
             raise NotYetBursted ("The remote server has not yet bursted.")
         # check for server-related desyncs
@@ -629,7 +629,7 @@ class ServerProtocol(AMP):
             raise ServerAlreadyConnected ("The server trying to connect to the network is already connected to the network.")
         if nearhop not in self.ircd.servers:
             raise RemoteDataInconsistent ("The connecting server on the network is not part of the network.")
-        for server in remoteservers:
+        for server in linkedservers:
             if server["name"] in self.ircd.servers:
                 raise ServerAlreadyConnected ("A server connected to the remote network is already connected to this network.")
         # Since user and channel data should have been filtered/processed on burst by the receiving server before being broadcast,
@@ -644,7 +644,7 @@ class ServerProtocol(AMP):
         for server in self.ircd.servers.itervalues():
             if nearhop in server.remoteServers:
                 server.remoteServers.add(name)
-                for addingServer in remoteservers:
+                for addingServer in linkedservers:
                     server.remoteServers.add(addingServer["name"])
         # Add new users
         for u in users:
