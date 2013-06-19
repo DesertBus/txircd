@@ -336,6 +336,8 @@ class ServerProtocol(AMP):
             raise AlreadyBursted ("Data has already been bursted to this server.")
         self.sendBurstData() # Respond by sending our own burst data if we haven't yet
         incomingChannels = []
+        propUsers = []
+        propChannels = []
         for chan in channels:
             newChannel = IRCChannel(self.ircd, chan["name"])
             newChannel.created = datetime.utcfromtimestamp(chan["ts"])
@@ -385,6 +387,7 @@ class ServerProtocol(AMP):
             for chan in udata["channels"]:
                 newUser.channels[chan["name"]] = { "status": chan["status"] } # This will get fixed in the channel merging to immediately follow
             self.ircd.users[udata["nickname"]] = newUser
+            propUsers.append(udata)
         for channel in incomingChannels:
             for user in channel.cache["mergingusers"]:
                 channel.users.add(self.ircd.users[user])
@@ -531,7 +534,12 @@ class ServerProtocol(AMP):
                         mergeChanData.users.add(user)
         self.burstStatus.append("burst-recv")
         self.burstComplete = True
-        self.ircd.servers[name] = self
+        
+        # TODO: propChannels
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopcount, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
+        
+        self.ircd.servers[self.name] = self
         for server in servers:
             newServer = RemoteServer(self.ircd, server["name"], server["description"], server["nearhop"], server["hopcount"])
             for servname in server["remoteservers"]:
@@ -539,7 +547,6 @@ class ServerProtocol(AMP):
             self.ircd.servers[server["name"]] = newServer
         for action in self.ircd.actions["netmerge"]:
             action()
-        # TODO: propagate
         return {}
     BurstData.responder(burstData)
     
@@ -733,7 +740,6 @@ class ServerProtocol(AMP):
                 for user in cdata.users:
                     if user.nickname in self.ircd.localusers: # Don't send this message to users on remote servers who will get this message anyway
                         user.sendMessage("MODE", modestr, to=cdata.name)
-        # TODO: propagate
         return {}
     AddNewServer.responder(newServer)
     
