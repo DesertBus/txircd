@@ -676,8 +676,19 @@ class ServerProtocol(AMP):
             newUser = RemoteUser(self.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], u["signon"], u["ts"])
             for chan in u["channels"]:
                 newUser.channels[chan["name"]] = {"status": chan["status"]}
+            for modedata in u["mode"]:
+                mode = modedata[0]
+                param = modedata[1:]
+                modetype = self.ircd.user_mode_type[mode]
+                if modetype == 0:
+                    if mode not in newUser.mode:
+                        newUser.mode[mode] = []
+                    newUser.mode[mode].append(param)
+                elif modetype == 3:
+                    newUser.mode[mode] = None
+                else:
+                    newuser.mode[mode] = param
             self.ircd.users[newUser.nickname] = newUser
-            # TODO: the rest of user data
         for c in channels:
             if c["name"] not in self.ircd.channels:
                 cdata = IRCChannel(self.ircd, c["name"])
