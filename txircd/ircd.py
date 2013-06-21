@@ -5,6 +5,7 @@ from twisted.internet.task import LoopingCall
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
+from txircd.server import ClientServerFactory
 from txircd.utils import CaseInsensitiveDictionary, now
 from txircd.user import IRCUser
 from txircd import __version__
@@ -37,7 +38,7 @@ default_options = {
     "server_stats_public": "ou",
     "server_modules": [],
     "server_password": None,
-    "serverlinks": [],
+    "serverlinks": {},
     "serverlink_autoconnect": [],
     # Client details
     "client_vhosts": {"127.0.0.1":"localhost"},
@@ -217,6 +218,8 @@ class IRCD(Factory):
             options = {}
         self.load_options(options)
         self.name = self.servconfig["server_name"]
+        self.autoconnect_servers = LoopingCall(self.server_autoconnect, 60)
+        self.autoconnect_servers.start()
         # Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
         self.isupport["CASEMAPPING"] = "rfc1459"
         self.isupport["CHANMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.channel_modes])
@@ -316,6 +319,18 @@ class IRCD(Factory):
         log.msg("Waiting on deferreds...")
         self.dead = True
         return DeferredList(deferreds)
+    
+    def server_autoconnect(self):
+        for server in self.servconfig["serverlink_autoconnect"]:
+            if server not in self.servers and server in self.servconfig["serverlinks"]:
+                servinfo = self.servconfig["serverlinks"][server]
+                if "ip" not in servinfo or "port" not in servinfo:
+                    continue
+                if "bindaddress" in servinfo and "bindport" in servinfo:
+                    bind = (servinfo["bindaddress"], servinfo["bindport"])
+                else:
+                    bind = None
+                reactor.connectTCP(servinfo["ip"], servinfo["port"], ClientServerFactory, bindAddress=bind)
     
     def load_module(self, name):
         saved_data = {}

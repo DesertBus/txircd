@@ -71,6 +71,7 @@
 #    ip: 12.34.56.78
 #    incoming_password: lolol
 #    outgoing_password: whateven
+#XXX TODO: document the rest of the server options
 
 # serverlink_autoconnect: This is a list of server names specified above to
 # automatically connect to.
