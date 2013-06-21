@@ -310,7 +310,7 @@ class ServerProtocol(AMP):
             raise ModuleMismatch ("Common modules are not matched between servers: {}".format(", ".join(commonModDiff)))
         if name not in self.ircd.servconfig["serverlinks"]:
             raise ServerNoLink ("There is no link data in the configuration file for the server trying to link.")
-        if name in self.ircd.servers:
+        if name in self.ircd.servers or self.ircd.name == name:
             raise ServerAlreadyConnected ("The connecting server is already connected to this network.")
         linkData = self.ircd.servconfig["serverlinks"][name]
         ip = self.transport.getPeer().host
