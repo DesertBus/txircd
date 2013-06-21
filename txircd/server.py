@@ -355,7 +355,7 @@ class ServerProtocol(AMP):
                     newChannel.mode[mode[0]] = None
                 else:
                     newChannel.mode[mode[0]] = mode[1:]
-            incomingChannels.append(newChannel)
+            incomingChannels.append([newChannel, chan])
         for udata in users:
             if udata["nickname"] in self.ircd.users: # a user with the same nickname is already connected
                 ourudata = self.ircd.users[udata["nickname"]]
@@ -388,12 +388,14 @@ class ServerProtocol(AMP):
                 newUser.channels[chan["name"]] = { "status": chan["status"] } # This will get fixed in the channel merging to immediately follow
             self.ircd.users[udata["nickname"]] = newUser
             propUsers.append(udata)
-        for channel in incomingChannels:
+        for chandata in incomingChannels:
+            channel, cdata = chandata
             for user in channel.cache["mergingusers"]:
                 channel.users.add(self.ircd.users[user])
             del channel.cache["mergingusers"]
             if channel.name not in self.ircd.channels:
                 self.ircd.channels[channel.name] = channel # simply add the channel to our list
+                propChannels.append(cdata)
             else:
                 mergeChanData = self.ircd.channels[channel.name]
                 if channel.created == mergeChanData.created: # ... matching timestamps? Time to resolve lots of conflicts
@@ -407,6 +409,10 @@ class ServerProtocol(AMP):
                             mergeChanData.topicTime = channel.topicTime
                             for user in mergeChanData.users:
                                 user.sendMessage("TOPIC", ":{}".format(channel.topic), to=mergeChanData.name)
+                    else:
+                        del cdata["topic"]
+                        del cdata["topicsetter"]
+                        del cdata["topicts"]
                     # modes: merge modes together
                     # break parameter ties on normal parameter modes by giving the winner to the server being connected to
                     modeDisplay = []
@@ -448,6 +454,18 @@ class ServerProtocol(AMP):
                                 u.sendMessage("MODE", modestr, to=mergeChanData.name)
                     for user in channel.users: # Run this as a separate loop so that remote users don't get repeat join messages for users already in that channel
                         mergeChanData.users.add(user)
+                    # reserialize modes for other servers
+                    cdata["modes"] = []
+                    for mode, param in channel.mode:
+                        modetype = self.ircd.channel_mode_type[mode]
+                        if modetype == 0:
+                            for item in param:
+                                cdata["modes"].append("{}{}".format(mode, item))
+                        elif modetype == 3:
+                            cdata["modes"].append(mode)
+                        else:
+                            cdata["modes"].append("{}{}".format(mode, param))
+                    propChannels.append(cdata)
                 elif channel.created < mergeChanData.created: # theirs is older, so discard any changes ours made
                     # Topic: If the contents and setter are the same, adopt the remote timestamp; otherwise, adopt the
                     # remote topic and alert users of the change
@@ -522,6 +540,7 @@ class ServerProtocol(AMP):
                             for user in mergeChanData.users:
                                 if user.nickname in self.ircd.localusers:
                                     user.sendMessage("MODE", "".join(modeStr), to=mergeChanData.name)
+                    propChannels.append(cdata)
                 else: # ours is older, so discard any changes theirs made
                     # topic: keep ours; ignore theirs
                     # modes: keep ours; ignore theirs
@@ -535,7 +554,6 @@ class ServerProtocol(AMP):
         self.burstStatus.append("burst-recv")
         self.burstComplete = True
         
-        # TODO: propChannels
         for server in self.ircd.servers.itervalues():
             server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopcount, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
         
@@ -670,57 +688,62 @@ class ServerProtocol(AMP):
                 cdata.setTopic(c["topic"], c["topicsetter"])
                 cdata.topicTime = datatime.utcfromtimestamp(c["topicts"])
             modeChanges = []
-            oldModes = cdata.mode
-            cdata.mode = {}
-            for modedata in c["mode"]:
-                mode = modedata[0]
-                param = modedata[1:]
-                modetype = self.ircd.channel_mode_type[mode]
-                if modetype == 0:
-                    if mode not in cdata.mode:
-                        cdata.mode[mode] = []
-                    cdata.mode[mode].append(param)
-                elif modetype == 3:
-                    cdata.mode[mode] = None
-                else:
-                    cdata.mode[mode] = param
-            for mode, param in oldModes.iteritems():
-                modetype = self.ircd.channel_mode_type[mode]
-                if modetype == 0:
-                    if mode not in cdata.mode:
-                        for item in param:
-                            modeChanges.append([False, mode, item])
+            if "mode" in c:
+                oldModes = cdata.mode
+                cdata.mode = {}
+                for modedata in c["mode"]:
+                    mode = modedata[0]
+                    param = modedata[1:]
+                    modetype = self.ircd.channel_mode_type[mode]
+                    if modetype == 0:
+                        if mode not in cdata.mode:
+                            cdata.mode[mode] = []
+                        cdata.mode[mode].append(param)
+                    elif modetype == 3:
+                        cdata.mode[mode] = None
                     else:
-                        for item in param:
-                            if param not in cdata.mode[mode]:
+                        cdata.mode[mode] = param
+                for mode, param in oldModes.iteritems():
+                    modetype = self.ircd.channel_mode_type[mode]
+                    if modetype == 0:
+                        if mode not in cdata.mode:
+                            for item in param:
                                 modeChanges.append([False, mode, item])
-                else:
-                    if mode not in cdata.mode:
-                        if modetype == 1:
-                            modeChanges.append([False, mode, param])
                         else:
-                            modeChanges.append([False, mode, None])
-            for mode, param in cdata.mode:
-                modetype = self.ircd.channel_mode_type[mode]
-                if modetype == 0:
-                    if mode not in oldModes:
-                        for item in param:
-                            modeChanges.append([True, mode, item])
+                            for item in param:
+                                if param not in cdata.mode[mode]:
+                                    modeChanges.append([False, mode, item])
                     else:
-                        for item in param:
-                            if param not in oldModes[mode]:
+                        if mode not in cdata.mode:
+                            if modetype == 1:
+                                modeChanges.append([False, mode, param])
+                            else:
+                                modeChanges.append([False, mode, None])
+                for mode, param in cdata.mode:
+                    modetype = self.ircd.channel_mode_type[mode]
+                    if modetype == 0:
+                        if mode not in oldModes:
+                            for item in param:
                                 modeChanges.append([True, mode, item])
-                else:
-                    if mode not in oldModes:
-                        modeChanges.append([True, mode, param])
-                    elif oldModes[mode] != param:
-                        modeChanges.append([True, mode, param])
+                        else:
+                            for item in param:
+                                if param not in oldModes[mode]:
+                                    modeChanges.append([True, mode, item])
+                    else:
+                        if mode not in oldModes:
+                            modeChanges.append([True, mode, param])
+                        elif oldModes[mode] != param:
+                            modeChanges.append([True, mode, param])
+            chants = datetime.utcfromtimestamp(c["ts"])
             for nick in c["users"]:
                 if nick in self.ircd.users:
                     udata = self.ircd.users[nick]
                     cdata.add(udata)
-                    for status in udata.channels[cdata.name]["status"]:
-                        modeChanges.append([True, status, udata.nickname])
+                    if chants <= cdata.created:
+                        for status in udata.channels[cdata.name]["status"]:
+                            modeChanges.append([True, status, udata.nickname])
+                    else:
+                        udata.channels[cdata.name]["status"] = ""
             if modeChanges:
                 adding = None
                 modes = []
