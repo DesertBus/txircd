@@ -112,12 +112,12 @@ if __name__ == "__main__":
         if isinstance(options["serverlink_port_ssl"], collections.Sequence):
             for port in options["serverlink_port_ssl"]:
                 try:
-                    reactor.listenSSL(int(port), serverlink_factory)
+                    reactor.listenSSL(int(port), serverlink_factory, ssl_cert)
                 except:
                     pass
         else:
             try:
-                reactor.listenSSL(int(options["serverlink_port_ssl"]), serverlink_factory)
+                reactor.listenSSL(int(options["serverlink_port_ssl"]), serverlink_factory, ssl_cert)
             except:
                 pass
     # Bind SIGHUP to rehash
