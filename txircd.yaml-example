@@ -492,16 +492,16 @@
 #services_bidserv_gecos: Bidding Service
 
 # NickServ client: NickServ needs a nick, ident, host, and gecos.
-services_nickserv_nick: NickServ
-services_nickserv_ident: NickServ
-services_nickserv_host: services.desertbus.org
-services_nickserv_gecos: Nickname Service
+#services_nickserv_nick: NickServ
+#services_nickserv_ident: NickServ
+#services_nickserv_host: services.desertbus.org
+#services_nickserv_gecos: Nickname Service
 
 # ChanServ client: ChanServ needs a nick, ident, host, and gecos.
-services_chanserv_nick: ChanServ
-services_chanserv_ident: ChanServ
-services_chanserv_host: services.desertbus.org
-services_chanserv_gecos: Channel Service
+#services_chanserv_nick: ChanServ
+#services_chanserv_ident: ChanServ
+#services_chanserv_host: services.desertbus.org
+#services_chanserv_gecos: Channel Service
 
 # BidServ configuration
 # increment: The minimum increment between bids.  If not given, bids can be any
