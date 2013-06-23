@@ -289,7 +289,6 @@ class DisconnectServer(Command):
 
 class ServerProtocol(AMP):
     def __init__(self, *args, **kwargs):
-        self.ircd = self.factory.ircd
         self.burstComplete = False
         self.burstStatus = []
         self.name = None
@@ -305,21 +304,21 @@ class ServerProtocol(AMP):
         self.burstStatus.append("handshake-recv")
         if version not in compatible_versions:
             raise IncompatibleVersions ("Protocol version {} is not compatible with this version".format(version))
-        commonModDiff = set(commonmodules) ^ self.ircd.common_modules
+        commonModDiff = set(commonmodules) ^ self.factory.ircd.common_modules
         if commonModDiff:
             raise ModuleMismatch ("Common modules are not matched between servers: {}".format(", ".join(commonModDiff)))
-        if name not in self.ircd.servconfig["serverlinks"]:
+        if name not in self.factory.ircd.servconfig["serverlinks"]:
             raise ServerNoLink ("There is no link data in the configuration file for the server trying to link.")
-        if name in self.ircd.servers or self.ircd.name == name:
+        if name in self.factory.ircd.servers or self.factory.ircd.name == name:
             raise ServerAlreadyConnected ("The connecting server is already connected to this network.")
-        linkData = self.ircd.servconfig["serverlinks"][name]
+        linkData = self.factory.ircd.servconfig["serverlinks"][name]
         ip = self.transport.getPeer().host
         if "ip" not in linkData or ip != linkData["ip"]:
             raise ServerMismatchedIP ("The IP address for this server does not match the one in the configuration.")
         if "incoming_password" not in linkData or password != linkData["incoming_password"]:
             raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
         if "handshake-send" not in self.burstStatus:
-            self.callRemote(IntroduceServer, name=self.ircd.name, password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
+            self.callRemote(IntroduceServer, name=self.factory.ircd.name, password=linkData["outgoing_password"], description=self.factory.ircd.servconfig["server_description"], version=current_version, commonmodules=self.factory.ircd.common_modules)
             self.burstStatus.append("handshake-send")
         else:
             self.sendBurstData()
@@ -339,14 +338,14 @@ class ServerProtocol(AMP):
         propUsers = []
         propChannels = []
         for chan in channels:
-            newChannel = IRCChannel(self.ircd, chan["name"])
+            newChannel = IRCChannel(self.factory.ircd, chan["name"])
             newChannel.created = datetime.utcfromtimestamp(chan["ts"])
             newChannel.topic = chan["topic"]
             newChannel.topicSetter = chan["topicsetter"]
             newChannel.topicTime = datetime.utcfromtimestamp(chan["topicts"])
             newChannel.cache["mergingusers"] = chan["users"]
             for mode in chan["mode"]:
-                modetype = self.ircd.channel_mode_type[mode[0]]
+                modetype = self.factory.ircd.channel_mode_type[mode[0]]
                 if modetype == 0:
                     if mode[0] not in newChannel.mode:
                         newChannel.mode[mode[0]] = []
@@ -357,8 +356,8 @@ class ServerProtocol(AMP):
                     newChannel.mode[mode[0]] = mode[1:]
             incomingChannels.append([newChannel, chan])
         for udata in users:
-            if udata["nickname"] in self.ircd.users: # a user with the same nickname is already connected
-                ourudata = self.ircd.users[udata["nickname"]]
+            if udata["nickname"] in self.factory.ircd.users: # a user with the same nickname is already connected
+                ourudata = self.factory.ircd.users[udata["nickname"]]
                 ourts = epoch(ourudata.nicktime)
                 if ourts == udata["ts"]: # older user wins; if same, they both die
                     ourudata.disconnect("Nickname collision")
@@ -373,9 +372,9 @@ class ServerProtocol(AMP):
                         if udata["nickname"] in channel.cache["mergingusers"]:
                             channel.cache["mergingusers"].remove(udata["nickname"])
                     continue # skip adding the remote user since they'll die on the remote server
-            newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"], datetime.utcfromtimestamp(udata["signon"]), datetime.utcfromtimestamp(udata["ts"]))
+            newUser = RemoteUser(self.factory.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"], datetime.utcfromtimestamp(udata["signon"]), datetime.utcfromtimestamp(udata["ts"]))
             for mode in udata["mode"]:
-                modetype = self.ircd.user_mode_type[mode[0]]
+                modetype = self.factory.ircd.user_mode_type[mode[0]]
                 if modetype == 0:
                     if mode[0] not in newUser.mode:
                         newUser.mode[mode[0]] = []
@@ -386,18 +385,18 @@ class ServerProtocol(AMP):
                     newUser.mode[mode[0]] = mode[1:]
             for chan in udata["channels"]:
                 newUser.channels[chan["name"]] = { "status": chan["status"] } # This will get fixed in the channel merging to immediately follow
-            self.ircd.users[udata["nickname"]] = newUser
+            self.factory.ircd.users[udata["nickname"]] = newUser
             propUsers.append(udata)
         for chandata in incomingChannels:
             channel, cdata = chandata
             for user in channel.cache["mergingusers"]:
-                channel.users.add(self.ircd.users[user])
+                channel.users.add(self.factory.ircd.users[user])
             del channel.cache["mergingusers"]
-            if channel.name not in self.ircd.channels:
-                self.ircd.channels[channel.name] = channel # simply add the channel to our list
+            if channel.name not in self.factory.ircd.channels:
+                self.factory.ircd.channels[channel.name] = channel # simply add the channel to our list
                 propChannels.append(cdata)
             else:
-                mergeChanData = self.ircd.channels[channel.name]
+                mergeChanData = self.factory.ircd.channels[channel.name]
                 if channel.created == mergeChanData.created: # ... matching timestamps? Time to resolve lots of conflicts
                     if channel.topicTime >= mergeChanData.topicTime:
                         # topics: if identical contents and setter but different timestamps, keep older timestamp
@@ -418,7 +417,7 @@ class ServerProtocol(AMP):
                     modeDisplay = []
                     paramDisplay = []
                     for mode, param in channel.mode.iteritems():
-                        modetype = self.ircd.channel_mode_type[mode]
+                        modetype = self.factory.ircd.channel_mode_type[mode]
                         if modetype == 0:
                             for item in param:
                                 if item not in mergeChanData.mode[mode]:
@@ -457,7 +456,7 @@ class ServerProtocol(AMP):
                     # reserialize modes for other servers
                     cdata["modes"] = []
                     for mode, param in channel.mode:
-                        modetype = self.ircd.channel_mode_type[mode]
+                        modetype = self.factory.ircd.channel_mode_type[mode]
                         if modetype == 0:
                             for item in param:
                                 cdata["modes"].append("{}{}".format(mode, item))
@@ -480,7 +479,7 @@ class ServerProtocol(AMP):
                     modeDisplay = []
                     removeModes = []
                     for mode, param in mergeChanData.mode.iteritems():
-                        modetype = self.ircd.channel_mode_type[mode]
+                        modetype = self.factory.ircd.channel_mode_type[mode]
                         if modetype == 0:
                             listData = param
                             for item in listData:
@@ -498,7 +497,7 @@ class ServerProtocol(AMP):
                     for mode in removeModes:
                         del mergeChanData.mode[mode]
                     for mode, param in channel.mode.iteritems():
-                        modetype = self.ircd.channel_mode_type[mode]
+                        modetype = self.factory.ircd.channel_mode_type[mode]
                         if modetype == 0:
                             mergeChanData.mode[mode].append(param)
                             modeDisplay.append([True, mode, param])
@@ -534,11 +533,11 @@ class ServerProtocol(AMP):
                                 params.append(mode[2])
                         if params:
                             for user in mergeChanData.users:
-                                if user.nickname in self.ircd.localusers: # Don't send this to remote users who will get it anyway once the data propagates
+                                if user.nickname in self.factory.ircd.localusers: # Don't send this to remote users who will get it anyway once the data propagates
                                     user.sendMessage("MODE", "{} {}".format("".join(modeStr), " ".join(params)), to=mergeChanData.name)
                         else:
                             for user in mergeChanData.users:
-                                if user.nickname in self.ircd.localusers:
+                                if user.nickname in self.factory.ircd.localusers:
                                     user.sendMessage("MODE", "".join(modeStr), to=mergeChanData.name)
                     propChannels.append(cdata)
                 else: # ours is older, so discard any changes theirs made
@@ -554,16 +553,16 @@ class ServerProtocol(AMP):
         self.burstStatus.append("burst-recv")
         self.burstComplete = True
         
-        for server in self.ircd.servers.itervalues():
-            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopcount, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
+        for server in self.factory.ircd.servers.itervalues():
+            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopcount, nearhop=self.factory.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
         
-        self.ircd.servers[self.name] = self
+        self.factory.ircd.servers[self.name] = self
         for server in servers:
-            newServer = RemoteServer(self.ircd, server["name"], server["description"], server["nearhop"], server["hopcount"])
+            newServer = RemoteServer(self.factory.ircd, server["name"], server["description"], server["nearhop"], server["hopcount"])
             for servname in server["remoteservers"]:
                 newServer.remoteServers.add(servname)
-            self.ircd.servers[server["name"]] = newServer
-        for action in self.ircd.actions["netmerge"]:
+            self.factory.ircd.servers[server["name"]] = newServer
+        for action in self.factory.ircd.actions["netmerge"]:
             action()
         return {}
     BurstData.responder(burstData)
@@ -571,7 +570,7 @@ class ServerProtocol(AMP):
     def justSendJoin(self, user, channel):
         joinShowUsers = set(channel.users) # copy the channel.users set to prevent accidental modification of the users list
         tryagain = []
-        for modfunc in self.ircd.actions["joinmessage"]:
+        for modfunc in self.factory.ircd.actions["joinmessage"]:
             result = modfunc(channel, user, joinShowUsers)
             if result == "again":
                 tryagain.append(modfunc)
@@ -586,10 +585,10 @@ class ServerProtocol(AMP):
         if "burst-send" in self.burstStatus:
             return
         userList = []
-        for u in self.ircd.users.itervalues():
+        for u in self.factory.ircd.users.itervalues():
             modes = []
             for mode, param in u.mode.iteritems():
-                if self.ircd.user_mode_type[mode] == 0:
+                if self.factory.ircd.user_mode_type[mode] == 0:
                     for item in param:
                         modes.append("{}{}".format(mode, item))
                 elif param is None:
@@ -617,10 +616,10 @@ class ServerProtocol(AMP):
                 "ts": epoch(u.nicktime)
             })
         channelList = []
-        for chan in self.ircd.channels.itervalues():
+        for chan in self.factory.ircd.channels.itervalues():
             modes = []
             for mode, param in chan.mode.iteritems():
-                if self.ircd.channel_mode_type[mode] == 0:
+                if self.factory.ircd.channel_mode_type[mode] == 0:
                     for item in param:
                         modes.append("{}{}".format(mode, item))
                 elif param is None:
@@ -640,7 +639,7 @@ class ServerProtocol(AMP):
                 "ts": epoch(chan.created)
             })
         serverList = []
-        for server in self.ircd.servers.itervalues():
+        for server in self.factory.ircd.servers.itervalues():
             serverList.append({
                 "name": server.name,
                 "description": server.desc
@@ -652,36 +651,36 @@ class ServerProtocol(AMP):
         if not self.burstComplete:
             raise NotYetBursted ("The remote server has not yet bursted.")
         # check for server-related desyncs
-        if name in self.ircd.servers:
+        if name in self.factory.ircd.servers:
             raise ServerAlreadyConnected ("The server trying to connect to the network is already connected to the network.")
-        if nearhop not in self.ircd.servers:
+        if nearhop not in self.factory.ircd.servers:
             raise RemoteDataInconsistent ("The connecting server on the network is not part of the network.")
         for server in linkedservers:
-            if server["name"] in self.ircd.servers:
+            if server["name"] in self.factory.ircd.servers:
                 raise ServerAlreadyConnected ("A server connected to the remote network is already connected to this network.")
         # Since user and channel data should have been filtered/processed on burst by the receiving server before being broadcast,
         # raise an error if any user data is inconsistent
         # Nickname collision kills must have occurred before notification of the new server, so any problem here indicates that a
         # desyncing of user data has occurred
         for u in users:
-            if u["nickname"] in self.ircd.users:
+            if u["nickname"] in self.factory.ircd.users:
                 raise RemoteDataInconsistent ("A user on a connecting remote server matches a user here.")
         # Set up the new server(s)
-        newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount)
-        for server in self.ircd.servers.itervalues():
+        newServer = RemoteServer(self.factory.ircd, name, description, nearhop, hopcount)
+        for server in self.factory.ircd.servers.itervalues():
             if nearhop in server.remoteServers:
                 server.remoteServers.add(name)
                 for addingServer in linkedservers:
                     server.remoteServers.add(addingServer["name"])
         # Add new users
         for u in users:
-            newUser = RemoteUser(self.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], u["signon"], u["ts"])
+            newUser = RemoteUser(self.factory.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], u["signon"], u["ts"])
             for chan in u["channels"]:
                 newUser.channels[chan["name"]] = {"status": chan["status"]}
             for modedata in u["mode"]:
                 mode = modedata[0]
                 param = modedata[1:]
-                modetype = self.ircd.user_mode_type[mode]
+                modetype = self.factory.ircd.user_mode_type[mode]
                 if modetype == 0:
                     if mode not in newUser.mode:
                         newUser.mode[mode] = []
@@ -690,13 +689,13 @@ class ServerProtocol(AMP):
                     newUser.mode[mode] = None
                 else:
                     newuser.mode[mode] = param
-            self.ircd.users[newUser.nickname] = newUser
+            self.factory.ircd.users[newUser.nickname] = newUser
         for c in channels:
-            if c["name"] not in self.ircd.channels:
-                cdata = IRCChannel(self.ircd, c["name"])
-                self.ircd.channels[cdata.name] = cdata
+            if c["name"] not in self.factory.ircd.channels:
+                cdata = IRCChannel(self.factory.ircd, c["name"])
+                self.factory.ircd.channels[cdata.name] = cdata
             else:
-                cdata = self.ircd.channels[c["name"]]
+                cdata = self.factory.ircd.channels[c["name"]]
             if c["topic"]:
                 cdata.setTopic(c["topic"], c["topicsetter"])
                 cdata.topicTime = datatime.utcfromtimestamp(c["topicts"])
@@ -707,7 +706,7 @@ class ServerProtocol(AMP):
                 for modedata in c["mode"]:
                     mode = modedata[0]
                     param = modedata[1:]
-                    modetype = self.ircd.channel_mode_type[mode]
+                    modetype = self.factory.ircd.channel_mode_type[mode]
                     if modetype == 0:
                         if mode not in cdata.mode:
                             cdata.mode[mode] = []
@@ -717,7 +716,7 @@ class ServerProtocol(AMP):
                     else:
                         cdata.mode[mode] = param
                 for mode, param in oldModes.iteritems():
-                    modetype = self.ircd.channel_mode_type[mode]
+                    modetype = self.factory.ircd.channel_mode_type[mode]
                     if modetype == 0:
                         if mode not in cdata.mode:
                             for item in param:
@@ -733,7 +732,7 @@ class ServerProtocol(AMP):
                             else:
                                 modeChanges.append([False, mode, None])
                 for mode, param in cdata.mode:
-                    modetype = self.ircd.channel_mode_type[mode]
+                    modetype = self.factory.ircd.channel_mode_type[mode]
                     if modetype == 0:
                         if mode not in oldModes:
                             for item in param:
@@ -749,8 +748,8 @@ class ServerProtocol(AMP):
                             modeChanges.append([True, mode, param])
             chants = datetime.utcfromtimestamp(c["ts"])
             for nick in c["users"]:
-                if nick in self.ircd.users:
-                    udata = self.ircd.users[nick]
+                if nick in self.factory.ircd.users:
+                    udata = self.factory.ircd.users[nick]
                     cdata.add(udata)
                     if chants <= cdata.created:
                         for status in udata.channels[cdata.name]["status"]:
@@ -774,7 +773,7 @@ class ServerProtocol(AMP):
                 if params:
                     modestr = "{} {}".format("".join(modes), " ".join(params))
                 for user in cdata.users:
-                    if user.nickname in self.ircd.localusers: # Don't send this message to users on remote servers who will get this message anyway
+                    if user.nickname in self.factory.ircd.localusers: # Don't send this message to users on remote servers who will get this message anyway
                         user.sendMessage("MODE", modestr, to=cdata.name)
         return {}
     AddNewServer.responder(newServer)
@@ -782,25 +781,25 @@ class ServerProtocol(AMP):
     def splitServer(self, name):
         if not self.burstComplete:
             raise NotYetBursted ("The initial burst has not yet occurred on this connection.")
-        if name not in self.ircd.servers:
+        if name not in self.factory.ircd.servers:
             raise ServerNotConnected ("The server splitting from the network was not connected to the network.")
-        servinfo = self.ircd.servers[name]
+        servinfo = self.factory.ircd.servers[name]
         leavingServers = servinfo.remoteServers
         leavingServers.append(name)
-        userList = self.ircd.users.values()
+        userList = self.factory.ircd.users.values()
         for user in userList:
             if user.server in leavingServers:
                 user.disconnect("Server disconnected from network")
         for servname in leavingServers:
-            del self.ircd.servers[servname]
+            del self.factory.ircd.servers[servname]
         return {}
     DisconnectServer.responder(splitServer)
     
     def connectionLost(self, reason):
         # TODO: remove all data from this server originating from remote
         if self.name:
-            del self.ircd.servers[self.name]
-        for action in self.ircd.actions["netsplit"]:
+            del self.factory.ircd.servers[self.name]
+        for action in self.factory.ircd.actions["netsplit"]:
             action()
         AMP.connectionLost(self, reason)
 
