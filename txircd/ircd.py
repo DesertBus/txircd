@@ -331,9 +331,9 @@ class IRCD(Factory):
                 else:
                     bind = None
                 if "ssl" in servinfo and servinfo["ssl"]:
-                    reactor.connectSSL(servinfo["ip"], servinfo["port"], ClientServerFactory, self.ssl_cert, bindAddress=bind)
+                    reactor.connectSSL(servinfo["ip"], servinfo["port"], self.server_factory.client_factory, self.ssl_cert, bindAddress=bind)
                 else:
-                    reactor.connectTCP(servinfo["ip"], servinfo["port"], ClientServerFactory, bindAddress=bind)
+                    reactor.connectTCP(servinfo["ip"], servinfo["port"], self.server_factory.client_factory, bindAddress=bind)
     
     def load_module(self, name):
         saved_data = {}
