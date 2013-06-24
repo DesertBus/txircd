@@ -219,7 +219,7 @@ class IRCD(Factory):
         self.load_options(options)
         self.name = self.servconfig["server_name"]
         self.autoconnect_servers = LoopingCall(self.server_autoconnect)
-        self.autoconnect_servers.start(60)
+        self.autoconnect_servers.start(60, now=False) # The server factory isn't added to here yet
         # Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
         self.isupport["CASEMAPPING"] = "rfc1459"
         self.isupport["CHANMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.channel_modes])
