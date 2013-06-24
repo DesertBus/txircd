@@ -103,7 +103,7 @@ class IRCProtocol(irc.IRC):
         if self.secure:
             certificate = self.transport.getPeerCertificate()
             if certificate is not None:
-                self.type.setMetadata["server"]["certfp"] = certificate.digest("md5").lower().replace(":", "")
+                self.type.setMetadata("server", "certfp", certificate.digest("md5").lower().replace(":", ""))
         # Handle the received data
         for modfunc in self.factory.actions["recvdata"]:
             modfunc(self.type, data)
