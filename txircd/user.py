@@ -76,7 +76,11 @@ class IRCUser(object):
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
+        print len(self.ircd.localusers)
+        print self.ircd.localusers.keys()
         self.ircd.localusers[self.nickname] = self
+        print len(self.ircd.localusers)
+        print self.ircd.localusers.keys()
         
         # Send all those lovely join messages
         chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
@@ -117,7 +121,11 @@ class IRCUser(object):
                 self.leave(cdata)
                 for u in cdata.users:
                     quitdest.add(u)
+            print len(self.ircd.localusers)
+            print self.ircd.localusers.keys()
             del self.ircd.users[self.nickname]
+            print len(self.ircd.localusers)
+            print self.ircd.localusers.keys()
             del self.ircd.localusers[self.nickname]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
@@ -369,7 +377,7 @@ class IRCUser(object):
             if "o" in user.mode:
                 operCount += 1
         for server in self.ircd.servers.itervalues():
-            if server.name == server.firsthop:
+            if server.name == server.firstHop:
                 serverCount += 1
         if localCount > self.ircd.usercount["localmax"]:
             self.ircd.usercount["localmax"] = localCount

@@ -12,7 +12,6 @@ from random import choice
 import math, os, random, yaml
 
 class Service(object):
-    
     class ServiceSocket(object):
         class ServiceTransport(object):
             def loseConnection(self):
@@ -37,6 +36,7 @@ class Service(object):
         self.signon = now()
         self.lastactivity = now()
         self.lastpong = now()
+        self.nicktime = now()
         self.mode = {}
         self.channels = CaseInsensitiveDictionary()
         self.disconnected = Deferred()

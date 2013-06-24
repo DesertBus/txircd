@@ -218,6 +218,7 @@ class IRCD(Factory):
             options = {}
         self.load_options(options)
         self.name = self.servconfig["server_name"]
+        self.all_module_load()
         self.autoconnect_servers = LoopingCall(self.server_autoconnect)
         self.autoconnect_servers.start(60, now=False) # The server factory isn't added to here yet
         # Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
@@ -293,7 +294,6 @@ class IRCD(Factory):
         for var, value in default_options.iteritems():
             if var not in self.servconfig:
                 self.servconfig[var] = value
-        self.all_module_load()
     
     def cleanup(self):
         # Track the disconnections so we know they get done

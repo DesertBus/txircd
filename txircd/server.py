@@ -15,7 +15,7 @@ compatible_versions = [ 200 ]
 class RemoteUser(object):
     class RemoteSocket(object):
         class RemoteTransport(object):
-            def loseConnection():
+            def loseConnection(self):
                 pass
         
         def __init__(self, secure):
@@ -364,15 +364,15 @@ class ServerProtocol(AMP):
                 if ourts == udata["ts"]: # older user wins; if same, they both die
                     ourudata.disconnect("Nickname collision")
                     for channel in incomingChannels:
-                        if udata["nickname"] in channel.cache["mergingusers"]:
-                            channel.cache["mergingusers"].remove(udata["nickname"])
+                        if udata["nickname"] in channel[0].cache["mergingusers"]:
+                            channel[0].cache["mergingusers"].remove(udata["nickname"])
                     continue
                 elif ourts > udata["ts"]:
                     ourudata.disconnect("Nickname collision")
                 else:
                     for channel in incomingChannels:
-                        if udata["nickname"] in channel.cache["mergingusers"]:
-                            channel.cache["mergingusers"].remove(udata["nickname"])
+                        if udata["nickname"] in channel[0].cache["mergingusers"]:
+                            channel[0].cache["mergingusers"].remove(udata["nickname"])
                     continue # skip adding the remote user since they'll die on the remote server
             newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"], datetime.utcfromtimestamp(udata["signon"]), datetime.utcfromtimestamp(udata["ts"]))
             for mode in udata["mode"]:
@@ -450,7 +450,7 @@ class ServerProtocol(AMP):
                     for user in channel.users:
                         self.justSendJoin(user, mergeChanData)
                         if user.channels[mergeChanData.name]["status"]:
-                            modestr = "+{} {}".format(user.channels[mergeChanData.name]["status"], " ".join([user.nickname for i in len(user.channels[mergeChanData.name]["status"])]))
+                            modestr = "+{} {}".format(user.channels[mergeChanData.name]["status"], " ".join([user.nickname for i in range(len(user.channels[mergeChanData.name]["status"]))]))
                             for u in mergeChanData.users:
                                 u.sendMessage("MODE", modestr, to=mergeChanData.name)
                     for user in channel.users: # Run this as a separate loop so that remote users don't get repeat join messages for users already in that channel
@@ -799,7 +799,7 @@ class ServerProtocol(AMP):
     
     def connectionLost(self, reason):
         # TODO: remove all data from this server originating from remote
-        if self.name:
+        if self.name and self.name in self.ircd.servers:
             del self.ircd.servers[self.name]
         for action in self.ircd.actions["netsplit"]:
             action()
