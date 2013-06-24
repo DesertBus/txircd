@@ -101,7 +101,7 @@ class IRCProtocol(irc.IRC):
         # when the SSL handshake is complete); see http://twistedmatrix.com/trac/ticket/6024
         # This will be moved in the future when we can.
         if self.secure:
-            certificate = self.socket.transport.getPeerCertificate()
+            certificate = self.transport.getPeerCertificate()
             if certificate is not None:
                 self.type.setMetadata["server"]["certfp"] = certificate.digest("md5").lower().replace(":", "")
         # Handle the received data
