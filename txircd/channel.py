@@ -65,7 +65,7 @@ class IRCChannel(object):
                     if not adding and mode not in udata.status(self.name):
                         continue
                     if mode in self.ircd.servconfig["channel_status_minimum_change"]:
-                        minimum_level = self.ircd.servconfig["channel_status_minimum_change"]
+                        minimum_level = self.ircd.servconfig["channel_status_minimum_change"][mode]
                     else:
                         minimum_level = mode
                     if not adding and user == udata:
