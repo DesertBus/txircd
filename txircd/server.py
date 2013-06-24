@@ -298,6 +298,10 @@ class ServerProtocol(AMP):
         self.firstHop = None
         self.hopCount = 0
     
+    def connectionMade(self):
+        if self.localOrigin:
+            self.callRemote(IntroduceServer, name=self.ircd.name, password=self.ircd.servconfig["serverlinks"][name]["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
+    
     def newServer(self, name, password, description, version, commonmodules):
         if "handshake-recv" in self.burstStatus:
             raise HandshakeAlreadyComplete ("The server handshake has already been completed between these servers.")
