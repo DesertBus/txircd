@@ -1,11 +1,11 @@
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
-from twisted.internet.protocol import Factory
+from twisted.internet.protocol import ClientCreator, Factory
 from twisted.internet.task import LoopingCall
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
-from txircd.server import ClientServerFactory
+from txircd.server import IntroduceServer, ServerProtocol, protocol_version
 from txircd.utils import CaseInsensitiveDictionary, now
 from txircd.user import IRCUser
 from txircd import __version__
@@ -321,6 +321,9 @@ class IRCD(Factory):
         return DeferredList(deferreds)
     
     def server_autoconnect(self):
+        def sendServerHandshake(protocol, password):
+            protocol.callRemote(IntroduceServer, name=self.name, password=password, description=self.servconfig["server_description"], version=protocol_version, commonmodules=self.common_modules)
+            protocol.burstStatus.append("handshake-send")
         for server in self.servconfig["serverlink_autoconnect"]:
             if server not in self.servers and server in self.servconfig["serverlinks"]:
                 servinfo = self.servconfig["serverlinks"][server]
@@ -330,10 +333,12 @@ class IRCD(Factory):
                     bind = (servinfo["bindaddress"], servinfo["bindport"])
                 else:
                     bind = None
+                creator = ClientCreator(reactor, ServerProtocol, self)
                 if "ssl" in servinfo and servinfo["ssl"]:
-                    reactor.connectSSL(servinfo["ip"], servinfo["port"], self.server_factory.client_factory, self.ssl_cert, bindAddress=bind)
+                    d = creator.connectSSL(servinfo["ip"], servinfo["port"], self.ssl_cert, bindAddress=bind)
                 else:
-                    reactor.connectTCP(servinfo["ip"], servinfo["port"], self.server_factory.client_factory, bindAddress=bind)
+                    d = creator.connectTCP(servinfo["ip"], servinfo["port"], bindAddress=bind)
+                d.addCallback(sendServerHandshake, servinfo["outgoing_password"])
     
     def load_module(self, name):
         saved_data = {}

@@ -1,9 +1,10 @@
 from twisted.internet.protocol import Factory, ClientFactory
 from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
+from txircd.channel import IRCChannel
 from txircd.utils import CaseInsensitiveDictionary, epoch, now
 from datetime import datetime
 
-current_version = 200 # Protocol version 0.2.0
+protocol_version = 200 # Protocol version 0.2.0
 # The protocol version should be incremented with changes of the protocol
 # Breaking changes should be avoided except for major version upgrades or when it's otherwise unavoidable
 
@@ -288,7 +289,8 @@ class DisconnectServer(Command):
 
 
 class ServerProtocol(AMP):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ircd):
+        self.ircd = ircd
         self.burstComplete = False
         self.burstStatus = []
         self.name = None
@@ -297,11 +299,6 @@ class ServerProtocol(AMP):
         self.localOrigin = False
         self.firstHop = None
         self.hopCount = 0
-    
-    def connectionMade(self):
-        self.ircd = self.factory.ircd
-        if self.localOrigin:
-            self.callRemote(IntroduceServer, name=self.ircd.name, password=self.ircd.servconfig["serverlinks"][self.name]["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
     
     def newServer(self, name, password, description, version, commonmodules):
         if "handshake-recv" in self.burstStatus:
@@ -323,7 +320,7 @@ class ServerProtocol(AMP):
         if "incoming_password" not in linkData or password != linkData["incoming_password"]:
             raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
         if "handshake-send" not in self.burstStatus:
-            self.callRemote(IntroduceServer, name=self.ircd.name, password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=current_version, commonmodules=self.ircd.common_modules)
+            self.callRemote(IntroduceServer, name=self.ircd.name, password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=protocol_version, commonmodules=self.ircd.common_modules)
             self.burstStatus.append("handshake-send")
         else:
             self.sendBurstData()
@@ -601,7 +598,7 @@ class ServerProtocol(AMP):
                 else:
                     modes.append("{}{}".format(mode, param))
             channels = []
-            for name, data in u.channels:
+            for name, data in u.channels.iteritems():
                 status = data["status"]
                 channels.append({
                     "name": name,
@@ -649,7 +646,7 @@ class ServerProtocol(AMP):
                 "name": server.name,
                 "description": server.desc
             })
-        self.callRemote(burstData, users=userList, channels=channelList, servers=serverList)
+        self.callRemote(BurstData, users=userList, channels=channelList, servers=serverList)
         self.burstStatus.append("burst-send")
     
     def newServer(self, name, description, hopcount, nearhop, linkedservers, users, channels):
@@ -815,12 +812,13 @@ class ServerProtocol(AMP):
 class ClientServerFactory(ClientFactory):
     protocol = ServerProtocol
     
-    def __init__(self, parent, ircd):
-        self.parent = parent
+    def __init__(self, ircd, remoteName):
         self.ircd = ircd
+        self.name = remoteName
     
     def buildProtocol(self, addr):
         proto = ClientFactory.buildProtocol(self, addr)
+        proto.name = self.name
         proto.localOrigin = True
         return proto
 
@@ -829,5 +827,9 @@ class ServerFactory(Factory):
     
     def __init__(self, ircd):
         self.ircd = ircd
-        self.client_factory = ClientServerFactory(self, ircd)
         self.ircd.server_factory = self
+    
+    def buildProtocol(self, addr):
+        proto = self.protocol(self.ircd)
+        proto.factory = self
+        return proto
