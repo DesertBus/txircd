@@ -1,3 +1,4 @@
+from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Factory, ClientFactory
 from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
 from txircd.channel import IRCChannel
@@ -35,6 +36,8 @@ class RemoteUser(object):
         self.signon = signonTime
         self.nicktime = nickTime
         self.lastactivity = now()
+        self.disconnected = Deferred()
+        self.disconnected.callback(None)
         self.mode = {}
         self.channels = CaseInsensitiveDictionary()
         self.registered = 0
