@@ -528,8 +528,10 @@ class ServerProtocol(AMP):
                         for mode in modeDisplay:
                             if mode[0] and adding is not True:
                                 modeStr.append("+")
+                                adding = True
                             elif not mode[0] and adding is not False:
                                 modeStr.append("-")
+                                adding = False
                             modeStr.append(mode[1])
                             if mode[2]:
                                 params.append(mode[2])
