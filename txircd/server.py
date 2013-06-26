@@ -649,7 +649,10 @@ class ServerProtocol(AMP):
         for server in self.ircd.servers.itervalues():
             serverList.append({
                 "name": server.name,
-                "description": server.description
+                "description": server.description,
+                "hopcount": server.hopCount,
+                "nearhop": server.firstHop,
+                "remoteservers": server.remoteServers
             })
         self.callRemote(BurstData, users=userList, channels=channelList, servers=serverList)
         self.burstStatus.append("burst-send")
