@@ -249,6 +249,7 @@ class IRCD(Factory):
                     "cmd_away", "cmd_ison", "cmd_userhost", "cmd_who", "cmd_whois", "cmd_whowas", # user info
                     "cmd_names", "cmd_list", # channel info
                     "cmd_kill", "cmd_eline", "cmd_gline", "cmd_kline", "cmd_qline", "cmd_zline", # user management
+                    "cmd_links", # linked servers
                     
                     # channel modes
                     "cmode_b", "cmode_i", "cmode_k", "cmode_l", "cmode_m", "cmode_n", "cmode_o", "cmode_p", "cmode_s", "cmode_t", "cmode_v",
