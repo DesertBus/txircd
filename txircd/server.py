@@ -248,7 +248,7 @@ class AddNewServer(Command):
             ("hopcount", Integer()),
             ("nearhop", String()),
             ("remoteservers", ListOf(String()))
-        ]),
+        ])),
         ("users", AmpList([
             ("nickname", String()),
             ("ident", String()),
@@ -270,7 +270,7 @@ class AddNewServer(Command):
             ("mode", ListOf(String())),
             ("users", ListOf(String())),
             ("ts", Integer())
-        ])))
+        ]))
     ]
     errors = {
         NotYetBursted: "NOT_YET_BURSTED"
