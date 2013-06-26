@@ -687,7 +687,7 @@ class ServerProtocol(AMP):
                     server.remoteServers.add(addingServer["name"])
         # Add new users
         for u in users:
-            newUser = RemoteUser(self.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], u["signon"], u["ts"])
+            newUser = RemoteUser(self.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], datetime.utcfromtimestamp(u["signon"]), datetime.utcfromtimestamp(u["ts"]))
             for chan in u["channels"]:
                 newUser.channels[chan["name"]] = {"status": chan["status"]}
             for modedata in u["mode"]:
