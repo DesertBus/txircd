@@ -128,14 +128,17 @@ class RemoteServer(object):
         self.ircd = ircd
         self.name = name
         self.description = desc
-        self.firstHop = nearestServer
+        self.nearHop = nearestServer
         self.burstComplete = True
         self.remoteServers = set()
         self.hopCount = hopCount
     
     def callRemote(self, command, *args):
-        if self.firstHop in self.ircd.servers:
-            self.ircd.servers[self.firstHop].callRemote(command, *args) # If the parameters are such that they indicate the target properly, this will be forwarded to the proper server.
+        server = self
+        while server.nearHop != self.ircd.name and server.nearHop in self.ircd.servers:
+            server = self.ircd.servers[server.nearHop]
+        if server.name in self.ircd.servers:
+            server.callRemote(command, *args) # If the parameters are such that they indicate the target properly, this will be forwarded to the proper server.
 
 
 # ERRORS
@@ -300,7 +303,8 @@ class ServerProtocol(AMP):
         self.description = None
         self.remoteServers = set()
         self.localOrigin = False
-        self.firstHop = None
+        self.nearHop = None
+        self.nearRemoteLink = self.ircd.name
         self.hopCount = 0
     
     def newServer(self, name, password, description, version, commonmodules):
@@ -329,7 +333,7 @@ class ServerProtocol(AMP):
             self.sendBurstData()
         self.name = name
         self.description = description
-        self.firstHop = name
+        self.nearHop = name
         return {}
     IntroduceServer.responder(newServer)
     
@@ -651,7 +655,7 @@ class ServerProtocol(AMP):
                 "name": server.name,
                 "description": server.description,
                 "hopcount": server.hopCount,
-                "nearhop": server.firstHop,
+                "nearhop": server.nearHop,
                 "remoteservers": server.remoteServers
             })
         self.callRemote(BurstData, users=userList, channels=channelList, servers=serverList)
