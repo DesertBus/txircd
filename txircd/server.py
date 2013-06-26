@@ -564,7 +564,7 @@ class ServerProtocol(AMP):
         self.burstComplete = True
         
         for server in self.ircd.servers.itervalues():
-            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopCount + 1, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
+            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopCount, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
         
         self.ircd.servers[self.name] = self
         for server in servers:
@@ -679,7 +679,7 @@ class ServerProtocol(AMP):
             if u["nickname"] in self.ircd.users:
                 raise RemoteDataInconsistent ("A user on a connecting remote server matches a user here.")
         # Set up the new server(s)
-        newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount)
+        newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount + 1)
         for server in self.ircd.servers.itervalues():
             if nearhop in server.remoteServers:
                 server.remoteServers.add(name)
