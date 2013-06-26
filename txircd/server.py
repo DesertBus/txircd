@@ -463,7 +463,7 @@ class ServerProtocol(AMP):
                         mergeChanData.users.add(user)
                     # reserialize modes for other servers
                     cdata["modes"] = []
-                    for mode, param in channel.mode:
+                    for mode, param in channel.mode.iteritems():
                         modetype = self.ircd.channel_mode_type[mode]
                         if modetype == 0:
                             for item in param:
