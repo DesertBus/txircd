@@ -303,7 +303,7 @@ class ServerProtocol(AMP):
         self.description = None
         self.remoteServers = set()
         self.localOrigin = False
-        self.nearHop = None
+        self.nearHop = self.ircd.name
         self.nearRemoteLink = self.ircd.name
         self.hopCount = 1
     
@@ -333,7 +333,6 @@ class ServerProtocol(AMP):
             self.sendBurstData()
         self.name = name
         self.description = description
-        self.nearHop = name
         return {}
     IntroduceServer.responder(newServer)
     
