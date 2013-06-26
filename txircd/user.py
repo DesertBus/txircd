@@ -369,6 +369,7 @@ class IRCUser(object):
             if "o" in user.mode:
                 operCount += 1
         for server in self.ircd.servers.itervalues():
+            # TODO: fix references to firstHop
             if server.name == server.firstHop:
                 serverCount += 1
         if localCount > self.ircd.usercount["localmax"]:
