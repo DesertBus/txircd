@@ -565,7 +565,7 @@ class ServerProtocol(AMP):
         self.burstComplete = True
         
         for server in self.ircd.servers.itervalues():
-            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopcount, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
+            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopCount, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
         
         self.ircd.servers[self.name] = self
         for server in servers:
