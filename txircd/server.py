@@ -305,7 +305,7 @@ class ServerProtocol(AMP):
         self.localOrigin = False
         self.nearHop = None
         self.nearRemoteLink = self.ircd.name
-        self.hopCount = 0
+        self.hopCount = 1
     
     def newServer(self, name, password, description, version, commonmodules):
         if "handshake-recv" in self.burstStatus:
@@ -565,11 +565,11 @@ class ServerProtocol(AMP):
         self.burstComplete = True
         
         for server in self.ircd.servers.itervalues():
-            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopCount, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
+            server.callRemote(AddNewServer, name=self.name, description=self.description, hopcount=self.hopCount + 1, nearhop=self.ircd.name, linkedservers=servers, users=propUsers, channels=propChannels)
         
         self.ircd.servers[self.name] = self
         for server in servers:
-            newServer = RemoteServer(self.ircd, server["name"], server["description"], server["nearhop"], server["hopcount"])
+            newServer = RemoteServer(self.ircd, server["name"], server["description"], server["nearhop"], server["hopcount"] + 1)
             for servname in server["remoteservers"]:
                 newServer.remoteServers.add(servname)
             self.ircd.servers[server["name"]] = newServer
