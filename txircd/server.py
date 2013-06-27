@@ -509,11 +509,15 @@ class ServerProtocol(AMP):
                     for mode, param in channel.mode.iteritems():
                         modetype = self.ircd.channel_mode_type[mode]
                         if modetype == 0:
-                            mergeChanData.mode[mode].append(param)
-                            modeDisplay.append([True, mode, param])
+                            if mode not in mergeChanData.mode:
+                                mergeChanData.mode[mode] = []
+                            if param not in mergeChanData.mode[mode]:
+                                mergeChanData.mode[mode].append(param)
+                                modeDisplay.append([True, mode, param])
                         else:
-                            mergeChanData.mode[mode] = param
-                            modeDisplay.append([True, mode, param])
+                            if mode not in mergeChanData.mode or mergeChanData.mode[mode] != param:
+                                mergeChanData.mode[mode] = param
+                                modeDisplay.append([True, mode, param])
                     # Users (local): remove statuses, send mode change notice
                     for user in mergeChanData.users:
                         statuses = user.channels[mergeChanData.name]["status"]
