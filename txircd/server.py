@@ -406,20 +406,20 @@ class ServerProtocol(AMP):
             else:
                 mergeChanData = self.ircd.channels[channel.name]
                 if channel.created == mergeChanData.created: # ... matching timestamps? Time to resolve lots of conflicts
-                    if channel.topicTime >= mergeChanData.topicTime:
-                        # topics: if identical contents and setter but different timestamps, keep older timestamp
-                        # if different topics, keep newer topic
-                        if channel.topic == mergeChanData.topic and channel.topicSetter == mergeChanData.topicSetter:
-                            channel.topicTime = mergeChanData.topicTime # If the topics are identical, go with the lower timestamp
-                        else:
+                    # topics: if identical contents and setter but different timestamps, keep older timestamp
+                    # if different topics, keep newer topic
+                    if channel.topic == mergeChanData.topic and channel.topicSetter == mergeChanData.topicSetter:
+                        if channel.topicTime < mergeChanData.topicTime:
+                            mergeChanData.topicTime = channel.topicTime # If the topics are identical, go with the lower timestamp
+                    else:
+                        if mergeChanData.topicTime < channel.topicTime or (mergeChanData.topicTime == channel.topicTime and self.localOrigin):
                             mergeChanData.setTopic(channel.topic, channel.topicSetter)
                             mergeChanData.topicTime = channel.topicTime
                             for user in mergeChanData.users:
                                 user.sendMessage("TOPIC", ":{}".format(channel.topic), to=mergeChanData.name)
-                    else:
-                        del cdata["topic"]
-                        del cdata["topicsetter"]
-                        del cdata["topicts"]
+                    cdata["topic"] = mergeChanData.topic
+                    cdata["topicsetter"] = mergeChanData.topicSetter
+                    cdata["topicts"] = mergeChanData.topicTime
                     # modes: merge modes together
                     # break parameter ties on normal parameter modes by giving the winner to the server being connected to
                     modeDisplay = []
