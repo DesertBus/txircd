@@ -763,7 +763,7 @@ class ServerProtocol(AMP):
             for nick in c["users"]:
                 if nick in self.ircd.users:
                     udata = self.ircd.users[nick]
-                    cdata.add(udata)
+                    cdata.users.add(udata)
                     if chants <= cdata.created:
                         for status in udata.channels[cdata.name]["status"]:
                             modeChanges.append([True, status, udata.nickname])
