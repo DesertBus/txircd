@@ -722,52 +722,51 @@ class ServerProtocol(AMP):
                 cdata.setTopic(c["topic"], c["topicsetter"])
                 cdata.topicTime = datatime.utcfromtimestamp(c["topicts"])
             modeChanges = []
-            if "mode" in c:
-                oldModes = cdata.mode
-                cdata.mode = {}
-                for modedata in c["mode"]:
-                    mode = modedata[0]
-                    param = modedata[1:]
-                    modetype = self.ircd.channel_mode_type[mode]
-                    if modetype == 0:
-                        if mode not in cdata.mode:
-                            cdata.mode[mode] = []
-                        cdata.mode[mode].append(param)
-                    elif modetype == 3:
-                        cdata.mode[mode] = None
+            oldModes = cdata.mode
+            cdata.mode = {}
+            for modedata in c["mode"]:
+                mode = modedata[0]
+                param = modedata[1:]
+                modetype = self.ircd.channel_mode_type[mode]
+                if modetype == 0:
+                    if mode not in cdata.mode:
+                        cdata.mode[mode] = []
+                    cdata.mode[mode].append(param)
+                elif modetype == 3:
+                    cdata.mode[mode] = None
+                else:
+                    cdata.mode[mode] = param
+            for mode, param in oldModes.iteritems():
+                modetype = self.ircd.channel_mode_type[mode]
+                if modetype == 0:
+                    if mode not in cdata.mode:
+                        for item in param:
+                            modeChanges.append([False, mode, item])
                     else:
-                        cdata.mode[mode] = param
-                for mode, param in oldModes.iteritems():
-                    modetype = self.ircd.channel_mode_type[mode]
-                    if modetype == 0:
-                        if mode not in cdata.mode:
-                            for item in param:
+                        for item in param:
+                            if param not in cdata.mode[mode]:
                                 modeChanges.append([False, mode, item])
+                else:
+                    if mode not in cdata.mode:
+                        if modetype == 1:
+                            modeChanges.append([False, mode, param])
                         else:
-                            for item in param:
-                                if param not in cdata.mode[mode]:
-                                    modeChanges.append([False, mode, item])
+                            modeChanges.append([False, mode, None])
+            for mode, param in cdata.mode:
+                modetype = self.ircd.channel_mode_type[mode]
+                if modetype == 0:
+                    if mode not in oldModes:
+                        for item in param:
+                            modeChanges.append([True, mode, item])
                     else:
-                        if mode not in cdata.mode:
-                            if modetype == 1:
-                                modeChanges.append([False, mode, param])
-                            else:
-                                modeChanges.append([False, mode, None])
-                for mode, param in cdata.mode:
-                    modetype = self.ircd.channel_mode_type[mode]
-                    if modetype == 0:
-                        if mode not in oldModes:
-                            for item in param:
+                        for item in param:
+                            if param not in oldModes[mode]:
                                 modeChanges.append([True, mode, item])
-                        else:
-                            for item in param:
-                                if param not in oldModes[mode]:
-                                    modeChanges.append([True, mode, item])
-                    else:
-                        if mode not in oldModes:
-                            modeChanges.append([True, mode, param])
-                        elif oldModes[mode] != param:
-                            modeChanges.append([True, mode, param])
+                else:
+                    if mode not in oldModes:
+                        modeChanges.append([True, mode, param])
+                    elif oldModes[mode] != param:
+                        modeChanges.append([True, mode, param])
             chants = datetime.utcfromtimestamp(c["ts"])
             for nick in c["users"]:
                 if nick in self.ircd.users:
