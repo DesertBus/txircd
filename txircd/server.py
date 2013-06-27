@@ -394,7 +394,6 @@ class ServerProtocol(AMP):
             for chan in udata["channels"]:
                 newUser.channels[chan["name"]] = { "status": chan["status"] } # This will get fixed in the channel merging to immediately follow
             self.ircd.users[udata["nickname"]] = newUser
-            propUsers.append(udata)
         for chandata in incomingChannels:
             channel, cdata = chandata
             for user in channel.cache["mergingusers"]:
@@ -463,7 +462,7 @@ class ServerProtocol(AMP):
                         mergeChanData.users.add(user)
                     # reserialize modes for other servers
                     cdata["modes"] = []
-                    for mode, param in channel.mode.iteritems():
+                    for mode, param in mergeChanData.mode.iteritems():
                         modetype = self.ircd.channel_mode_type[mode]
                         if modetype == 0:
                             for item in param:
@@ -472,6 +471,10 @@ class ServerProtocol(AMP):
                             cdata["modes"].append(mode)
                         else:
                             cdata["modes"].append("{}{}".format(mode, param))
+                    # also reserialize users
+                    cdata["users"] = []
+                    for u in mergeChanData.users:
+                        cdata["users"].append(u.nickname)
                     propChannels.append(cdata)
                 elif channel.created < mergeChanData.created: # theirs is older, so discard any changes ours made
                     # Topic: If the contents and setter are the same, adopt the remote timestamp; otherwise, adopt the
@@ -483,6 +486,9 @@ class ServerProtocol(AMP):
                         mergeChanData.topicTime = channel.topicTime
                         for user in mergeChanData.users:
                             user.sendMessage("TOPIC", ":{}".format(channel.topic), to=mergeChanData.name)
+                    cdata["topic"] = mergeChanData.topic
+                    cdata["topicsetter"] = mergeChanData.topicSetter
+                    cdata["topicts"] = epoch(mergeChanData.topicTime)
                     # Modes: Take modes of remote side; keep track of mode changes to alert our users
                     modeDisplay = []
                     removeModes = []
@@ -555,6 +561,21 @@ class ServerProtocol(AMP):
                             for user in mergeChanData.users:
                                 if user.nickname in self.ircd.localusers:
                                     user.sendMessage("MODE", "".join(modeStr), to=mergeChanData.name)
+                    # reserialize modes for other servers
+                    cdata["mode"] = []
+                    for mode, param in mergeChanData.mode.iteritems():
+                        modetype = self.ircd.channel_mode_type[mode]
+                        if modetype == 0:
+                            for item in param:
+                                cdata["mode"].append("{}{}".format(mode, item))
+                        elif modetype == 3:
+                            cdata["mode"].append(mode)
+                        else:
+                            cdata["mode"].append("{}{}".format(mode, param))
+                    # Also reserialize users
+                    cdata["users"] = []
+                    for u in mergeChanData.users:
+                        cdata["users"].append(u.nickname)
                     propChannels.append(cdata)
                 else: # ours is older, so discard any changes theirs made
                     # topic: keep ours; ignore theirs
@@ -566,6 +587,68 @@ class ServerProtocol(AMP):
                         self.justSendJoin(user, mergeChanData)
                     for user in channel.users: # Use a second loop so remote users don't get extra JOIN messages about users already in that channel
                         mergeChanData.users.add(user)
+                    cdata["topic"] = mergeChanData.topic
+                    cdata["topicsetter"] = mergeChanData.topicSetter
+                    cdata["topicts"] = epoch(mergeChanData.topicTime)
+                    cdata["mode"] = []
+                    for mode, param in mergeChanData.mode.iteritems():
+                        modetype = self.ircd.channel_mode_type[mode]
+                        if modetype == 0:
+                            for item in param:
+                                cdata["mode"].append("{}{}".format(mode, item))
+                        elif modetype == 3:
+                            cdata["mode"].append(mode)
+                        else:
+                            cdata["mode"].append("{}{}".format(mode, param))
+                    cdata["users"] = []
+                    for u in mergeChanData.users:
+                        cdata["users"].append(u.nickname)
+                    propChannels.append(cdata)
+        """
+        ("users", AmpList([
+            ("nickname", String()),
+            ("ident", String()),
+            ("host", String()),
+            ("gecos", String()),
+            ("ip", String()),
+            ("server", String()),
+            ("secure", Boolean()),
+            ("mode", ListOf(String())),
+            ("channels", AmpList([("name", String()), ("status", String())])),
+            ("signon", Integer()),
+            ("ts", Integer())
+        ]))
+        """
+        for u in self.ircd.users.itervalues:
+            modes = []
+            channels = []
+            for mode, param in u.mode:
+                modetype = self.ircd.user_mode_type[mode]
+                if modetype == 0:
+                    for item in param:
+                        modes.append("{}{}".format(mode, item))
+                elif modetype == 3:
+                    modes.append(mode)
+                else:
+                    modes.append("{}{}".format(mode, param))
+            for name, data in u.channels:
+                channels.append({
+                    "name": name,
+                    "status": data["status"]
+                })
+            propUsers.append({
+                "nickname": u.nickname,
+                "ident": u.username,
+                "host": u.hostname,
+                "gecos": u.realname,
+                "ip": u.ip,
+                "server": u.server,
+                "secure": u.socket.secure,
+                "mode": modes,
+                "channels": channels,
+                "signon": epoch(u.signon),
+                "ts": epoch(u.nickTime)
+            })
         self.burstStatus.append("burst-recv")
         self.burstComplete = True
         
@@ -677,13 +760,6 @@ class ServerProtocol(AMP):
         for server in linkedservers:
             if server["name"] in self.ircd.servers:
                 raise ServerAlreadyConnected ("A server connected to the remote network is already connected to this network.")
-        # Since user and channel data should have been filtered/processed on burst by the receiving server before being broadcast,
-        # raise an error if any user data is inconsistent
-        # Nickname collision kills must have occurred before notification of the new server, so any problem here indicates that a
-        # desyncing of user data has occurred
-        for u in users:
-            if u["nickname"] in self.ircd.users:
-                raise RemoteDataInconsistent ("A user on a connecting remote server matches a user here.")
         # Set up the new server(s)
         newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount + 1)
         for server in self.ircd.servers.itervalues():
@@ -694,6 +770,8 @@ class ServerProtocol(AMP):
         self.ircd.servers[name] = newServer
         # TODO: deal with linkedservers
         # TODO: propagate new server
+        if not users and not channels:
+            return {}
         # Add new users
         for u in users:
             newUser = RemoteUser(self.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], datetime.utcfromtimestamp(u["signon"]), datetime.utcfromtimestamp(u["ts"]))
