@@ -720,7 +720,7 @@ class ServerProtocol(AMP):
                 cdata = self.ircd.channels[c["name"]]
             if c["topic"] != cdata.topic or c["topicsetter"] != cdata.topicSetter:
                 cdata.setTopic(c["topic"], c["topicsetter"])
-                cdata.topicTime = datatime.utcfromtimestamp(c["topicts"])
+            cdata.topicTime = datatime.utcfromtimestamp(c["topicts"])
             modeChanges = []
             oldModes = cdata.mode
             cdata.mode = {}
