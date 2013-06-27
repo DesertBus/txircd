@@ -494,6 +494,8 @@ class ServerProtocol(AMP):
                                 if mode not in channel.mode or item not in channel.mode[mode]:
                                     param.remove(item)
                                     modeDisplay.append([False, mode, param])
+                                if mode not in channel.mode:
+                                    removeModes.append(mode)
                         elif modetype == 3:
                             if mode not in channel.mode:
                                 removeModes.append(mode)
