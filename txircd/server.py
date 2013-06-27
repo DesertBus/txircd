@@ -419,7 +419,7 @@ class ServerProtocol(AMP):
                                 user.sendMessage("TOPIC", ":{}".format(channel.topic), to=mergeChanData.name)
                     cdata["topic"] = mergeChanData.topic
                     cdata["topicsetter"] = mergeChanData.topicSetter
-                    cdata["topicts"] = mergeChanData.topicTime
+                    cdata["topicts"] = epoch(mergeChanData.topicTime)
                     # modes: merge modes together
                     # break parameter ties on normal parameter modes by giving the winner to the server being connected to
                     modeDisplay = []
