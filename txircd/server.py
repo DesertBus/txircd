@@ -307,7 +307,7 @@ class ServerProtocol(AMP):
         self.nearRemoteLink = self.ircd.name
         self.hopCount = 1
     
-    def newServer(self, name, password, description, version, commonmodules):
+    def serverHandshake(self, name, password, description, version, commonmodules):
         if "handshake-recv" in self.burstStatus:
             raise HandshakeAlreadyComplete ("The server handshake has already been completed between these servers.")
         self.burstStatus.append("handshake-recv")
@@ -334,7 +334,7 @@ class ServerProtocol(AMP):
         self.name = name
         self.description = description
         return {}
-    IntroduceServer.responder(newServer)
+    IntroduceServer.responder(serverHandshake)
     
     def burstData(self, users, channels, servers):
         if "handshake-send" not in self.burstStatus or "handshake-recv" not in self.burstStatus:
