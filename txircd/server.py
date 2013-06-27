@@ -604,21 +604,6 @@ class ServerProtocol(AMP):
                     for u in mergeChanData.users:
                         cdata["users"].append(u.nickname)
                     propChannels.append(cdata)
-        """
-        ("users", AmpList([
-            ("nickname", String()),
-            ("ident", String()),
-            ("host", String()),
-            ("gecos", String()),
-            ("ip", String()),
-            ("server", String()),
-            ("secure", Boolean()),
-            ("mode", ListOf(String())),
-            ("channels", AmpList([("name", String()), ("status", String())])),
-            ("signon", Integer()),
-            ("ts", Integer())
-        ]))
-        """
         for u in self.ircd.users.itervalues:
             modes = []
             channels = []
@@ -768,8 +753,26 @@ class ServerProtocol(AMP):
                 for addingServer in linkedservers:
                     server.remoteServers.add(addingServer["name"])
         self.ircd.servers[name] = newServer
-        # TODO: deal with linkedservers
-        # TODO: propagate new server
+        # Add linked servers
+        remoteLinkedServers = []
+        for servinfo in linkedservers:
+            farServer = RemoteServer(self.ircd, servinfo["name"], servinfo["description"], servinfo["nearhop"], servinfo["hopcount"] + 1)
+            for server in servinfo["remoteservers"]:
+                farServer.remoteServers.append(server)
+            remoteLinkedServers.append(servinfo["name"])
+            newServer.remoteServers.append(farServer.name)
+            self.ircd.servers[farServer.name] = farServer
+        nextServer = newServer.nearHop
+        while nextServer != self.ircd.name:
+            nextServerPtr = self.ircd.servers[nextServer]
+            for servname in remoteLinkedServers.iterkeys():
+                nextServerPtr.remoteServers.append(servname)
+            nextServer = nextServerPtr.nearHop
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                # The server is connected to this server but is NOT this server link
+                # so that it goes to each server once and does not get sent back where it came from
+                server.callRemote(AddNewServer, name=name, description=description, hopcount=hopcount+1, nearhop=nearhop, linkedservers=linkedservers, users=users, channels=channels)
         if not users and not channels:
             return {}
         # Add new users
