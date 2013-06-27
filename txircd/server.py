@@ -685,6 +685,7 @@ class ServerProtocol(AMP):
                 server.remoteServers.add(name)
                 for addingServer in linkedservers:
                     server.remoteServers.add(addingServer["name"])
+        self.ircd.servers[name] = newServer
         # Add new users
         for u in users:
             newUser = RemoteUser(self.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], datetime.utcfromtimestamp(u["signon"]), datetime.utcfromtimestamp(u["ts"]))
