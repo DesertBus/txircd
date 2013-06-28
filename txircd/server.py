@@ -882,7 +882,8 @@ class ServerProtocol(AMP):
         for servname in leavingServers:
             del self.ircd.servers[servname]
         for server in self.ircd.servers.itervalues(): # propagate to the rest of the servers
-            server.callRemote(DisconnectServer, name=name)
+            if self.ircd.name == server.nearHop and server != self:
+                server.callRemote(DisconnectServer, name=name)
         for action in self.ircd.actions["netsplit"]:
             action()
         return {}
