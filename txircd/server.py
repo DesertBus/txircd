@@ -881,6 +881,8 @@ class ServerProtocol(AMP):
                 user.disconnect("Server disconnected from network")
         for servname in leavingServers:
             del self.ircd.servers[servname]
+        for server in self.ircd.servers.itervalues(): # propagate to the rest of the servers
+            server.callRemote(DisconnectServer, name=name)
         for action in self.ircd.actions["netsplit"]:
             action()
         return {}
