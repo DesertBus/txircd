@@ -394,6 +394,7 @@ class ServerProtocol(AMP):
             for chan in udata["channels"]:
                 newUser.channels[chan["name"]] = { "status": chan["status"] } # This will get fixed in the channel merging to immediately follow
             self.ircd.users[udata["nickname"]] = newUser
+            propUsers.append(udata)
         for chandata in incomingChannels:
             channel, cdata = chandata
             for user in channel.cache["mergingusers"]:
@@ -604,36 +605,6 @@ class ServerProtocol(AMP):
                     for u in mergeChanData.users:
                         cdata["users"].append(u.nickname)
                     propChannels.append(cdata)
-        for u in self.ircd.users.itervalues:
-            modes = []
-            channels = []
-            for mode, param in u.mode:
-                modetype = self.ircd.user_mode_type[mode]
-                if modetype == 0:
-                    for item in param:
-                        modes.append("{}{}".format(mode, item))
-                elif modetype == 3:
-                    modes.append(mode)
-                else:
-                    modes.append("{}{}".format(mode, param))
-            for name, data in u.channels:
-                channels.append({
-                    "name": name,
-                    "status": data["status"]
-                })
-            propUsers.append({
-                "nickname": u.nickname,
-                "ident": u.username,
-                "host": u.hostname,
-                "gecos": u.realname,
-                "ip": u.ip,
-                "server": u.server,
-                "secure": u.socket.secure,
-                "mode": modes,
-                "channels": channels,
-                "signon": epoch(u.signon),
-                "ts": epoch(u.nickTime)
-            })
         self.burstStatus.append("burst-recv")
         self.burstComplete = True
         
@@ -745,6 +716,14 @@ class ServerProtocol(AMP):
         for server in linkedservers:
             if server["name"] in self.ircd.servers:
                 raise ServerAlreadyConnected ("A server connected to the remote network is already connected to this network.")
+        # Since user and channel data should have been filtered/processed on burst by the receiving server before being broadcast,
+        # raise an error if any user data is inconsistent
+        # Nickname collision kills must have occurred before notification of the new server, so any problem here indicates that a
+        # desyncing of user data has occurred
+        for u in users:
+            if u["nickname"] in self.ircd.users:
+                raise RemoteDataInconsistent ("A user on a connecting remote server matches a user here.")
+        
         # Set up the new server(s)
         newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount + 1)
         for server in self.ircd.servers.itervalues():
@@ -765,7 +744,7 @@ class ServerProtocol(AMP):
         nextServer = newServer.nearHop
         while nextServer != self.ircd.name:
             nextServerPtr = self.ircd.servers[nextServer]
-            for servname in remoteLinkedServers.iterkeys():
+            for servname in remoteLinkedServers:
                 nextServerPtr.remoteServers.append(servname)
             nextServer = nextServerPtr.nearHop
         for server in self.ircd.servers.itervalues():
@@ -775,7 +754,8 @@ class ServerProtocol(AMP):
                 server.callRemote(AddNewServer, name=name, description=description, hopcount=hopcount+1, nearhop=nearhop, linkedservers=linkedservers, users=users, channels=channels)
         if not users and not channels:
             return {}
-        # Add new users
+        
+        # Add new users to list
         for u in users:
             newUser = RemoteUser(self.ircd, u["nickname"], u["ident"], u["host"], u["gecos"], u["ip"], u["server"], u["secure"], datetime.utcfromtimestamp(u["signon"]), datetime.utcfromtimestamp(u["ts"]))
             for chan in u["channels"]:
@@ -793,18 +773,12 @@ class ServerProtocol(AMP):
                 else:
                     newuser.mode[mode] = param
             self.ircd.users[newUser.nickname] = newUser
+        # Add new channels and merge channel data
         for c in channels:
-            if c["name"] not in self.ircd.channels:
-                cdata = IRCChannel(self.ircd, c["name"])
-                self.ircd.channels[cdata.name] = cdata
-            else:
-                cdata = self.ircd.channels[c["name"]]
-            if c["topic"] != cdata.topic or c["topicsetter"] != cdata.topicSetter:
-                cdata.setTopic(c["topic"], c["topicsetter"])
-            cdata.topicTime = datatime.utcfromtimestamp(c["topicts"])
-            modeChanges = []
-            oldModes = cdata.mode
-            cdata.mode = {}
+            cdata = IRCChannel(self.ircd, c["name"])
+            cdata.topic = c["topic"]
+            cdata.topicSetter = c["topicsetter"]
+            cdata.topicTime = datetime.utcfromtimestamp(c["topicts"])
             for modedata in c["mode"]:
                 mode = modedata[0]
                 param = modedata[1:]
@@ -817,66 +791,76 @@ class ServerProtocol(AMP):
                     cdata.mode[mode] = None
                 else:
                     cdata.mode[mode] = param
-            for mode, param in oldModes.iteritems():
-                modetype = self.ircd.channel_mode_type[mode]
-                if modetype == 0:
-                    if mode not in cdata.mode:
-                        for item in param:
-                            modeChanges.append([False, mode, item])
-                    else:
-                        for item in param:
-                            if param not in cdata.mode[mode]:
-                                modeChanges.append([False, mode, item])
-                else:
-                    if mode not in cdata.mode:
-                        if modetype == 1:
-                            modeChanges.append([False, mode, param])
-                        else:
-                            modeChanges.append([False, mode, None])
-            for mode, param in cdata.mode:
-                modetype = self.ircd.channel_mode_type[mode]
-                if modetype == 0:
-                    if mode not in oldModes:
-                        for item in param:
-                            modeChanges.append([True, mode, item])
-                    else:
-                        for item in param:
-                            if param not in oldModes[mode]:
-                                modeChanges.append([True, mode, item])
-                else:
-                    if mode not in oldModes:
-                        modeChanges.append([True, mode, param])
-                    elif oldModes[mode] != param:
-                        modeChanges.append([True, mode, param])
             chants = datetime.utcfromtimestamp(c["ts"])
             for nick in c["users"]:
-                if nick in self.ircd.users:
-                    udata = self.ircd.users[nick]
-                    cdata.users.add(udata)
-                    if chants <= cdata.created:
-                        for status in udata.channels[cdata.name]["status"]:
-                            modeChanges.append([True, status, udata.nickname])
+                udata = self.ircd.users[nick]
+                cdata.users.add(udata)
+                if chants <= cdata.created:
+                    for status in udata.channels[cdata.name]["status"]:
+                        modeChanges.append([True, status, udata.nickname])
+                else:
+                    udata.channels[cdata.name]["status"] = ""
+            if cdata.name in self.ircd.channels:
+                oldcdata = self.ircd.channels[cdata.name]
+                if cdata.topic != oldcdata.topic:
+                    for u in oldcdata.users:
+                        if u.server == self.ircd.name: # local users only; remote users will get notified by their respective servers
+                            user.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name)
+                modeDisplay = []
+                for mode, param in oldcdata.mode.iteritems():
+                    modetype = self.ircd.channel_mode_type[mode]
+                    if mode not in cdata.mode:
+                        if modetype == 0:
+                            for item in param:
+                                modeDisplay.append([False, mode, item])
+                        else:
+                            modeDisplay.append([False, mode, param])
+                    elif modetype == 0:
+                        for item in param:
+                            if item not in cdata.mode[mode]:
+                                modeDisplay.append([False, mode, item])
+                for mode, param in cdata.mode.iteritems():
+                    modetype = self.ircd.channel_mode_type[mode]
+                    if mode not in oldcdata.mode:
+                        if modetype == 0:
+                            for item in param:
+                                modeDisplay.append([True, mode, item])
+                        else:
+                            modeDisplay.append([True, mode, param])
+                    elif modetype == 0:
+                        for item in param:
+                            if item not in oldcdata.mode[mode]:
+                                modeDisplay.append([True, mode, item])
                     else:
-                        udata.channels[cdata.name]["status"] = ""
-            if modeChanges:
-                adding = None
-                modes = []
-                params = []
-                for change in modeChanges:
-                    if change[0] and adding != "+":
-                        modes.append("+")
-                        adding = "+"
-                    elif not change[0] and adding != "-":
-                        modes.append("-")
-                        adding = "-"
-                    modes.append(change[1])
-                    if change[2] is not None:
-                        params.append(change[2])
-                if params:
-                    modestr = "{} {}".format("".join(modes), " ".join(params))
-                for user in cdata.users:
-                    if user.nickname in self.ircd.localusers: # Don't send this message to users on remote servers who will get this message anyway
-                        user.sendMessage("MODE", modestr, to=cdata.name)
+                        if param != oldcdata.mode[mode]:
+                            modeDisplay.append([True, mode, param])
+                if modeDisplay:
+                    adding = None
+                    modeString = []
+                    params = []
+                    for mode in modeDisplay:
+                        if mode[0] and adding is not True:
+                            adding = True
+                            modeString.append("+")
+                        elif not mode[0] and adding is not False:
+                            adding = False
+                            modeString.append("-")
+                        modeString.append(mode[1])
+                        if mode[2] is not None:
+                            params.append(mode[2])
+                    modeLine = "{} {}".format("".join(modeString), " ".join(params))
+                    for u in oldcdata.users:
+                        if u.server == self.ircd.name:
+                            u.sendMessage("MODE", modeLine, to=cdata.name)
+                for u in cdata.users:
+                    if u not in oldcdata.users:
+                        self.justSendJoin(u, oldcdata)
+                        chanstatus = u.channels[cdata.name]["status"]
+                        if chanstatus:
+                            for user in oldcdata.users:
+                                if user.server == self.ircd.name: # local users only; remote users will get notified by their respective servers
+                                    user.sendMessage("MODE", "+{} {}".format(chanstatus, " ".join([u.nickname for i in range(len(chanstatus))])), to=cdata.name)
+            self.ircd.channels[cdata.name] = cdata
         return {}
     AddNewServer.responder(newServer)
     
