@@ -327,6 +327,7 @@ class IRCD(Factory):
             protocol.burstStatus.append("handshake-send")
         for server in self.servconfig["serverlink_autoconnect"]:
             if server not in self.servers and server in self.servconfig["serverlinks"]:
+                log.msg("Initiating autoconnect to server {}".format(server))
                 servinfo = self.servconfig["serverlinks"][server]
                 if "ip" not in servinfo or "port" not in servinfo:
                     continue
