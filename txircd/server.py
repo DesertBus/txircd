@@ -478,6 +478,7 @@ class ServerProtocol(AMP):
                         cdata["users"].append(u.nickname)
                     propChannels.append(cdata)
                 elif channel.created < mergeChanData.created: # theirs is older, so discard any changes ours made
+                    mergeChanData.created = channel.created # Set the proper timestamp
                     # Topic: If the contents and setter are the same, adopt the remote timestamp; otherwise, adopt the
                     # remote topic and alert users of the change
                     if channel.topic == mergeChanData.topic and channel.topicSetter == mergeChanData.topicSetter:
