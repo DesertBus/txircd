@@ -874,7 +874,7 @@ class ServerProtocol(AMP):
             raise ServerNotConnected ("The server splitting from the network was not connected to the network.")
         servinfo = self.ircd.servers[name]
         leavingServers = servinfo.remoteServers
-        leavingServers.append(name)
+        leavingServers.add(name)
         userList = self.ircd.users.values()
         for user in userList:
             if user.server in leavingServers:
