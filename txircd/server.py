@@ -881,15 +881,13 @@ class ServerProtocol(AMP):
                 user.disconnect("Server disconnected from network")
         for servname in leavingServers:
             del self.ircd.servers[servname]
+        for action in self.ircd.actions["netsplit"]:
+            action()
         return {}
     DisconnectServer.responder(splitServer)
     
     def connectionLost(self, reason):
-        # TODO: remove all data from this server originating from remote
-        if self.name and self.name in self.ircd.servers:
-            del self.ircd.servers[self.name]
-        for action in self.ircd.actions["netsplit"]:
-            action()
+        self.splitServer(self.name)
         AMP.connectionLost(self, reason)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
