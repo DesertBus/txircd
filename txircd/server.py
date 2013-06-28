@@ -793,6 +793,8 @@ class ServerProtocol(AMP):
                 else:
                     cdata.mode[mode] = param
             cdata.created = datetime.utcfromtimestamp(c["ts"])
+            for u in c["users"]:
+                cdata.users.add(self.ircd.users[u])
             if cdata.name in self.ircd.channels:
                 oldcdata = self.ircd.channels[cdata.name]
                 if cdata.topic != oldcdata.topic:
