@@ -727,6 +727,8 @@ class ServerProtocol(AMP):
         
         # Set up the new server(s)
         newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount + 1)
+        nearHop = self.ircd.servers[nearhop]
+        nearHop.remoteServers.add(name)
         for server in self.ircd.servers.itervalues():
             if nearhop in server.remoteServers:
                 server.remoteServers.add(name)
