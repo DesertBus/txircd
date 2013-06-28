@@ -791,7 +791,7 @@ class ServerProtocol(AMP):
                     cdata.mode[mode] = None
                 else:
                     cdata.mode[mode] = param
-            chants = datetime.utcfromtimestamp(c["ts"])
+            cdata.created = datetime.utcfromtimestamp(c["ts"])
             for nick in c["users"]:
                 udata = self.ircd.users[nick]
                 cdata.users.add(udata)
@@ -834,6 +834,22 @@ class ServerProtocol(AMP):
                     else:
                         if param != oldcdata.mode[mode]:
                             modeDisplay.append([True, mode, param])
+                if cdata.created < oldcdata.created:
+                    for user in oldcdata.users:
+                        chanstatus = user.channels[oldcdata.name]["status"]
+                        if chanstatus:
+                            user.channels[oldcdata.name]["status"] = ""
+                            for mode in chanstatus:
+                                modeDisplay.append([False, mode, user.nickname])
+                for u in cdata.users:
+                    if u not in oldcdata.users:
+                        self.justSendJoin(u, oldcdata)
+                        if cdata.created <= oldcdata.created:
+                            chanstatus = u.channels[cdata.name]["status"]
+                            for mode in chanstatus:
+                                modeDisplay.append([True, mode, u.nickname])
+                        else:
+                            u.channels[cdata.name]["status"] = ""
                 if modeDisplay:
                     adding = None
                     modeString = []
@@ -852,14 +868,6 @@ class ServerProtocol(AMP):
                     for u in oldcdata.users:
                         if u.server == self.ircd.name:
                             u.sendMessage("MODE", modeLine, to=cdata.name)
-                for u in cdata.users:
-                    if u not in oldcdata.users:
-                        self.justSendJoin(u, oldcdata)
-                        chanstatus = u.channels[cdata.name]["status"]
-                        if chanstatus:
-                            for user in oldcdata.users:
-                                if user.server == self.ircd.name: # local users only; remote users will get notified by their respective servers
-                                    user.sendMessage("MODE", "+{} {}".format(chanstatus, " ".join([u.nickname for i in range(len(chanstatus))])), to=cdata.name)
             self.ircd.channels[cdata.name] = cdata
         return {}
     AddNewServer.responder(newServer)
