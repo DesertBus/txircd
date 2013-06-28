@@ -798,7 +798,7 @@ class ServerProtocol(AMP):
                 if cdata.topic != oldcdata.topic:
                     for u in oldcdata.users:
                         if u.server == self.ircd.name: # local users only; remote users will get notified by their respective servers
-                            user.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name)
+                            u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name)
                 modeDisplay = []
                 for mode, param in oldcdata.mode.iteritems():
                     modetype = self.ircd.channel_mode_type[mode]
