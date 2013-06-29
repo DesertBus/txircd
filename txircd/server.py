@@ -60,9 +60,6 @@ class RemoteUser(object):
     def disconnect(self, reason):
         pass # TODO
     
-    def connectionLost(self, reason):
-        pass # TODO
-    
     def handleCommand(self, command, prefix, params):
         pass # TODO
     

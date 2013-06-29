@@ -61,9 +61,6 @@ class Service(object):
     def disconnect(self, reason):
         pass
     
-    def connectionLost(self, reason):
-        pass
-    
     def sendMessage(self, command, *parameter_list, **kw):
         if command == "PRIVMSG" and "prefix" in kw:
             nick = kw["prefix"][0:kw["prefix"].find("!")]
