@@ -25,7 +25,7 @@ class NickCommand(Command):
             return {}
         if params[0] == user.nickname:
             return {}
-        if params[0] in self.ircd.users and (user.registered > 0 or irc_lower(params[0]) != irc_lower(user.nickname)):
+        if params[0] in self.ircd.users and (user.nickname and irc_lower(params[0]) != irc_lower(user.nickname)):
             user.sendMessage(irc.ERR_NICKNAMEINUSE, self.ircd.users[params[0]].nickname, ":Nickname is already in use")
             return {}
         return {
