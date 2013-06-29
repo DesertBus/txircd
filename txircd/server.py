@@ -385,7 +385,7 @@ class ServerProtocol(AMP):
                         if udata["nickname"] in channel[0].cache["mergingusers"]:
                             channel[0].cache["mergingusers"].remove(udata["nickname"])
                     continue # skip adding the remote user since they'll die on the remote server
-            newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], self.name, udata["secure"], datetime.utcfromtimestamp(udata["signon"]), datetime.utcfromtimestamp(udata["ts"]))
+            newUser = RemoteUser(self.ircd, udata["nickname"], udata["ident"], udata["host"], udata["gecos"], udata["ip"], udata["server"], udata["secure"], datetime.utcfromtimestamp(udata["signon"]), datetime.utcfromtimestamp(udata["ts"]))
             for mode in udata["mode"]:
                 modetype = self.ircd.user_mode_type[mode[0]]
                 if modetype == 0:
