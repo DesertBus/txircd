@@ -51,12 +51,6 @@ class RemoteUser(object):
         self.cache = {}
         self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
     
-    def register(self):
-        pass
-    
-    def send_isupport(self):
-        pass # TODO?
-    
     def disconnect(self, reason):
         quitdest = set()
         leavingChannels = self.channels.keys()
@@ -109,15 +103,6 @@ class RemoteUser(object):
                 if param:
                     params.append(self.ircd.user_modes[modetype][mode].showParam(user, self, param))
         return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
-    
-    def send_motd(self):
-        pass # TODO?
-    
-    def send_lusers(self):
-        pass # TODO?
-    
-    def report_names(self, channel):
-        pass # TODO?
     
     def join(self, channel):
         pass # TODO
