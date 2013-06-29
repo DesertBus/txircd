@@ -23,7 +23,7 @@ class WhoisCommand(Command):
                     chandisplay.append("{}{}".format(status, cdata.name))
             if chandisplay:
                 user.sendMessage(irc.RPL_WHOISCHANNELS, u.nickname, ":{}".format(" ".join(chandisplay)))
-            user.sendMessage(irc.RPL_WHOISSERVER, u.nickname, u.server, ":{}".format(self.ircd.servers[u.server].description))
+            user.sendMessage(irc.RPL_WHOISSERVER, u.nickname, u.server, ":{}".format(self.ircd.servconfig["server_description"] if u.server == self.ircd.name else self.ircd.servers[u.server].description))
             if "accountname" in u.metadata["ext"]:
                 user.sendMessage(irc.RPL_WHOISACCOUNT, u.nickname, u.metadata["ext"]["accountname"], ":is logged in as")
             if u.socket.secure:
