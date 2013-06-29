@@ -58,13 +58,21 @@ class RemoteUser(object):
         pass # TODO?
     
     def disconnect(self, reason):
-        pass # TODO
-    
-    def handleCommand(self, command, prefix, params):
-        pass # TODO
-    
-    def commandExtraHook(self, command, data):
-        pass # TODO
+        quitdest = set()
+        leavingChannels = self.channels.keys()
+        for channel in leavingChannels:
+            cdata = self.ircd.channels[channel]
+            del self.channels[cdata.name]
+            cdata.users.remove(self)
+            if not cdata.users:
+                for modfunc in self.ircd.actions["chandestroy"]:
+                    modfunc(channel)
+                del self.ircd.channels[cdata.name]
+            for u in cdata.users:
+                quitdest.add(u)
+        del self.ircd.users[self.nickname]
+        for user in quitdest:
+            user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
     
     def sendMessage(self, command, *parameter_list, **kw):
         pass # TODO
