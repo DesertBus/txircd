@@ -618,6 +618,7 @@ class ServerProtocol(AMP):
             for servname in server["remoteservers"]:
                 newServer.remoteServers.add(servname)
             self.ircd.servers[server["name"]] = newServer
+            self.remoteServers.add(server["name"])
         for action in self.ircd.actions["netmerge"]:
             action()
         return {}
