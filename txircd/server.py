@@ -78,7 +78,7 @@ class RemoteUser(object):
             action(self, namespace, key, oldValue, value)
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(SetMetadata, user=self.nickname, namespace=namespace, key=key, value=value)
+                server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
         oldValue = self.metadata[namespace][key]
@@ -87,7 +87,7 @@ class RemoteUser(object):
             action(self, namespace, key, oldValue, "")
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(SetMetadata, user=self.nickname, namespace=namespace, key=key, value="")
+                server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value="")
     
     def prefix(self):
         return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
@@ -722,7 +722,7 @@ class ServerProtocol(AMP):
         for user in self.ircd.users.itervalues():
             for namespace, data in user.metadata.iteritems():
                 for key, value in data.iteritems():
-                    self.callRemote(SetMetadata, user=user.nickname, namespace=namespace, key=key, value=value)
+                    self.callRemote(SetMetadata, target=user.nickname, namespace=namespace, key=key, value=value)
         self.burstStatus.append("burst-send")
     
     def newServer(self, name, description, hopcount, nearhop, linkedservers, users, channels):
