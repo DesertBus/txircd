@@ -72,10 +72,22 @@ class RemoteUser(object):
         pass # TODO
     
     def setMetadata(self, namespace, key, value):
-        pass # TODO
+        oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
+        self.metadata[namespace][key] = value
+        for action in self.ircd.actions["metadataupdate"]:
+            action(self, namespace, key, oldValue, value)
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(SetMetadata, user=self.nickname, namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
-        pass # TODO
+        oldValue = self.metadata[namespace][key]
+        del self.metadata[namespace][key]
+        for action in self.ircd.actions["metadataupdate"]:
+            action(self, namespace, key, oldValue, "")
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(SetMetadata, user=self.nickname, namespace=namespace, key=key, value="")
     
     def prefix(self):
         return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
@@ -163,6 +175,9 @@ class ServerNotConnected(Exception):
     pass
 
 class RemoteDataInconsistent(Exception):
+    pass
+
+class NoSuchUser(Exception):
     pass
 
 # TODO: errbacks to handle all of these
@@ -280,6 +295,18 @@ class DisconnectServer(Command):
     }
     fatalErrors = {
         ServerNotConnected: "NO_SUCH_SERVER"
+    }
+    requiresAnswer = False
+
+class SetMetadata(Command):
+    arguments = [
+        ("user", String()),
+        ("namespace", String()),
+        ("key", String()),
+        ("value", String())
+    ]
+    errors = {
+        NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
 
@@ -695,6 +722,10 @@ class ServerProtocol(AMP):
                 "remoteservers": server.remoteServers
             })
         self.callRemote(BurstData, users=userList, channels=channelList, servers=serverList)
+        for user in self.ircd.users.itervalues():
+            for namespace, data in user.metadata.iteritems():
+                for key, value in data:
+                    self.callRemote(SetMetadata, user=user.nickname, namespace=namespace, key=key, value=value)
         self.burstStatus.append("burst-send")
     
     def newServer(self, name, description, hopcount, nearhop, linkedservers, users, channels):
@@ -887,6 +918,17 @@ class ServerProtocol(AMP):
     def connectionLost(self, reason):
         self.splitServer(self.name)
         AMP.connectionLost(self, reason)
+    
+    def setMetadata(self, user, namespace, key, value):
+        if user not in self.ircd.users:
+            raise NoSuchUser ("The specified user is not connected to the network.")
+        udata = self.ircd.users[user]
+        if value and (key not in udata.metadata[namespace] or value != udata.metadata[namespace][key]):
+            udata.setMetadata(namespace, key, value)
+        elif not value and key in udata.metadata[namespace]:
+            udata.delMetadata(namespace, key)
+        return {}
+    SetMetadata.responder(setMetadata)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
