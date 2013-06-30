@@ -1,4 +1,5 @@
 from twisted.words.protocols import irc
+from txircd.server import SetMetadata
 from txircd.utils import now
 from copy import deepcopy
 

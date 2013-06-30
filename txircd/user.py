@@ -3,6 +3,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
+from txircd.server import SetMetadata
 from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
 import socket, hashlib
 
