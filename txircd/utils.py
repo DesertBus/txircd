@@ -1,4 +1,3 @@
-from twisted.internet import reactor
 from base64 import b64encode, b64decode
 from collections import MutableMapping
 from Crypto.Hash import MD5, SHA, SHA224, SHA256, SHA384, SHA512
