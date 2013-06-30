@@ -172,9 +172,15 @@ class IRCChannel(object):
         self.metadata[namespace][key] = value
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, value)
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(SetMetadata, target=self.name, namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
         oldValue = self.metadata[namespace][key]
         del self.metadata[namespace][key]
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, "")
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(SetMetadata, target=self.name, namespace=namespace, key=key, value="")

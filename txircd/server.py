@@ -177,7 +177,7 @@ class ServerNotConnected(Exception):
 class RemoteDataInconsistent(Exception):
     pass
 
-class NoSuchUser(Exception):
+class NoSuchTarget(Exception):
     pass
 
 # TODO: errbacks to handle all of these
@@ -300,13 +300,13 @@ class DisconnectServer(Command):
 
 class SetMetadata(Command):
     arguments = [
-        ("user", String()),
+        ("target", String()),
         ("namespace", String()),
         ("key", String()),
         ("value", String())
     ]
     errors = {
-        NoSuchUser: "NO_SUCH_USER"
+        NoSuchTarget: "NO_SUCH_TARGET"
     }
     requiresAnswer = False
 
@@ -724,7 +724,7 @@ class ServerProtocol(AMP):
         self.callRemote(BurstData, users=userList, channels=channelList, servers=serverList)
         for user in self.ircd.users.itervalues():
             for namespace, data in user.metadata.iteritems():
-                for key, value in data:
+                for key, value in data.iteritems():
                     self.callRemote(SetMetadata, user=user.nickname, namespace=namespace, key=key, value=value)
         self.burstStatus.append("burst-send")
     
@@ -919,14 +919,17 @@ class ServerProtocol(AMP):
         self.splitServer(self.name)
         AMP.connectionLost(self, reason)
     
-    def setMetadata(self, user, namespace, key, value):
-        if user not in self.ircd.users:
-            raise NoSuchUser ("The specified user is not connected to the network.")
-        udata = self.ircd.users[user]
-        if value and (key not in udata.metadata[namespace] or value != udata.metadata[namespace][key]):
-            udata.setMetadata(namespace, key, value)
-        elif not value and key in udata.metadata[namespace]:
-            udata.delMetadata(namespace, key)
+    def setMetadata(self, target, namespace, key, value):
+        if target in self.ircd.users:
+            data = self.ircd.users[target]
+        elif target in self.ircd.channels:
+            data = self.ircd.channels[target]
+        else:
+            raise NoSuchTarget ("The specified user or channel is not connected to the network.")
+        if value and (key not in data.metadata[namespace] or value != data.metadata[namespace][key]):
+            data.setMetadata(namespace, key, value)
+        elif not value and key in data.metadata[namespace]:
+            data.delMetadata(namespace, key)
         return {}
     SetMetadata.responder(setMetadata)
 

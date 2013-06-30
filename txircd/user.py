@@ -223,7 +223,7 @@ class IRCUser(object):
             modfunc(self, namespace, key, oldValue, value)
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(SetMetadata, user=self.nickname, namespace=namespace, key=key, value=value)
+                server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
         oldValue = self.metadata[namespace][key]
@@ -232,7 +232,7 @@ class IRCUser(object):
             modfunc(self, namespace, key, oldValue, "")
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(SetMetadata, user=self.nickname, namespace=namespace, key=key, value="")
+                server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value="")
     
     #=====================
     #== Utility Methods ==
