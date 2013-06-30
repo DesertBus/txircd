@@ -723,6 +723,10 @@ class ServerProtocol(AMP):
             for namespace, data in user.metadata.iteritems():
                 for key, value in data.iteritems():
                     self.callRemote(SetMetadata, target=user.nickname, namespace=namespace, key=key, value=value)
+        for channel in self.ircd.channels.itervalues():
+            for namespace, data in channel.metadata.iteritems():
+                for key, value in data.iteritems():
+                    self.callRemote(SetMetadata, target=channel.name, namespace=namespace, key=key, value=value)
         self.burstStatus.append("burst-send")
     
     def newServer(self, name, description, hopcount, nearhop, linkedservers, users, channels):
