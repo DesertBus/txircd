@@ -1,5 +1,4 @@
 from twisted.words.protocols import irc
-from txircd.server import SetMetadata
 from txircd.utils import now
 from copy import deepcopy
 
@@ -173,6 +172,7 @@ class IRCChannel(object):
         self.metadata[namespace][key] = value
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, value)
+        from txircd.server import SetMetadata # This import is moved to here to alleviate issues with circular dependencies
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
                 server.callRemote(SetMetadata, target=self.name, namespace=namespace, key=key, value=value)
@@ -182,6 +182,7 @@ class IRCChannel(object):
         del self.metadata[namespace][key]
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, "")
+        from txircd.server import SetMetadata
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
                 server.callRemote(SetMetadata, target=self.name, namespace=namespace, key=key, value="")
