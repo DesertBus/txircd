@@ -229,9 +229,6 @@ class UserAlreadyConnected(Exception):
 class NoSuchUser(Exception):
     pass
 
-class NoSuchChannel(Exception):
-    pass
-
 # TODO: errbacks to handle all of these
 
 
@@ -407,8 +404,7 @@ class PartChannel(Command):
     ]
     errors = {
         NotYetBursted: "NOT_YET_BURSTED",
-        NoSuchUser: "NO_SUCH_USER",
-        NoSuchChannel: "NO_SUCH_CHANNEL"
+        NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
 
@@ -1082,7 +1078,7 @@ class ServerProtocol(AMP):
         if nick not in self.ircd.users:
             raise NoSuchUser ("The given user is not connected to the network.")
         if channel not in self.ircd.channels:
-            raise NoSuchChannel ("The given channel does not exist.")
+            return {} # If the channel is already destroyed, raising may be from a broadcast throwback
         user = self.ircd.users[nick]
         chan = self.ircd.channels[channel]
         user.part(chan, reason)
