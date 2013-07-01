@@ -272,7 +272,7 @@ class NSLogoutCommand(Command):
     
     def processParams(self, user, params):
         if "accountid" not in user.metadata["ext"]:
-            user.sendMessage("NOTICE", ":You must be logged in to log out!", prefix=self.nickserv.prefix())
+            user.sendMessage("NOTICE", ":You're already logged out.", prefix=self.nickserv.prefix())
             return {}
         return {
             "user": user
