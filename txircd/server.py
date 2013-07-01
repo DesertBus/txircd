@@ -180,6 +180,9 @@ class RemoteDataInconsistent(Exception):
 class NoSuchTarget(Exception):
     pass
 
+class UserAlreadyConnected(Exception):
+    pass
+
 # TODO: errbacks to handle all of these
 
 
@@ -304,6 +307,24 @@ class SetMetadata(Command):
     ]
     errors = {
         NoSuchTarget: "NO_SUCH_TARGET"
+    }
+    requiresAnswer = False
+
+class ConnectUser(Command):
+    arguments = [
+        ("nick", String()),
+        ("ident", String()),
+        ("host", String()),
+        ("gecos", String()),
+        ("ip", String()),
+        ("server", String()),
+        ("secure", Boolean()),
+        ("signon", Integer()),
+        ("nickts", Integer())
+    ]
+    errors = {
+        NotYetBursted: "NOT_YET_BURSTED",
+        UserAlreadyConnected: "USER_ALREADY_CONNECTED"
     }
     requiresAnswer = False
 
@@ -931,6 +952,18 @@ class ServerProtocol(AMP):
             data.delMetadata(namespace, key)
         return {}
     SetMetadata.responder(setMetadata)
+    
+    def addUser(self, nick, ident, host, gecos, ip, server, secure, signon, nickts):
+        if not self.burstComplete:
+            raise NotYetBursted ("The burst for this link has not yet been completed.")
+        if nick in self.ircd.users:
+            raise UserAlreadyConnected ("The user is already connected to the network.")
+        self.ircd.users[nick] = RemoteUser(self.ircd, nick, ident, host, gecos, ip, server, secure, datetime.utcfromtimestamp(signon), datetime.utcfromtimestamp(nickts))
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                server.callRemote(ConnectUser, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
+        return {}
+    ConnectUser.responder(addUser)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received

@@ -3,7 +3,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
-from txircd.server import SetMetadata
+from txircd.server import ConnectUser, SetMetadata
 from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
 import socket, hashlib
 
@@ -78,6 +78,11 @@ class IRCUser(object):
         # Add self to user list
         self.ircd.users[self.nickname] = self
         self.ircd.localusers[self.nickname] = self
+        
+        # Send notification of connection to other servers
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(ConnectUser, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=epoch(self.signon), nickts=epoch(self.nicktime))
         
         # Send all those lovely join messages
         chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
