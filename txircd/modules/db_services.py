@@ -1482,9 +1482,7 @@ class Spawner(object):
             c = self.ircd.channels[channel]
             status = data["status"]
             if status:
-                for u in c.users:
-                    u.sendMessage("MODE", "-{} {}".format(status, " ".join([user.nickname for i in status])), to=c.name, prefix=self.chanserv.prefix())
-                data["status"] = ""
+                c.setMode(None, "-{}".format(status), [user.nickname for i in range(len(status))], self.chanserv.prefix())
     
     def promote(self, user, channel, keepOldStatus=False):
         if channel.name in self.chanserv.cache["registered"]:
@@ -1501,33 +1499,14 @@ class Spawner(object):
                         flags.add(flag)
             if keepOldStatus:
                 for flag in user.status(channel.name):
-                    try:
-                        flags.remove(flag)
-                    except KeyError:
-                        pass
+                    flags.discard(flag)
             else:
                 userStatus = user.status(channel.name)
                 if userStatus:
-                    modeMsg = "-{} {}".format(userStatus, " ".join([user.nickname for i in userStatus]))
-                    for u in channel.users:
-                        u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
-                    user.channels[channel.name]["status"] = ""
+                    channel.setMode(None, "-{}".format(userStatus), [user.nickname for i in range(len(userStatus))], self.chanserv.prefix())
             
             if flags:
-                for flag in flags:
-                    currentStatus = user.channels[channel.name]["status"]
-                    statusList = list(currentStatus)
-                    for index, statusLevel in enumerate(currentStatus):
-                        if self.ircd.prefixes[statusLevel][1] < self.ircd.prefixes[flag][1]:
-                            statusList.insert(index, flag)
-                            break
-                    if flag not in statusList:
-                        statusList.append(flag)
-                    user.channels[channel.name]["status"] = "".join(statusList)
-                
-                modeMsg = "+{} {}".format("".join(flags), " ".join([user.nickname for i in flags]))
-                for u in channel.users:
-                    u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
+                channel.setMode(None, "+{}".format("".join(flags)), [user.nickname for i in range(len(flags))], self.chanserv.prefix())
     
     def addCert(self, user, certfp):
         accountid = user.metadata["ext"]["accountid"]
