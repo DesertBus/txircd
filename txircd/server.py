@@ -2,7 +2,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Factory, ClientFactory
 from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
 from txircd.channel import IRCChannel
-from txircd.utils import CaseInsensitiveDictionary, epoch, now
+from txircd.utils import CaseInsensitiveDictionary, epoch, irc_lower, now
 from datetime import datetime
 
 protocol_version = 200 # Protocol version 0.2.0
@@ -120,10 +120,50 @@ class RemoteUser(object):
         return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
     
     def join(self, channel):
-        pass # TODO
+        if channel.name in self.channels:
+            return
+        if channel.name not in self.ircd.channels:
+            self.ircd.channels[channel.name] = channel
+            for modfunc in self.ircd.actions["chancreate"]:
+                modfunc(channel)
+        hostmask = irc_lower(self.prefix())
+        self.channels[channel.name] = {"status": ""}
+        channel.users.add(self)
+        joinShowUsers = set(channel.users) # copy the channel.users set to prevent accidental modification of the users list
+        tryagain = []
+        for modfunc in self.ircd.actions["joinmessage"]:
+            result = modfunc(channel, self, joinShowUsers)
+            if result == "again":
+                tryagain.append(modfunc)
+            else:
+                joinShowUsers = result
+        for modfunc in tryagain:
+            joinShowUsers = modfunc(channel, self, joinShowUsers)
+        for u in joinShowUsers:
+            u.sendMessage("JOIN", to=channel.name, prefix=self.prefix())
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(JoinChannel, channel=channel.name, nick=self.nickname)
+        for modfunc in self.ircd.actions["join"]:
+            modfunc(self, channel)
+    
+    def part(self, channel, reason):
+        if channel.name not in self.channels:
+            return
+        for u in channel.users:
+            u.sendMessage("PART", ":{}".format(reason), to=channel.name, prefix=self.prefix())
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(PartChannel, channel=channel.name, nick=self.nickname, reason=reason)
+        self.leave(channel)
     
     def leave(self, channel):
-        pass # TODO
+        del self.channels[channel.name]
+        channel.users.remove(self)
+        if not channel.users:
+            for modfunc in self.ircd.actions["chandestroy"]:
+                modfunc(channel)
+            del self.ircd.channels[channel.name]
     
     def nick(self, newNick):
         pass # TODO
@@ -184,6 +224,12 @@ class NoSuchTarget(Exception):
     pass
 
 class UserAlreadyConnected(Exception):
+    pass
+
+class NoSuchUser(Exception):
+    pass
+
+class NoSuchChannel(Exception):
     pass
 
 # TODO: errbacks to handle all of these
@@ -339,6 +385,30 @@ class RemoveUser(Command):
     ]
     errors = {
         NotYetBursted: "NOT_YET_BURSTED"
+    }
+    requiresAnswer = False
+
+class JoinChannel(Command):
+    arguments = [
+        ("channel", String()),
+        ("nick", String())
+    ]
+    errors = {
+        NotYetBursted: "NOT_YET_BURSTED",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class PartChannel(Command):
+    arguments = [
+        ("channel", String()),
+        ("nick", String()),
+        ("reason", String())
+    ]
+    errors = {
+        NotYetBursted: "NOT_YET_BURSTED",
+        NoSuchUser: "NO_SUCH_USER",
+        NoSuchChannel: "NO_SUCH_CHANNEL"
     }
     requiresAnswer = False
 
@@ -989,6 +1059,35 @@ class ServerProtocol(AMP):
             self.ircd.users[nick].disconnect(reason)
         return {}
     RemoveUser.responder(removeUser)
+    
+    def joinChannel(self, channel, nick):
+        if not self.burstComplete:
+            raise NotYetBursted ("The burst for this link has not yet been completed.")
+        if nick not in self.ircd.users:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        user = self.ircd.users[nick]
+        if channel in user.channels:
+            return {}
+        if channel in self.ircd.channels:
+            cdata = self.ircd.channels[channel]
+        else:
+            cdata = IRCChannel(self.ircd, channel)
+        user.join(cdata)
+        return {}
+    JoinChannel.responder(joinChannel)
+    
+    def partChannel(self, channel, nick, reason):
+        if not self.burstComplete:
+            raise NotYetBursted ("The burst for this link has not yet been completed.")
+        if nick not in self.ircd.users:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        if channel not in self.ircd.channels:
+            raise NoSuchChannel ("The given channel does not exist.")
+        user = self.ircd.users[nick]
+        chan = self.ircd.channels[channel]
+        user.part(chan, reason)
+        return {}
+    PartChannel.responder(partChannel)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
