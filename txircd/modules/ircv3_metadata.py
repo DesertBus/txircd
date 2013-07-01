@@ -163,7 +163,7 @@ class MetadataCommand(Command):
             namespaceList.append("private")
         for namespace in namespaceList:
             for key, value in target.metadata[namespace].iteritems():
-                user.sendMessage(irc.RPL_WHOISKEYVALUE, target.nickname, key, ":{}".format(value))
+                user.sendMessage(irc.RPL_WHOISKEYVALUE, target.nickname, "{}.{}".format(namespace, key), ":{}".format(value))
     
     def notify(self, target, namespace, key, oldValue, value):
         try:
