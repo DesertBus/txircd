@@ -1274,7 +1274,7 @@ class Spawner(object):
             failValidation()
     
     def loginUser(self, result, user):
-        user.setMetadata("ext", "accountid", result[0][0])
+        user.setMetadata("ext", "accountid", str(result[0][0]))
         user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
         if user in self.auth_timer:
             self.auth_timer[user].cancel()
@@ -1299,7 +1299,7 @@ class Spawner(object):
     
     def beginVerify(self, result, user):
         if result:
-            id = result[0][0]
+            id = str(result[0][0])
             if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
                 if user in self.auth_timer: # Clear the timer
                     self.auth_timer[user].cancel()
