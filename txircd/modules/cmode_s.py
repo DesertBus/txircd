@@ -17,6 +17,8 @@ class SecretMode(Mode):
     def listOutput(self, command, data):
         if command != "LIST":
             return data
+        if "cdata" not in data:
+            return data
         cdata = data["cdata"]
         if "s" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
             data["cdata"].clear()
