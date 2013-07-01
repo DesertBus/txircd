@@ -1046,9 +1046,9 @@ class ServerProtocol(AMP):
         if nick in self.ircd.users:
             raise UserAlreadyConnected ("The user is already connected to the network.")
         self.ircd.users[nick] = RemoteUser(self.ircd, nick, ident, host, gecos, ip, server, secure, datetime.utcfromtimestamp(signon), datetime.utcfromtimestamp(nickts))
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name and server != self:
-                server.callRemote(ConnectUser, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
+        for linkedServer in self.ircd.servers.itervalues():
+            if linkedServer.nearHop == self.ircd.name and linkedServer != self:
+                linkedServer.callRemote(ConnectUser, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
         return {}
     ConnectUser.responder(addUser)
     
