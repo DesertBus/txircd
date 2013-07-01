@@ -3,7 +3,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
-from txircd.server import ConnectUser, JoinChannel, PartChannel, RemoveUser, SetMetadata
+from txircd.server import ConnectUser, JoinChannel, PartChannel, RemoveUser, SetMetadata, SetMode
 from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
 import socket, hashlib
 
@@ -345,10 +345,17 @@ class IRCUser(object):
             modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
             if user:
                 self.sendMessage("MODE", modeLine, prefix=user.prefix())
+                lineSource = user.prefix()
             elif displayPrefix:
                 self.sendMessage("MODE", modeLine, prefix=displayPrefix)
+                lineSource = displayPrefix
             else: # display from this server
                 self.sendMessage("MODE", modeLine)
+                lineSource = self.ircd.name
+            
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name:
+                    server.callRemote(SetMode, target=self.nickname, source=lineSource, modestring="".join(modestring), params=showParams)
             return modeLine
         return ""
     

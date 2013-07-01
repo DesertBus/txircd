@@ -149,12 +149,20 @@ class IRCChannel(object):
             if user:
                 for u in self.users:
                     u.sendMessage("MODE", modeLine, to=self.name, prefix=user.prefix())
+                lineSource = user.prefix()
             elif displayPrefix:
                 for u in self.users:
                     u.sendMessage("MODE", modeLine, to=self.name, prefix=displayPrefix)
+                lineSource = displayPrefix
             else:
                 for u in self.users:
                     u.sendMessage("MODE", modeLine, to=self.name)
+                lineSource = self.ircd.name
+            
+            from txircd.server import SetMode
+            for servers in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name:
+                    server.callRemote(SetMode, target=self.name, source=lineSource, modestring="".join(modestring), params=showParams)
             return modeLine
         return ""
     

@@ -408,6 +408,20 @@ class PartChannel(Command):
     }
     requiresAnswer = False
 
+class SetMode(Command):
+    arguments = [
+        ("target", String()),
+        ("source", String()),
+        ("modestring", String()),
+        ("params", ListOf(String()))
+    ]
+    errors = {
+        NotYetBursted: "NOT_YET_BURSTED",
+        NoSuchTarget: "NO_SUCH_TARGET",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
 
 class ServerProtocol(AMP):
     def __init__(self, ircd):
@@ -1084,6 +1098,20 @@ class ServerProtocol(AMP):
         user.part(chan, reason)
         return {}
     PartChannel.responder(partChannel)
+    
+    def setMode(self, target, source, modestring, params):
+        if not self.burstComplete:
+            raise NotYetBursted ("The burst for this link has not yet been completed.")
+        if source not in self.ircd.users:
+            raise NoSuchUser ("The source user given is not on the network.")
+        if target in self.ircd.channels:
+            data = self.ircd.channels[target]
+        elif target in self.ircd.users:
+            data = self.ircd.users[target]
+        else:
+            raise NoSuchTarget ("The target given does not exist on the network.")
+        target.setMode(None, modestring, params, source)
+    SetMode.responder(setMode)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
