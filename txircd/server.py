@@ -67,6 +67,9 @@ class RemoteUser(object):
         del self.ircd.users[self.nickname]
         for user in quitdest:
             user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(RemoveUser, nick=self.nickname, reason=reason)
     
     def sendMessage(self, command, *parameter_list, **kw):
         pass # TODO
@@ -326,6 +329,16 @@ class ConnectUser(Command):
     errors = {
         NotYetBursted: "NOT_YET_BURSTED",
         UserAlreadyConnected: "USER_ALREADY_CONNECTED"
+    }
+    requiresAnswer = False
+
+class RemoveUser(Command):
+    arguments = [
+        ("nick", String()),
+        ("reason", String())
+    ]
+    errors = {
+        NotYetBursted: "NOT_YET_BURSTED"
     }
     requiresAnswer = False
 
@@ -968,6 +981,14 @@ class ServerProtocol(AMP):
                 server.callRemote(ConnectUser, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
         return {}
     ConnectUser.responder(addUser)
+    
+    def removeUser(self, nick, reason):
+        if not self.burstComplete:
+            raise NotYetBursted ("The burst for this link has not yet been completed.")
+        if nick in self.ircd.users: # If nick is not in self.ircd.users, we're fine; probably is a return from the broadcast
+            self.ircd.users[nick].disconnect(reason)
+        return {}
+    RemoveUser.responder(removeUser)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received

@@ -3,7 +3,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
-from txircd.server import ConnectUser, SetMetadata
+from txircd.server import ConnectUser, RemoveUser, SetMetadata
 from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
 import socket, hashlib
 
@@ -127,6 +127,9 @@ class IRCUser(object):
             del self.ircd.localusers[self.nickname]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name:
+                    server.callRemote(RemoveUser, nick=self.nickname, reason=reason)
         self.sendMessage("ERROR", ":Closing Link: {}@{} [{}]".format(self.username if self.username else "unknown", self.hostname, reason), to=None, prefix=None)
         self.socket.transport.loseConnection()
     
