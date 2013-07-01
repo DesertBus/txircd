@@ -1147,30 +1147,10 @@ class Spawner(object):
     
     def data_serialize(self):
         outputDict = {}
-        registeredChannels = self.chanserv.cache["registered"]._data
-        for chandata in registeredChannels.itervalues():
-            chandata["founder"] = int(chandata["founder"])
-            accessDict = chandata["access"]
-            for key, value in accessDict.iteritems():
-                try:
-                    newKey = int(key)
-                    del chandata["access"][key]
-                    chandata["access"][newKey] = value
-                except ValueError:
-                    pass
-        outputDict["registeredchannels"] = registeredChannels
+        outputDict["registeredchannels"] = self.chanserv.cache["registered"]._data
         if "auction" in self.bidserv.cache:
-            auctionDict = self.bidserv.cache["auction"]
-            auctionDict["item"] = int(auctionDict["item"])
-            auctionDict["highbidderid"] = int(auctionDict["highbidderid"])
-            for bid in auctionDict["bids"]:
-                bid["bidder"] = int(bid["bidder"])
-            outputDict["currentauction"] = auctionDict
-        certData = self.nickserv.cache["certfp"]
-        for userid, certlist in self.nickserv.cache["certfp"].iteritems():
-            del certData[userid]
-            certData[int(userid)] = certlist
-        outputDict["certfp"] = certData
+            outputDict["currentauction"] = self.bidserv.cache["auction"]
+        outputDict["certfp"] = self.nickserv.cache["certfp"]
         return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
     
     def data_unserialize(self, data):
