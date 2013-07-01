@@ -32,9 +32,9 @@ class MetadataCommand(Command):
                         if fnmatch("{}.{}".format(namespace, key), filter):
                             encounteredItem = True
                             if value:
-                                user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key), ":{}".format(value))
+                                user.sendMessage(irc.RPL_KEYVALUE, data["targetname"], "{}.{}".format(namespace, key), ":{}".format(value))
                             else:
-                                user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key))
+                                user.sendMessage(irc.RPL_KEYVALUE, data["targetname"], "{}.{}".format(namespace, key))
                 if encounteredItem:
                     user.sendMessage(irc.RPL_METADATAEND, ":End of metadata")
                 else:
@@ -45,9 +45,9 @@ class MetadataCommand(Command):
                     for key, value in target.metadata[namespace].iteritems():
                         encounteredItem = True
                         if value:
-                            user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key), ":{}".format(value))
+                            user.sendMessage(irc.RPL_KEYVALUE, data["targetname"], "{}.{}".format(namespace, key), ":{}".format(value))
                         else:
-                            user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key))
+                            user.sendMessage(irc.RPL_KEYVALUE, data["targetname"], "{}.{}".format(namespace, key))
                 if encounteredItem:
                     user.sendMessage(irc.RPL_METADATAEND, ":End of metadata")
                 else:
@@ -61,10 +61,10 @@ class MetadataCommand(Command):
             # whatever keys in the user-settable namespaces is a major problem. //EA
             if data["value"]:
                 target.setMetadata(namespace, key, data["value"])
-                user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key), ":{}".format(data["value"]))
+                user.sendMessage(irc.RPL_KEYVALUE, data["targetname"], "{}.{}".format(namespace, key), ":{}".format(data["value"]))
             else:
                 target.delMetadata(namespace, key)
-                user.sendMessage(irc.RPL_KEYVALUE, "{}.{}".format(namespace, key))
+                user.sendMessage(irc.RPL_KEYVALUE, data["targetname"], "{}.{}".format(namespace, key))
             user.sendMessage(irc.RPL_METADATAEND, ":end of metadata")
         elif subcmd == "CLEAR":
             for namespace in ["client", "user"]:
@@ -82,10 +82,13 @@ class MetadataCommand(Command):
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "METADATA", ":Not enough parameters")
             return {}
         target = None
+        targetname = None
         if params[0] in self.ircd.channels:
             target = self.ircd.channels[params[0]]
+            targetname = target.name
         elif params[0] in self.ircd.users:
             target = self.ircd.users[params[0]]
+            targetname = target.nickname
         else:
             user.sendMessage(irc.ERR_TARGETINVALID, params[0], ":invalid metadata target")
             return {}
@@ -93,7 +96,7 @@ class MetadataCommand(Command):
         if subcmd == "LIST":
             return {
                 "user": user,
-                "targetname": params[0],
+                "targetname": targetname,
                 "target": target,
                 "subcmd": "LIST",
                 "filter": params[2] if len(params) >= 3 else None
@@ -116,7 +119,7 @@ class MetadataCommand(Command):
                 return {}
             return {
                 "user": user,
-                "targetname": params[0],
+                "targetname": targetname,
                 "target": target,
                 "subcmd": "SET",
                 "key": params[2],
@@ -128,7 +131,7 @@ class MetadataCommand(Command):
                 return {}
             return {
                 "user": user,
-                "targetname": params[0],
+                "targetname": targetname,
                 "target": target,
                 "subcmd": "CLEAR"
             }
@@ -160,7 +163,7 @@ class MetadataCommand(Command):
             namespaceList.append("private")
         for namespace in namespaceList:
             for key, value in target.metadata[namespace].iteritems():
-                user.sendMessage(irc.RPL_WHOISKEYVALUE, key, ":{}".format(value))
+                user.sendMessage(irc.RPL_WHOISKEYVALUE, target.nickname, key, ":{}".format(value))
     
     def notify(self, target, namespace, key, oldValue, value):
         try:
