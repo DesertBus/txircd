@@ -478,7 +478,9 @@ class IRCUser(object):
             if server.nearHop == self.ircd.name:
                 server.callRemote(JoinChannel, channel=channel.name, nick=self.nickname)
         if status:
-            pass # TODO: call remote mode change function
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name:
+                    server.callRemote(SetMode, target=self.nickname, source=self.ircd.name, modestring="+{}".format(status), params=[self.nickname for i in range(len(status))])
         for modfunc in self.ircd.actions["join"]:
             modfunc(self, channel)
     
