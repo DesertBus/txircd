@@ -211,7 +211,8 @@ class Spawner(object):
                 "METADATA": self.metadata_cmd
             },
             "actions": {
-                "metadataupdate": [self.metadata_cmd.notify]
+                "metadataupdate": [self.metadata_cmd.notify],
+                "commandextra": [self.metadata_cmd.whoisSendMetadata]
             }
         }
     
@@ -220,3 +221,4 @@ class Spawner(object):
         del self.ircd.isupport["METADATA"]
         del self.ircd.module_data_cache["cap"]["metadata-notify"]
         self.ircd.actions["metadataupdate"].remove(self.metadata_cmd.notify)
+        self.ircd.actions["commandextra"].remove(self.metadata_cmd.whoisSendMetadata)
