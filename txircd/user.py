@@ -264,7 +264,7 @@ class IRCUser(object):
             return ""
         return self.channels[channel]["status"]
     
-    def setMode(self, user, modes, params):
+    def setMode(self, user, modes, params, displayPrefix = None):
         adding = True
         currentParam = 0
         modeDisplay = []
@@ -275,7 +275,8 @@ class IRCUser(object):
                 adding = False
             else:
                 if mode not in self.ircd.user_mode_type:
-                    user.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, mode, ":is unknown mode char to me")
+                    if user:
+                        user.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, mode, ":is unknown mode char to me")
                     continue
                 modetype = self.ircd.user_mode_type[mode]
                 if modetype == 1 or (adding and modetype == 2) or (modetype == 0 and len(params) > current_param):
@@ -288,16 +289,17 @@ class IRCUser(object):
                 if not (modetype == 0 and param is None): # ignore these checks for list modes so that they can be listed
                     if not adding and mode not in self.mode:
                         continue # cannot unset a mode that's not set
-                    if adding:
-                        allowed, param = self.ircd.user_modes[modetype][mode].checkSet(user, self, param)
-                        if not allowed:
-                            continue
-                    else:
-                        allowed, param = self.ircd.user_modes[modetype][mode].checkUnset(user, self, param)
-                        if not allowed:
-                            continue
+                    if user:
+                        if adding:
+                            allowed, param = self.ircd.user_modes[modetype][mode].checkSet(user, self, param)
+                            if not allowed:
+                                continue
+                        else:
+                            allowed, param = self.ircd.user_modes[modetype][mode].checkUnset(user, self, param)
+                            if not allowed:
+                                continue
                 if modetype == 0:
-                    if not param:
+                    if not param and user:
                         self.ircd.user_modes[modetype][mode].showParam(user, self)
                     elif adding:
                         if mode not in self.mode:
@@ -341,7 +343,12 @@ class IRCUser(object):
                 if mode[2]:
                     showParams.append(mode[2])
             modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
-            self.sendMessage("MODE", modeLine, prefix=user.prefix())
+            if user:
+                self.sendMessage("MODE", modeLine, prefix=user.prefix())
+            elif displayPrefix:
+                self.sendMessage("MODE", modeLine, prefix=displayPrefix)
+            else: # display from this server
+                self.sendMessage("MODE", modeLine)
             return modeLine
         return ""
     

@@ -5,7 +5,7 @@ class SamodeCommand(Command):
     def onUse(self, user, data):
         if "targetchan" in data:
             cdata = data["targetchan"]
-            modesSet = cdata.setMode(user, data["modes"], data["params"], True)
+            modesSet = cdata.setMode(None, data["modes"], data["params"], user.prefix())
             user.sendMessage("NOTICE", ":*** SAMODE used on {}; set {}".format(cdata.name, modesSet))
         elif "targetuser" in data:
             udata = data["targetuser"]

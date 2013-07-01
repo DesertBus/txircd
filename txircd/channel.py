@@ -21,7 +21,7 @@ class IRCChannel(object):
         }
         self.cache = {}
     
-    def setMode(self, user, modes, params, override = False):
+    def setMode(self, user, modes, params, displayPrefix = None):
         adding = True
         currentParam = 0
         modeDisplay = []
@@ -32,7 +32,8 @@ class IRCChannel(object):
                 adding = False
             else:
                 if mode not in self.ircd.channel_mode_type:
-                    user.sendMessage(irc.ERR_UNKNOWNMODE, mode, ":is unknown mode char to me")
+                    if user:
+                        user.sendMessage(irc.ERR_UNKNOWNMODE, mode, ":is unknown mode char to me")
                     continue
                 modetype = self.ircd.channel_mode_type[mode]
                 if modetype == -1 or (modetype == 0 and len(params) > currentParam) or modetype == 1 or (adding and modetype == 2):
@@ -45,7 +46,7 @@ class IRCChannel(object):
                 if not (modetype == 0 and param is None): # ignore these checks for list modes so that they can be listed
                     if not adding and modetype >= 0 and mode not in self.mode:
                         continue # The channel does not have the mode set, so we can't remove it
-                    if modetype >= 0:
+                    if modetype >= 0 and user:
                         if adding:
                             allowed, param = self.ircd.channel_modes[modetype][mode].checkSet(user, self, param)
                             if not allowed:
@@ -70,7 +71,7 @@ class IRCChannel(object):
                         minimum_level = mode
                     if not adding and user == udata:
                         minimum_level = mode # Make the user always allowed to unset from self
-                    if user.hasAccess(self.name, minimum_level) or override:
+                    if user and user.hasAccess(self.name, minimum_level):
                         if adding:
                             allowed, param = self.ircd.prefixes[mode][2].checkSet(user, self, param)
                             if not allowed:
@@ -80,7 +81,8 @@ class IRCChannel(object):
                             if not allowed:
                                 continue
                     else:
-                        user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.name, ":You do not have the level required to change mode +{}".format(mode))
+                        if user:
+                            user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.name, ":You do not have the level required to change mode +{}".format(mode))
                         continue
                     if self.name not in udata.channels:
                         continue
@@ -100,7 +102,7 @@ class IRCChannel(object):
                             udata.channels[self.name]["status"] = udata.channels[self.name]["status"].replace(mode, "")
                             modeDisplay.append([adding, mode, param])
                 elif modetype == 0:
-                    if not param:
+                    if not param and user:
                         self.ircd.channel_modes[modetype][mode].showParam(user, self)
                     elif adding:
                         if mode not in self.mode:
@@ -144,8 +146,15 @@ class IRCChannel(object):
                 if mode[2]:
                     showParams.append(mode[2])
             modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
-            for u in self.users:
-                u.sendMessage("MODE", modeLine, to=self.name, prefix=user.prefix())
+            if user:
+                for u in self.users:
+                    u.sendMessage("MODE", modeLine, to=self.name, prefix=user.prefix())
+            elif displayPrefix:
+                for u in self.users:
+                    u.sendMessage("MODE", modeLine, to=self.name, prefix=displayPrefix)
+            else:
+                for u in self.users:
+                    u.sendMessage("MODE", modeLine, to=self.name)
             return modeLine
         return ""
     
