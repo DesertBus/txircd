@@ -294,6 +294,7 @@ class DisconnectServer(Command):
         ("name", String())
     ]
     fatalErrors = {
+        NotYetBursted: "NOT_YET_BURSTED",
         ServerNotConnected: "NO_SUCH_SERVER"
     }
     requiresAnswer = False
@@ -914,6 +915,8 @@ class ServerProtocol(AMP):
     AddNewServer.responder(newServer)
     
     def splitServer(self, name):
+        if not self.burstComplete:
+            raise NotYetBursted ("The burst for this link has not yet completed.")
         if name not in self.ircd.servers:
             raise ServerNotConnected ("The server splitting from the network was not connected to the network.")
         servinfo = self.ircd.servers[name]
@@ -936,7 +939,8 @@ class ServerProtocol(AMP):
     DisconnectServer.responder(splitServer)
     
     def connectionLost(self, reason):
-        self.splitServer(self.name)
+        if self.burstComplete:
+            self.splitServer(self.name)
         AMP.connectionLost(self, reason)
     
     def setMetadata(self, target, namespace, key, value):
