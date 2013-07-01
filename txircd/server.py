@@ -138,12 +138,12 @@ class RemoteServer(object):
         self.remoteServers = set()
         self.hopCount = hopCount
     
-    def callRemote(self, command, *args):
+    def callRemote(self, command, *args, **kw):
         server = self
         while server.nearHop != self.ircd.name and server.nearHop in self.ircd.servers:
             server = self.ircd.servers[server.nearHop]
         if server.name in self.ircd.servers:
-            server.callRemote(command, *args) # If the parameters are such that they indicate the target properly, this will be forwarded to the proper server.
+            server.callRemote(command, *args, **kw) # If the parameters are such that they indicate the target properly, this will be forwarded to the proper server.
 
 
 # ERRORS
