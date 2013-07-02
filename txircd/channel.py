@@ -159,7 +159,7 @@ class IRCChannel(object):
                 lineSource = self.ircd.name
             
             from txircd.server import SetMode
-            for servers in self.ircd.servers.itervalues():
+            for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
                     server.callRemote(SetMode, target=self.name, source=lineSource, modestring="".join(modestring), params=showParams)
             return modeLine
