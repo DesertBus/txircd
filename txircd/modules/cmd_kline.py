@@ -19,10 +19,11 @@ class KlineCommand(Command):
             }
             user.sendMessage("NOTICE", ":*** K:Line added on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
             now_banned = {}
-            for nick, u in self.ircd.localusers.iteritems():
-                result = self.match_kline(u)
-                if result:
-                    now_banned[nick] = result
+            for nick, u in self.ircd.users.iteritems():
+                if u.server == self.ircd.name:
+                    result = self.match_kline(u)
+                    if result:
+                        now_banned[nick] = result
             for uid, reason in now_banned.iteritems():
                 udata = self.ircd.users[uid]
                 udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))

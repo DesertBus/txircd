@@ -777,11 +777,11 @@ class ServerProtocol(AMP):
                                 params.append(mode[2])
                         if params:
                             for user in mergeChanData.users:
-                                if user.nickname in self.ircd.localusers: # Don't send this to remote users who will get it anyway once the data propagates
+                                if user.server == self.ircd.name: # Don't send this to remote users who will get it anyway once the data propagates
                                     user.sendMessage("MODE", "{} {}".format("".join(modeStr), " ".join(params)), to=mergeChanData.name)
                         else:
                             for user in mergeChanData.users:
-                                if user.nickname in self.ircd.localusers:
+                                if user.server == self.ircd.name:
                                     user.sendMessage("MODE", "".join(modeStr), to=mergeChanData.name)
                     # reserialize modes for other servers
                     cdata["mode"] = []

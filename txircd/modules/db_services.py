@@ -1041,11 +1041,8 @@ class Spawner(object):
         self.nickserv.cache["certfp"] = {}
         
         self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
-        self.ircd.localusers[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
         self.ircd.users[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
-        self.ircd.localusers[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
         self.ircd.users[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
-        self.ircd.localusers[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
         
         self.ircd.module_data_cache["sasl_agent"] = self
         
@@ -1099,11 +1096,8 @@ class Spawner(object):
             self.db.close()
         
         del self.ircd.users["NickServ"]
-        del self.ircd.localusers["NickServ"]
         del self.ircd.users["ChanServ"]
-        del self.ircd.localusers["ChanServ"]
         del self.ircd.users["BidServ"]
-        del self.ircd.localusers["BidServ"]
         
         del self.ircd.commands["NICKSERV"]
         del self.ircd.commands["NS"]

@@ -77,7 +77,6 @@ class IRCUser(object):
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
-        self.ircd.localusers[self.nickname] = self
         
         # Send notification of connection to other servers
         for server in self.ircd.servers.itervalues():
@@ -124,7 +123,6 @@ class IRCUser(object):
                 for u in cdata.users:
                     quitdest.add(u)
             del self.ircd.users[self.nickname]
-            del self.ircd.localusers[self.nickname]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
             for server in self.ircd.servers.itervalues():
@@ -390,9 +388,12 @@ class IRCUser(object):
         serverCount = 0
         networkServerCount = len(self.ircd.servers) + 1 # this server is also a server
         operCount = 0
-        localCount = len(self.ircd.localusers)
-        globalCount = len(self.ircd.users)
+        localCount = 0
+        globalCount = 0
         for user in self.ircd.users.itervalues():
+            globalCount += 1
+            if user.server == self.ircd.name:
+                localCount += 1
             if "i" in user.mode:
                 invisibleCount += 1
             else:
@@ -504,9 +505,7 @@ class IRCUser(object):
     
     def nick(self, newNick):
         del self.ircd.users[self.nickname]
-        del self.ircd.localusers[self.nickname]
         self.ircd.users[newNick] = self
-        self.ircd.localusers[newNick] = self
         notify = set()
         notify.add(self)
         for chan in self.channels.iterkeys():
