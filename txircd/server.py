@@ -108,6 +108,98 @@ class RemoteUser(object):
             return ""
         return self.channels[channel]["status"]
     
+    def setMode(self, user, modes, params, displayPrefix = None):
+        adding = True
+        currentParam = 0
+        modeChange = []
+        for mode in modes:
+            if mode == "+":
+                adding = True
+            elif mode == "-":
+                adding = False
+            else:
+                if mode not in self.ircd.user_mode_type:
+                    if user:
+                        user.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, mode, ":is unknown mode char to me")
+                    continue
+                modetype = self.ircd.user_mode_type[mode]
+                if modetype == 1 or (adding and modetype == 2) or (modetype == 0 and len(params) > current_param):
+                    if len(params) <= current_param:
+                        continue # mode must have parameter, but one wasn't provided
+                    param = params[currentParam]
+                    currentParam += 1
+                else:
+                    param = None
+                if not (modetype == 0 and param is None): # ignore these checks for list modes so that they can be listed
+                    if not adding and mode not in self.mode:
+                        continue # cannot unset a mode that's not set
+                    if user:
+                        if adding:
+                            allowed, param = self.ircd.user_modes[modetype][mode].checkSet(user, self, param)
+                            if not allowed:
+                                continue
+                        else:
+                            allowed, param = self.ircd.user_modes[modetype][mode].checkUnset(user, self, param)
+                            if not allowed:
+                                continue
+                if modetype == 0:
+                    if not param and user:
+                        self.ircd.user_modes[modetype][mode].showParam(user, self)
+                    elif adding:
+                        if mode not in self.mode:
+                            self.mode[mode] = []
+                        if param not in self.mode[mode]:
+                            self.mode[mode].append(param)
+                            modeChange.append([adding, mode, param])
+                    else:
+                        if mode not in self.mode:
+                            continue
+                        if param in self.mode[mode]:
+                            self.mode[mode].remove(param)
+                            modeChange.append([adding, mode, param])
+                            if not self.mode[mode]:
+                                del self.mode[mode]
+                else:
+                    if adding:
+                        if mode in self.mode and param == self.mode[mode]:
+                            continue
+                        self.mode[mode] = param
+                        modeChange.append([adding, mode, param])
+                    else:
+                        if mode not in self.mode:
+                            continue
+                        if modetype == 1 and param != self.mode[mode]:
+                            continue
+                        del self.mode[mode]
+                        modeChange.append([adding, mode, param])
+        if modeChange:
+            adding = None
+            modestring = []
+            showParams = []
+            for mode in modeChange:
+                if mode[0] and adding != "+":
+                    adding = "+"
+                    modestring.append("+")
+                elif not mode[0] and adding != "-":
+                    adding = "-"
+                    modestring.append("-")
+                modestring.append(mode[1])
+                if mode[2]:
+                    showParams.append(mode[2])
+            modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
+            if user:
+                lineSource = user.prefix()
+            elif displayPrefix:
+                lineSource = displayPrefix
+            else: # display from this server
+                lineSource = self.ircd.name
+            
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name:
+                    server.callRemote(SetMode, target=self.nickname, source=lineSource, modestring="".join(modestring), params=showParams)
+            return modeLine
+        return ""
+    
     def modeString(self, user):
         modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
         params = []
