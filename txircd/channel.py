@@ -80,9 +80,8 @@ class IRCChannel(object):
                             allowed, param = self.ircd.prefixes[mode][2].checkUnset(user, self, param)
                             if not allowed:
                                 continue
-                    else:
-                        if user:
-                            user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.name, ":You do not have the level required to change mode +{}".format(mode))
+                    elif user:
+                        user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.name, ":You do not have the level required to change mode +{}".format(mode))
                         continue
                     if self.name not in udata.channels:
                         continue
