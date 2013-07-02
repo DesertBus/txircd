@@ -1108,6 +1108,7 @@ class ServerProtocol(AMP):
         else:
             raise NoSuchTarget ("The target given does not exist on the network.")
         data.setMode(None, modestring, params, source)
+        return {}
     SetMode.responder(setMode)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
