@@ -1107,7 +1107,7 @@ class ServerProtocol(AMP):
             data = self.ircd.users[target]
         else:
             raise NoSuchTarget ("The target given does not exist on the network.")
-        target.setMode(None, modestring, params, source)
+        data.setMode(None, modestring, params, source)
     SetMode.responder(setMode)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
