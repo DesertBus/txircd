@@ -417,8 +417,7 @@ class SetMode(Command):
     ]
     errors = {
         NotYetBursted: "NOT_YET_BURSTED",
-        NoSuchTarget: "NO_SUCH_TARGET",
-        NoSuchUser: "NO_SUCH_USER"
+        NoSuchTarget: "NO_SUCH_TARGET"
     }
     requiresAnswer = False
 
@@ -1102,8 +1101,6 @@ class ServerProtocol(AMP):
     def setMode(self, target, source, modestring, params):
         if not self.burstComplete:
             raise NotYetBursted ("The burst for this link has not yet been completed.")
-        if source not in self.ircd.users:
-            raise NoSuchUser ("The source user given is not on the network.")
         if target in self.ircd.channels:
             data = self.ircd.channels[target]
         elif target in self.ircd.users:
