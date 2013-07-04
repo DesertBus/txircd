@@ -206,6 +206,19 @@ class DisconnectServer(Command):
     }
     requiresAnswer = False
 
+class RequestMetadata(Command):
+    arguments = [
+        ("nick", String()),
+        ("namespace", String()),
+        ("key", String()),
+        ("value", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
 class SetMetadata(Command):
     arguments = [
         ("target", String()),
@@ -239,13 +252,36 @@ class ConnectUser(Command):
     }
     requiresAnswer = False
 
+class RequestQuit(Command):
+    arguments = [
+        ("nick", String()),
+        ("reason", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
 class RemoveUser(Command):
     arguments = [
         ("nick", String()),
         ("reason", String())
     ]
     errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE"
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class RequestJoinChannel(Command):
+    arguments = [
+        ("channel", String()),
+        ("nick", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
 
@@ -261,11 +297,38 @@ class JoinChannel(Command):
     }
     requiresAnswer = False
 
+class RequestPartChannel(Command):
+    arguments = [
+        ("channel", String()),
+        ("nick", String()),
+        ("reason", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER",
+        NoSuchChannel: "NO_SUCH_CHANNEL"
+    }
+    requiresAnswer = False
+
 class PartChannel(Command):
     arguments = [
         ("channel", String()),
         ("nick", String()),
         ("reason", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER",
+        NoSuchChannel: "NO_SUCH_CHANNEL"
+    }
+    requiresAnswer = False
+
+class RequestSetMode(Command):
+    arguments = [
+        ("nick", String()),
+        ("source", String()),
+        ("modestring", String()),
+        ("params", ListOf(String()))
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
@@ -450,7 +513,11 @@ class ServerProtocol(AMP):
             self.splitServer(self.name)
         AMP.connectionLost(self, reason)
     
-    def setMetadata(self, target, namespace, key, value):
+    def requestMetadata(self, nick, namespace, key, value):
+        pass # TODO
+    RequestMetadata.responder(requestMetadata)
+    
+    def setMetadata(self, target, targetts, namespace, key, value):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if target in self.ircd.users:
@@ -459,10 +526,7 @@ class ServerProtocol(AMP):
             data = self.ircd.channels[target]
         else:
             raise NoSuchTarget ("The specified user or channel is not connected to the network.")
-        if value and (key not in data.metadata[namespace] or value != data.metadata[namespace][key]):
-            data.setMetadata(namespace, key, value)
-        elif not value and key in data.metadata[namespace]:
-            data.delMetadata(namespace, key)
+        # TODO
         return {}
     SetMetadata.responder(setMetadata)
     
@@ -480,6 +544,10 @@ class ServerProtocol(AMP):
         return {}
     ConnectUser.responder(addUser)
     
+    def requestQuit(self, nick, reason):
+        pass # TODO
+    RequestQuit.responder(requestQuit)
+    
     def removeUser(self, nick, reason):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
@@ -488,7 +556,11 @@ class ServerProtocol(AMP):
         return {}
     RemoveUser.responder(removeUser)
     
-    def joinChannel(self, channel, nick):
+    def requestJoin(self, channel, nick):
+        pass # TODO
+    RequestJoinChannel.responder(requestJoin)
+    
+    def joinChannel(self, channel, nick, chants):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if nick not in self.ircd.users:
@@ -500,9 +572,13 @@ class ServerProtocol(AMP):
             cdata = self.ircd.channels[channel]
         else:
             cdata = IRCChannel(self.ircd, channel)
-        user.join(cdata)
+        # TODO
         return {}
     JoinChannel.responder(joinChannel)
+    
+    def requestPart(self, channel, nick, reason):
+        pass # TODO
+    RequestPartChannel.responder(requestPart)
     
     def partChannel(self, channel, nick, reason):
         if not self.name:
@@ -513,11 +589,15 @@ class ServerProtocol(AMP):
             return {} # If the channel is already destroyed, raising may be from a broadcast throwback
         user = self.ircd.users[nick]
         chan = self.ircd.channels[channel]
-        user.part(chan, reason)
+        # TODO
         return {}
     PartChannel.responder(partChannel)
     
-    def setMode(self, target, source, modestring, params):
+    def requestMode(self, nick, source, modestring, params):
+        pass # TODO
+    RequestSetMode.responder(requestMode)
+    
+    def setMode(self, target, targetts, source, modestring, params):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if target in self.ircd.channels:
@@ -526,7 +606,7 @@ class ServerProtocol(AMP):
             data = self.ircd.users[target]
         else:
             raise NoSuchTarget ("The target given does not exist on the network.")
-        data.setMode(None, modestring, params, source)
+        # TODO
         return {}
     SetMode.responder(setMode)
     
@@ -550,6 +630,7 @@ class ServerProtocol(AMP):
                 if u.server == self.ircd.name:
                     u.sendMessage("TOPIC", ":{}".format(topic), to=cdata.name, prefix=topicsetter)
         return {}
+    SetTopic.responder(setTopic)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
