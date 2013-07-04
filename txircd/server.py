@@ -36,10 +36,7 @@ class RemoteUser(object):
         self.signon = signonTime
         self.nicktime = nickTime
         self.lastactivity = now()
-        self.disconnected = Deferred()
-        self.disconnected.callback(None)
         self.mode = {}
-        self.channels = CaseInsensitiveDictionary()
         self.registered = 0
         self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
             "server": {},
@@ -52,153 +49,30 @@ class RemoteUser(object):
         self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
     
     def disconnect(self, reason):
-        quitdest = set()
-        leavingChannels = self.channels.keys()
-        for channel in leavingChannels:
-            cdata = self.ircd.channels[channel]
-            del self.channels[cdata.name]
-            cdata.users.remove(self)
-            if not cdata.users:
-                for modfunc in self.ircd.actions["chandestroy"]:
-                    modfunc(channel)
-                del self.ircd.channels[cdata.name]
-            for u in cdata.users:
-                quitdest.add(u)
-        del self.ircd.users[self.nickname]
-        for user in quitdest:
-            user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
-                server.callRemote(RemoveUser, nick=self.nickname, reason=reason)
+        pass # TODO
     
     def sendMessage(self, command, *parameter_list, **kw):
         pass # TODO
     
     def setMetadata(self, namespace, key, value):
-        oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
-        self.metadata[namespace][key] = value
-        for action in self.ircd.actions["metadataupdate"]:
-            action(self, namespace, key, oldValue, value)
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
-                server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value=value)
+        pass # TODO
     
     def delMetadata(self, namespace, key):
-        oldValue = self.metadata[namespace][key]
-        del self.metadata[namespace][key]
-        for action in self.ircd.actions["metadataupdate"]:
-            action(self, namespace, key, oldValue, "")
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
-                server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value="")
+        pass # TODO
     
     def prefix(self):
         return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
     
     def hasAccess(self, channel, level):
-        if channel not in self.channels or level not in self.ircd.prefixes:
+        if self not in channel.users or level not in self.ircd.prefixes:
             return None
-        status = self.status(channel)
+        status = channel.users[self]
         if not status:
             return False
         return self.ircd.prefixes[status[0]][1] >= self.ircd.prefixes[level][1]
     
-    def status(self, channel):
-        if channel not in self.channels:
-            return ""
-        return self.channels[channel]["status"]
-    
     def setMode(self, user, modes, params, displayPrefix = None):
-        adding = True
-        currentParam = 0
-        modeChange = []
-        for mode in modes:
-            if mode == "+":
-                adding = True
-            elif mode == "-":
-                adding = False
-            else:
-                if mode not in self.ircd.user_mode_type:
-                    if user:
-                        user.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, mode, ":is unknown mode char to me")
-                    continue
-                modetype = self.ircd.user_mode_type[mode]
-                if modetype == 1 or (adding and modetype == 2) or (modetype == 0 and len(params) > current_param):
-                    if len(params) <= current_param:
-                        continue # mode must have parameter, but one wasn't provided
-                    param = params[currentParam]
-                    currentParam += 1
-                else:
-                    param = None
-                if not (modetype == 0 and param is None): # ignore these checks for list modes so that they can be listed
-                    if not adding and mode not in self.mode:
-                        continue # cannot unset a mode that's not set
-                    if user:
-                        if adding:
-                            allowed, param = self.ircd.user_modes[modetype][mode].checkSet(user, self, param)
-                            if not allowed:
-                                continue
-                        else:
-                            allowed, param = self.ircd.user_modes[modetype][mode].checkUnset(user, self, param)
-                            if not allowed:
-                                continue
-                if modetype == 0:
-                    if not param and user:
-                        self.ircd.user_modes[modetype][mode].showParam(user, self)
-                    elif adding:
-                        if mode not in self.mode:
-                            self.mode[mode] = []
-                        if param not in self.mode[mode]:
-                            self.mode[mode].append(param)
-                            modeChange.append([adding, mode, param])
-                    else:
-                        if mode not in self.mode:
-                            continue
-                        if param in self.mode[mode]:
-                            self.mode[mode].remove(param)
-                            modeChange.append([adding, mode, param])
-                            if not self.mode[mode]:
-                                del self.mode[mode]
-                else:
-                    if adding:
-                        if mode in self.mode and param == self.mode[mode]:
-                            continue
-                        self.mode[mode] = param
-                        modeChange.append([adding, mode, param])
-                    else:
-                        if mode not in self.mode:
-                            continue
-                        if modetype == 1 and param != self.mode[mode]:
-                            continue
-                        del self.mode[mode]
-                        modeChange.append([adding, mode, param])
-        if modeChange:
-            adding = None
-            modestring = []
-            showParams = []
-            for mode in modeChange:
-                if mode[0] and adding != "+":
-                    adding = "+"
-                    modestring.append("+")
-                elif not mode[0] and adding != "-":
-                    adding = "-"
-                    modestring.append("-")
-                modestring.append(mode[1])
-                if mode[2]:
-                    showParams.append(mode[2])
-            modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
-            if user:
-                lineSource = user.prefix()
-            elif displayPrefix:
-                lineSource = displayPrefix
-            else: # display from this server
-                lineSource = self.ircd.name
-            
-            for server in self.ircd.servers.itervalues():
-                if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMode, target=self.nickname, source=lineSource, modestring="".join(modestring), params=showParams)
-            return modeLine
-        return ""
+        pass # TODO
     
     def modeString(self, user):
         modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
@@ -212,50 +86,13 @@ class RemoteUser(object):
         return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
     
     def join(self, channel):
-        if channel.name in self.channels:
-            return
-        if channel.name not in self.ircd.channels:
-            self.ircd.channels[channel.name] = channel
-            for modfunc in self.ircd.actions["chancreate"]:
-                modfunc(channel)
-        hostmask = irc_lower(self.prefix())
-        self.channels[channel.name] = {"status": ""}
-        channel.users.add(self)
-        joinShowUsers = set(channel.users) # copy the channel.users set to prevent accidental modification of the users list
-        tryagain = []
-        for modfunc in self.ircd.actions["joinmessage"]:
-            result = modfunc(channel, self, joinShowUsers)
-            if result == "again":
-                tryagain.append(modfunc)
-            else:
-                joinShowUsers = result
-        for modfunc in tryagain:
-            joinShowUsers = modfunc(channel, self, joinShowUsers)
-        for u in joinShowUsers:
-            u.sendMessage("JOIN", to=channel.name, prefix=self.prefix())
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
-                server.callRemote(JoinChannel, channel=channel.name, nick=self.nickname)
-        for modfunc in self.ircd.actions["join"]:
-            modfunc(self, channel)
+        pass # TODO
     
     def part(self, channel, reason):
-        if channel.name not in self.channels:
-            return
-        for u in channel.users:
-            u.sendMessage("PART", ":{}".format(reason), to=channel.name, prefix=self.prefix())
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
-                server.callRemote(PartChannel, channel=channel.name, nick=self.nickname, reason=reason)
-        self.leave(channel)
+        pass # TODO
     
     def leave(self, channel):
-        del self.channels[channel.name]
-        channel.users.remove(self)
-        if not channel.users:
-            for modfunc in self.ircd.actions["chandestroy"]:
-                modfunc(channel)
-            del self.ircd.channels[channel.name]
+        pass # TODO
     
     def nick(self, newNick):
         pass # TODO
