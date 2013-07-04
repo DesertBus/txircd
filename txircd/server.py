@@ -180,6 +180,9 @@ class AddNewServer(Command):
         ("hopcount", Integer()),
         ("nearhop", String())
     ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE"
+    }
     fatalErrors = {
         ServerAlreadyConnected: "SERVER_ALREADY_CONNECTED" # If this error is present, the servers are already desynced, so have them fully disconnect and try again
     }
@@ -189,6 +192,9 @@ class DisconnectServer(Command):
     arguments = [
         ("name", String())
     ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE"
+    }
     fatalErrors = {
         ServerNotConnected: "NO_SUCH_SERVER"
     }
@@ -203,6 +209,7 @@ class SetMetadata(Command):
         ("value", String())
     ]
     errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchTarget: "NO_SUCH_TARGET"
     }
     requiresAnswer = False
@@ -220,6 +227,7 @@ class ConnectUser(Command):
         ("nickts", Integer())
     ]
     errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         UserAlreadyConnected: "USER_ALREADY_CONNECTED"
     }
     requiresAnswer = False
@@ -229,6 +237,9 @@ class RemoveUser(Command):
         ("nick", String()),
         ("reason", String())
     ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE"
+    }
     requiresAnswer = False
 
 class JoinChannel(Command):
@@ -238,6 +249,7 @@ class JoinChannel(Command):
         ("chants", Integer())
     ]
     errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
@@ -249,6 +261,7 @@ class PartChannel(Command):
         ("reason", String())
     ]
     errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
@@ -262,6 +275,7 @@ class SetMode(Command):
         ("params", ListOf(String()))
     ]
     errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchTarget: "NO_SUCH_TARGET"
     }
     requiresAnswer = False
@@ -363,6 +377,8 @@ class ServerProtocol(AMP):
                     self.callRemote(SetMetadata, target=chan.name, targetts=epoch(chan.created), namespace=namespace, key=key, value=value)
     
     def newServer(self, name, description, hopcount, nearhop):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         # check for server-related desyncs
         if name in self.ircd.servers:
             raise ServerAlreadyConnected ("The server trying to connect to the network is already connected to the network.")
@@ -384,6 +400,8 @@ class ServerProtocol(AMP):
     AddNewServer.responder(newServer)
     
     def splitServer(self, name):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if name not in self.ircd.servers:
             raise ServerNotConnected ("The server splitting from the network was not connected to the network.")
         servinfo = self.ircd.servers[name]
@@ -411,6 +429,8 @@ class ServerProtocol(AMP):
         AMP.connectionLost(self, reason)
     
     def setMetadata(self, target, namespace, key, value):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if target in self.ircd.users:
             data = self.ircd.users[target]
         elif target in self.ircd.channels:
@@ -425,6 +445,8 @@ class ServerProtocol(AMP):
     SetMetadata.responder(setMetadata)
     
     def addUser(self, nick, ident, host, gecos, ip, server, secure, signon, nickts):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if nick in self.ircd.users:
             raise UserAlreadyConnected ("The user is already connected to the network.")
         self.ircd.users[nick] = RemoteUser(self.ircd, nick, ident, host, gecos, ip, server, secure, datetime.utcfromtimestamp(signon), datetime.utcfromtimestamp(nickts))
@@ -435,12 +457,16 @@ class ServerProtocol(AMP):
     ConnectUser.responder(addUser)
     
     def removeUser(self, nick, reason):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if nick in self.ircd.users: # If nick is not in self.ircd.users, we're fine; probably is a return from the broadcast
             self.ircd.users[nick].disconnect(reason)
         return {}
     RemoveUser.responder(removeUser)
     
     def joinChannel(self, channel, nick):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if nick not in self.ircd.users:
             raise NoSuchUser ("The given user is not connected to the network.")
         user = self.ircd.users[nick]
@@ -455,6 +481,8 @@ class ServerProtocol(AMP):
     JoinChannel.responder(joinChannel)
     
     def partChannel(self, channel, nick, reason):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if nick not in self.ircd.users:
             raise NoSuchUser ("The given user is not connected to the network.")
         if channel not in self.ircd.channels:
@@ -466,6 +494,8 @@ class ServerProtocol(AMP):
     PartChannel.responder(partChannel)
     
     def setMode(self, target, source, modestring, params):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if target in self.ircd.channels:
             data = self.ircd.channels[target]
         elif target in self.ircd.users:
