@@ -24,10 +24,10 @@ class AwayNotify(Module):
             if "away" not in user.metadata["ext"]:
                 message = None
             notify = set()
-            for chanName in user.channels:
-                channel = self.ircd.channels[chanName]
-                for u in channel.users:
-                    notify.add(u)
+            for channel in self.ircd.channels.itervalues():
+                if user in channel.users:
+                    for u in channel.users.iterkeys():
+                        notify.add(u)
             notify.remove(user)
             for u in notify:
                 if "cap" in u.cache and "away-notify" in u.cache["cap"]:
@@ -40,7 +40,7 @@ class AwayNotify(Module):
     
     def notifyOnJoin(self, user, channel):
         if "away" in user.metadata["ext"]:
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 if "cap" in u.cache and "away-notify" in u.cache["cap"]:
                     u.sendMessage("AWAY", user.metadata["ext"]["away"], to=None, prefix=user.prefix())
 

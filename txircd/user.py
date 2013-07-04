@@ -46,7 +46,6 @@ class IRCUser(object):
         self.lastactivity = now()
         self.lastpong = now()
         self.mode = {}
-        self.channels = CaseInsensitiveDictionary()
         self.disconnected = Deferred()
         self.registered = 2
         self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
@@ -116,12 +115,11 @@ class IRCUser(object):
     def disconnect(self, reason):
         if self.registered == 0 and self.nickname in self.ircd.users: # both checks required in case this is called during the final registration process
             quitdest = set()
-            leavingChannels = self.channels.keys()
-            for channel in leavingChannels:
-                cdata = self.ircd.channels[channel]
-                self.leave(cdata)
-                for u in cdata.users:
-                    quitdest.add(u)
+            for channel in self.ircd.channels.itervalues():
+                if self in channel.users:
+                    self.leave(channel)
+                    for u in channel.users.iterkeys():
+                        quitdest.add(u)
             del self.ircd.users[self.nickname]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
@@ -250,17 +248,12 @@ class IRCUser(object):
         return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
     
     def hasAccess(self, channel, level):
-        if channel not in self.channels or level not in self.ircd.prefixes:
+        if self not in channel.users or level not in self.ircd.prefixes:
             return None
-        status = self.status(channel)
+        status = channel.users[self]
         if not status:
             return False
         return self.ircd.prefixes[status[0]][1] >= self.ircd.prefixes[level][1]
-    
-    def status(self, channel):
-        if channel not in self.channels:
-            return ""
-        return self.channels[channel]["status"]
     
     def setMode(self, user, modes, params, displayPrefix = None):
         adding = True
@@ -416,8 +409,7 @@ class IRCUser(object):
     
     def report_names(self, channel):
         userlist = []
-        for user in channel.users:
-            ranks = user.status(channel.name)
+        for user, ranks in channel.users.iteritems():
             representation = (self.ircd.prefixes[ranks[0]][0] + user.nickname) if ranks else user.nickname
             newRepresentation = self.listname(channel, user, representation)
             if newRepresentation:
@@ -446,7 +438,7 @@ class IRCUser(object):
         return representation
     
     def join(self, channel):
-        if channel.name in self.channels:
+        if self in channel.users:
             return
         status = ""
         if channel.name not in self.ircd.channels:
@@ -455,9 +447,8 @@ class IRCUser(object):
                 modfunc(channel)
             status = self.ircd.servconfig["channel_default_status"]
         hostmask = irc_lower(self.prefix())
-        self.channels[channel.name] = {"status":status}
-        channel.users.add(self)
-        joinShowUsers = set(channel.users) # copy the channel.users set to prevent accidental modification of the users list
+        channel.users[self] = status
+        joinShowUsers = channel.users.keys()
         tryagain = []
         for modfunc in self.ircd.actions["joinmessage"]:
             result = modfunc(channel, self, joinShowUsers)
@@ -486,9 +477,9 @@ class IRCUser(object):
             modfunc(self, channel)
     
     def part(self, channel, reason):
-        if channel.name not in self.channels:
+        if self not in channel.users:
             return
-        for u in channel.users:
+        for u in channel.users.iterkeys():
             u.sendMessage("PART", ":{}".format(reason), to=channel.name, prefix=self.prefix())
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
@@ -496,8 +487,7 @@ class IRCUser(object):
         self.leave(channel)
     
     def leave(self, channel):
-        del self.channels[channel.name]
-        channel.users.remove(self) # remove channel user entry
+        del channel.users[self] # remove channel user entry
         if not channel.users:
             for modfunc in self.ircd.actions["chandestroy"]:
                 modfunc(channel)
@@ -508,10 +498,10 @@ class IRCUser(object):
         self.ircd.users[newNick] = self
         notify = set()
         notify.add(self)
-        for chan in self.channels.iterkeys():
-            cdata = self.ircd.channels[chan]
-            for cuser in cdata.users:
-                notify.add(cuser)
+        for cdata in self.ircd.channels.itervalues():
+            if self in cdata.users:
+                for cuser in cdata.users.iterkeys():
+                    notify.add(cuser)
         prefix = self.prefix()
         for u in notify:
             u.sendMessage("NICK", to=newNick, prefix=prefix)

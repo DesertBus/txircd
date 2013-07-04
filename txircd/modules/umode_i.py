@@ -2,18 +2,18 @@ from txircd.modbase import Mode
 
 class InvisibleMode(Mode):
     def namesListEntry(self, recipient, channel, user, representation):
-        if channel.name not in recipient.channels and "i" in user.mode:
+        if recipient not in channel.users and "i" in user.mode:
             return ""
         return representation
     
     def checkWhoVisible(self, user, targetUser, filters, fields, channel, udata):
         if channel:
-            if channel.name not in user.channels and "i" in targetUser.mode:
+            if user not in channel.users and "i" in targetUser.mode:
                 return {}
         if "i" in targetUser.mode:
             share_channel = False
-            for chan in user.channels:
-                if chan in targetUser.channels:
+            for chan in self.ircd.channels.itervalues():
+                if user in chan.users and targetUser in chan.users:
                     share_channel = True
                     break
             if not share_channel:

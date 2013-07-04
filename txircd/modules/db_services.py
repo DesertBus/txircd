@@ -38,7 +38,6 @@ class Service(object):
         self.lastpong = now()
         self.nicktime = now()
         self.mode = {}
-        self.channels = CaseInsensitiveDictionary()
         self.disconnected = Deferred()
         self.disconnected.callback(None)
         self.registered = 0
@@ -449,7 +448,7 @@ class CSRegisterCommand(Command):
             user.sendMessage("NOTICE", ":That channel is already registered.", prefix=self.chanserv.prefix())
             return {}
         cdata = self.ircd.channels[params[0]]
-        if not user.hasAccess(cdata.name, "o"):
+        if not user.hasAccess(cdata, "o"):
             user.sendMessage("NOTICE", ":You must be a channel operator to register that channel.", prefix=self.chanserv.prefix())
             return {}
         return {
@@ -621,7 +620,7 @@ class BSStartCommand(Command):
         lines.append(":\x02\x034Please do not make any fake bids")
         lines.append(":\x02\x034Beginning bidding at ${:,.2f}".format(float(results[0][3])))
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 for line in lines:
                     u.sendMessage("PRIVMSG", line, to=channel.name, prefix=self.bidserv.prefix())
         user.sendMessage("NOTICE", ":The auction has been started.", prefix=self.bidserv.prefix())
@@ -640,7 +639,7 @@ class BSStopCommand(Command):
         itemName = self.bidserv.cache["auction"]["name"]
         cancelMsg = ":\x02\x034Auction for {} canceled.\x02 - Called by {}".format(itemName, user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 u.sendMessage("PRIVMSG", cancelMsg, to=channel.name, prefix=self.bidserv.prefix())
         del self.bidserv.cache["auction"]
         user.sendMessage("NOTICE", ":The auction has been canceled.", prefix=self.bidserv.prefix())
@@ -695,7 +694,7 @@ class BSBidCommand(Command):
         self.bidserv.cache["auction"]["highbidder"] = user.nickname
         self.bidserv.cache["auction"]["highbidderid"] = user.metadata["ext"]["accountid"]
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 u.sendMessage("PRIVMSG", bidMsg, to=channel.name, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
@@ -753,7 +752,7 @@ class BSRevertCommand(Command):
         self.bidserv.cache["auction"]["highbidderid"] = newHighBidderID
         self.bidserv.cache["auction"]["called"] = 0
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 u.sendMessage("PRIVMSG", revertMsg, to=channel.name, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
@@ -779,7 +778,7 @@ class BSOnceCommand(Command):
         self.bidserv.cache["auction"]["called"] = 1
         onceMsg = ":\x02\x034Going Once! To {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 u.sendMessage("PRIVMSG", onceMsg, to=channel.name, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
@@ -805,7 +804,7 @@ class BSTwiceCommand(Command):
         self.bidserv.cache["auction"]["called"] = 2
         twiceMsg = ":\x02\x034Going Twice! To {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 u.sendMessage("PRIVMSG", twiceMsg, to=channel.name, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
@@ -835,7 +834,7 @@ class BSSoldCommand(Command):
             user.sendMessage("NOTICE", ":The log file for this auction could not be written.", prefix=self.bidserv.prefix())
         soldMsg = ":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
+            for u in channel.users.iterkeys():
                 u.sendMessage("PRIVMSG", soldMsg, to=channel.name, prefix=self.bidserv.prefix())
         if self.bidserv.cache["auction"]["highbidder"] in self.ircd.users:
             udata = self.ircd.users[self.bidserv.cache["auction"]["highbidder"]]
@@ -1465,18 +1464,19 @@ class Spawner(object):
         self.saslUsers[user]["failure"] = failureFunction
     
     def registered(self, user):
-        for channel in user.channels.iterkeys():
-            c = self.ircd.channels[channel]
-            self.promote(user, c, True)
+        for c in self.ircd.channels.itervalues():
+            if user in c.users:
+                c = self.ircd.channels[channel]
+                self.promote(user, c, True)
         if "certfp" in user.metadata["server"]:
             self.addCert(user, user.metadata["server"]["certfp"])
     
     def unregistered(self, user):
-        for channel, data in user.channels.iteritems():
-            c = self.ircd.channels[channel]
-            status = data["status"]
-            if status:
-                c.setMode(None, "-{}".format(status), [user.nickname for i in range(len(status))], self.chanserv.prefix())
+        for channel in self.ircd.channels.itervalues():
+            if user in channel.users:
+                status = channel.users[user]
+                if status:
+                    channel.setMode(None, "-{}".format(status), [user.nickname for i in range(len(status))], self.chanserv.prefix())
     
     def promote(self, user, channel, keepOldStatus=False):
         if channel.name in self.chanserv.cache["registered"]:
@@ -1492,10 +1492,10 @@ class Spawner(object):
                     for flag in self.chanserv.cache["registered"][channel.name]["access"][user.metadata["ext"]["accountid"]]:
                         flags.add(flag)
             if keepOldStatus:
-                for flag in user.status(channel.name):
+                for flag in channel.users[user]:
                     flags.discard(flag)
             else:
-                userStatus = user.status(channel.name)
+                userStatus = channel.users[user]
                 if userStatus:
                     channel.setMode(None, "-{}".format(userStatus), [user.nickname for i in range(len(userStatus))], self.chanserv.prefix())
             

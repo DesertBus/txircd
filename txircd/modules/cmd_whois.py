@@ -13,12 +13,14 @@ class WhoisCommand(Command):
         targets = data["targetuser"]
         for u in targets:
             user.sendMessage(irc.RPL_WHOISUSER, u.nickname, u.username, u.hostname, "*", ":{}".format(u.realname))
-            chanlist = u.channels
+            chanlist = []
+            for chan in self.ircd.channels.itervalues():
+                if u in chan.users:
+                    chanlist.append(chan)
             chandisplay = []
-            for chan in chanlist.iterkeys():
-                cdata = self.ircd.channels[chan]
-                if chan in user.channels or ("s" not in cdata.mode and "p" not in cdata.mode):
-                    statuses = u.status(cdata.name)
+            for cdata in chanlist:
+                if user in cdata.users or ("s" not in cdata.mode and "p" not in cdata.mode):
+                    statuses = cdata.users[u] if u in cdata.users else ""
                     status = self.ircd.prefixes[statuses[0]][0] if statuses else ""
                     chandisplay.append("{}{}".format(status, cdata.name))
             if chandisplay:

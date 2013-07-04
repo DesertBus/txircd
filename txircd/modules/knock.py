@@ -14,8 +14,8 @@ class KnockCommand(Command):
             user.cache["knocks"] = []
         user.cache["knocks"].append(cdata.name)
         reason = data["reason"]
-        for u in cdata.users:
-            if u.hasAccess(cdata.name, self.ircd.servconfig["channel_minimum_level"]["INVITE"] if "channel_minimum_level" in self.ircd.servconfig and "INVITE" in self.ircd.servconfig["channel_minimum_level"] else "o"):
+        for u in cdata.users.iterkeys():
+            if u.hasAccess(cdata, self.ircd.servconfig["channel_minimum_level"]["INVITE"] if "channel_minimum_level" in self.ircd.servconfig and "INVITE" in self.ircd.servconfig["channel_minimum_level"] else "o"):
                 u.sendMessage(irc.RPL_KNOCK, cdata.name, user.prefix(), ":{}".format(reason))
         user.sendMessage(irc.RPL_KNOCKDLVR, cdata.name, ":Your KNOCK has been delivered")
     
@@ -30,7 +30,7 @@ class KnockCommand(Command):
             user.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
             return {}
         cdata = self.ircd.channels[params[0]]
-        if cdata.name in user.channels:
+        if user in cdata.users:
             user.sendMessage(irc.ERR_KNOCKONCHAN, cdata.name, ":You are already on that channel")
             return {}
         if "i" not in cdata.mode:

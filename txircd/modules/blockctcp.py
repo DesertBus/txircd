@@ -22,7 +22,7 @@ class BlockCTCP(Mode):
             okchans = []
             okchanmod = []
             for index, chan in enumerate(data["targetchan"]):
-                if "C" not in chan.mode or (exempt_chanops and user.hasAccess(chan.name, "o")):
+                if "C" not in chan.mode or (exempt_chanops and user.hasAccess(chan, "o")):
                     okchans.append(chan)
                     okchanmod.append(data["chanmod"][index])
             data["targetchan"] = okchans

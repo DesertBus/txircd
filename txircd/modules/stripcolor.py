@@ -38,7 +38,7 @@ class StripColor(Mode):
             stripchans = []
             stripchanmod = []
             for index, chan in enumerate(data["targetchan"]):
-                if "S" in chan.mode and (not exempt_chanops or not user.hasAccess(chan.name, "o")):
+                if "S" in chan.mode and (not exempt_chanops or not user.hasAccess(chan, "o")):
                     stripchans.append(chan.name)
                     stripchanmod.append(data["chanmod"][index])
                 else:

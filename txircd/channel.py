@@ -11,7 +11,7 @@ class IRCChannel(object):
         self.topicSetter = ""
         self.topicTime = now()
         self.mode = deepcopy(self.ircd.servconfig["channel_default_mode"]) # If the user specifies default bans or other lists, references to those will still be problematic
-        self.users = set()
+        self.users = {}
         self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
             "server": {},
             "user": {},
@@ -59,11 +59,11 @@ class IRCChannel(object):
                     if param not in self.ircd.users:
                         continue
                     udata = self.ircd.users[param]
-                    if self.name not in udata.channels:
+                    if user and user not in self.users:
                         continue
-                    if adding and mode in udata.status(self.name):
+                    if adding and mode in self.users[udata]:
                         continue
-                    if not adding and mode not in udata.status(self.name):
+                    if not adding and mode not in self.users[udata]:
                         continue
                     if mode in self.ircd.servconfig["channel_status_minimum_change"]:
                         minimum_level = self.ircd.servconfig["channel_status_minimum_change"][mode]
@@ -71,7 +71,7 @@ class IRCChannel(object):
                         minimum_level = mode
                     if not adding and user == udata:
                         minimum_level = mode # Make the user always allowed to unset from self
-                    if user and user.hasAccess(self.name, minimum_level):
+                    if user and user.hasAccess(self, minimum_level):
                         if adding:
                             allowed, param = self.ircd.prefixes[mode][2].checkSet(user, self, param)
                             if not allowed:
@@ -83,10 +83,10 @@ class IRCChannel(object):
                     elif user:
                         user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, self.name, ":You do not have the level required to change mode +{}".format(mode))
                         continue
-                    if self.name not in udata.channels:
+                    if udata not in self.users:
                         continue
                     if adding:
-                        status = udata.channels[self.name]["status"]
+                        status = self.users[udata]
                         statusList = list(status)
                         for index, statusLevel in enumerate(status):
                             if self.ircd.prefixes[statusLevel][1] < self.ircd.prefixes[mode][1]:
@@ -94,11 +94,11 @@ class IRCChannel(object):
                                 break
                         if mode not in statusList: # no status to put this one before was found, so this goes at the end
                             statusList.append(mode)
-                        udata.channels[self.name]["status"] = "".join(statusList)
+                        self.users[udata] = "".join(statusList)
                         modeDisplay.append([adding, mode, param])
                     else:
-                        if mode in udata.channels[self.name]["status"]:
-                            udata.channels[self.name]["status"] = udata.channels[self.name]["status"].replace(mode, "")
+                        if mode in self.users[udata]:
+                            self.users[udata] = self.users[udata].replace(mode, "")
                             modeDisplay.append([adding, mode, param])
                 elif modetype == 0:
                     if not param and user:
@@ -146,15 +146,15 @@ class IRCChannel(object):
                     showParams.append(mode[2])
             modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
             if user:
-                for u in self.users:
+                for u in self.users.iterkeys():
                     u.sendMessage("MODE", modeLine, to=self.name, prefix=user.prefix())
                 lineSource = user.prefix()
             elif displayPrefix:
-                for u in self.users:
+                for u in self.users.iterkeys():
                     u.sendMessage("MODE", modeLine, to=self.name, prefix=displayPrefix)
                 lineSource = displayPrefix
             else:
-                for u in self.users:
+                for u in self.users.iterkeys():
                     u.sendMessage("MODE", modeLine, to=self.name)
                 lineSource = self.ircd.name
             

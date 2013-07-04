@@ -10,7 +10,7 @@ class BlockColor(Mode):
         okchanmods = []
         exempt_chanops = "c" in self.ircd.servconfig["channel_exempt_chanops"] 
         for index, chan in enumerate(data["targetchan"]):
-            if "c" not in chan.mode or (exempt_chanops and user.hasAccess(chan.name, "o")):
+            if "c" not in chan.mode or (exempt_chanops and user.hasAccess(chan, "o")):
                 okchans.append(chan)
                 okchanmods.append(data["chanmod"][index])
         data["targetchan"] = okchans

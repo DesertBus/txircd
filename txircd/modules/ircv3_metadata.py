@@ -107,7 +107,7 @@ class MetadataCommand(Command):
                 return {}
             if "o" not in user.mode:
                 try:
-                    if not user.hasAccess(target.name, self.ircd.servconfig["channel_minimum_level"]["METADATA"]):
+                    if not user.hasAccess(target, self.ircd.servconfig["channel_minimum_level"]["METADATA"]):
                         user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, target.name, ":You do not have access to set metadata on this channel")
                         return {}
                 except AttributeError: # in this case, it's a user, not a channel

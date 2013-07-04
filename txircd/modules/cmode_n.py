@@ -11,7 +11,7 @@ class NoExternalMessagesMode(Mode):
         removeTargets = []
         
         for channel in targetChannels:
-            if channel.name not in user.channels and "n" in channel.mode:
+            if "n" in channel.mode and user not in channel.users:
                 removeTargets.append(channel)
                 user.sendMessage(irc.ERR_CANNOTSENDTOCHAN, channel.name, ":Cannot send to channel (no external messages)")
         

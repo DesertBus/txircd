@@ -21,10 +21,10 @@ class AccountNotify(Module):
             if not (namespace == "ext" and key == "accountname"):
                 return
             notify = set()
-            for chanName in user.channels:
-                channel = self.ircd.channels[chanName]
-                for u in channel.users:
-                    notify.add(u)
+            for channel in self.ircd.channels.itervalues():
+                if user in channel.users:
+                    for u in channel.users.iterkeys():
+                        notify.add(u)
             notify.remove(user)
             for u in notify:
                 if "cap" in u.cache and "account-notify" in u.cache["cap"]:

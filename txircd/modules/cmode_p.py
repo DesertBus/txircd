@@ -7,7 +7,7 @@ class PrivateMode(Mode):
         if "cdata" not in data:
             return data
         cdata = data["cdata"]
-        if "p" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
+        if "p" in cdata["channel"].mode and data["user"] not in cdata["channel"].users:
             cdata["name"] = "*"
             cdata["topic"] = ""
     # other +p stuff is in other modules
