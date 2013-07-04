@@ -12,7 +12,7 @@ class TopicCommand(Command):
             else:
                 user.sendMessage(irc.RPL_NOTOPIC, cdata.name, "No topic is set")
         else:
-            cdata.setTopic(data["topic"], user.nickname)
+            cdata.setTopic(data["topic"], user.prefix())
             for u in cdata.users.iterkeys():
                 u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=user.prefix())
     
