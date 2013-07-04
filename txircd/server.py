@@ -432,7 +432,7 @@ class ServerProtocol(AMP):
         userList = self.ircd.users.values()
         for user in userList:
             if user.server in leavingServers:
-                user.disconnect("Server disconnected from network")
+                user.disconnect("{} {}".format(servinfo.nearHop, servinfo.name))
         for servname in leavingServers:
             del self.ircd.servers[servname]
         for server in self.ircd.servers.itervalues():
