@@ -152,6 +152,9 @@ class NoSuchUser(Exception):
 class NoSuchServer(Exception):
     pass
 
+class NoSuchChannel(Exception):
+    pass
+
 # TODO: errbacks to handle all of these
 
 
@@ -284,6 +287,20 @@ class SetMode(Command):
     }
     requiresAnswer = False
 
+class SetTopic(Command):
+    arguments = [
+        ("channel", String()),
+        ("chants", Integer()),
+        ("topic", String()),
+        ("topicsetter", String()),
+        ("topicts", Integer())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchChannel: "NO_SUCH_CHANNEL"
+    }
+    requiresAnswer = False
+
 
 class ServerProtocol(AMP):
     def __init__(self, ircd):
@@ -375,7 +392,8 @@ class ServerProtocol(AMP):
                     modes.append(mode)
                     params.append(param)
             self.callRemote(SetMode, target=chan.name, targetts=epoch(chan.created), source="", modestring="+{}".format("".join(modes)), params=params)
-            # TODO: channel topic
+            if chan.topic:
+                self.callRemote(SetTopic, channel=chan.name, chants=epoch(chan.created), topic=chan.topic, topicsetter=chan.topicSetter, topicts=epoch(chan.topicTime))
             for namespace, data in chan.metadata.iteritems():
                 for key, value in data.iteritems():
                     self.callRemote(SetMetadata, target=chan.name, targetts=epoch(chan.created), namespace=namespace, key=key, value=value)
@@ -511,6 +529,27 @@ class ServerProtocol(AMP):
         data.setMode(None, modestring, params, source)
         return {}
     SetMode.responder(setMode)
+    
+    def setTopic(self, channel, chants, topic, topicsetter, topicts):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if channel not in self.ircd.channels:
+            raise NoSuchChannel ("The specified channel does not exist on this network.")
+        cdata = self.ircd.channels[channel]
+        chantime = datetime.utcfromtimestamp(chants)
+        if cdata.created < chantime:
+            return {} # Ignore the change
+        topictime = datetime.utcfromtimestamp(topicts)
+        if chantime < cdata.created or topictime > cdata.topicTime:
+            for action in self.ircd.actions["topic"]:
+                action(cdata, topic, topicsetter)
+            cdata.topic = topic
+            cdata.topicSetter = topicsetter
+            cdata.topicTime = topictime
+            for u in cdata.users.iterkeys():
+                if u.server == self.ircd.name:
+                    u.sendMessage("TOPIC", ":{}".format(topic), to=cdata.name, prefix=topicsetter)
+        return {}
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
