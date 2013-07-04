@@ -446,7 +446,7 @@ class ServerProtocol(AMP):
     DisconnectServer.responder(splitServer)
     
     def connectionLost(self, reason):
-        if self.burstComplete:
+        if self.name:
             self.splitServer(self.name)
         AMP.connectionLost(self, reason)
     
