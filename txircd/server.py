@@ -140,13 +140,16 @@ class ModuleMismatch(Exception):
 class ServerNotConnected(Exception):
     pass
 
-class NoSuchTarget(Exception):
-    pass
-
 class UserAlreadyConnected(Exception):
     pass
 
+class NoSuchTarget(Exception):
+    pass
+
 class NoSuchUser(Exception):
+    pass
+
+class NoSuchServer(Exception):
     pass
 
 # TODO: errbacks to handle all of these
@@ -228,7 +231,8 @@ class ConnectUser(Command):
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        UserAlreadyConnected: "USER_ALREADY_CONNECTED"
+        UserAlreadyConnected: "USER_ALREADY_CONNECTED",
+        NoSuchServer: "NO_SUCH_SERVER"
     }
     requiresAnswer = False
 
@@ -449,6 +453,8 @@ class ServerProtocol(AMP):
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if nick in self.ircd.users:
             raise UserAlreadyConnected ("The user is already connected to the network.")
+        if server not in self.ircd.servers:
+            raise NoSuchServer ("The server this user is on is not connected to the network.")
         self.ircd.users[nick] = RemoteUser(self.ircd, nick, ident, host, gecos, ip, server, secure, datetime.utcfromtimestamp(signon), datetime.utcfromtimestamp(nickts))
         for linkedServer in self.ircd.servers.itervalues():
             if linkedServer.nearHop == self.ircd.name and linkedServer != self:
