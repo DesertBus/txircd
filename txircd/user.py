@@ -3,7 +3,7 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
-from txircd.server import ConnectUser, JoinChannel, LeaveChannel, PartChannel, RemoveUser, SetMetadata, SetMode
+from txircd.server import ConnectUser, JoinChannel, LeaveChannel, RemoveUser, SetMetadata, SetMode
 from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
 import socket, hashlib, uuid
 
@@ -482,16 +482,6 @@ class IRCUser(object):
                     server.callRemote(SetMode, target=self.uuid, source=self.ircd.name, modestring="+{}".format(status), params=[self.nickname for i in range(len(status))])
         for modfunc in self.ircd.actions["join"]:
             modfunc(self, channel)
-    
-    def part(self, channel, reason):
-        if self not in channel.users:
-            return
-        for u in channel.users.iterkeys():
-            u.sendMessage("PART", ":{}".format(reason), to=channel.name, prefix=self.prefix())
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
-                server.callRemote(PartChannel, channel=channel.name, user=self.uuid, reason=reason)
-        self.leave(channel)
     
     def leave(self, channel, sourceServer = None):
         del channel.users[self] # remove channel user entry

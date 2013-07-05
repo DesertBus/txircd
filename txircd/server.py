@@ -115,9 +115,6 @@ class RemoteUser(object):
             return
         self.ircd.servers[self.server].callRemote(RequestJoinChannel, channel=channel.name, user=self.uuid)
     
-    def part(self, channel, reason):
-        self.ircd.servers[self.server].callRemote(RequestPartChannel, channel=channel.name, user=self.uuid)
-    
     def leave(self, channel, sourceServer = None):
         del channel.users[self] # remove channel user entry
         if not channel.users:
@@ -239,33 +236,6 @@ class DisconnectServer(Command):
     }
     requiresAnswer = False
 
-class RequestMetadata(Command):
-    arguments = [
-        ("user", String()),
-        ("namespace", String()),
-        ("key", String()),
-        ("value", String())
-    ]
-    errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        NoSuchUser: "NO_SUCH_USER"
-    }
-    requiresAnswer = False
-
-class SetMetadata(Command):
-    arguments = [
-        ("target", String()),
-        ("targetts", Integer()),
-        ("namespace", String()),
-        ("key", String()),
-        ("value", String())
-    ]
-    errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        NoSuchTarget: "NO_SUCH_TARGET"
-    }
-    requiresAnswer = False
-
 class ConnectUser(Command):
     arguments = [
         ("uuid", String()),
@@ -316,32 +286,6 @@ class JoinChannel(Command):
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchUser: "NO_SUCH_USER"
-    }
-    requiresAnswer = False
-
-class RequestPartChannel(Command):
-    arguments = [
-        ("channel", String()),
-        ("user", String()),
-        ("reason", String())
-    ]
-    errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        NoSuchUser: "NO_SUCH_USER",
-        NoSuchChannel: "NO_SUCH_CHANNEL"
-    }
-    requiresAnswer = False
-
-class PartChannel(Command):
-    arguments = [
-        ("channel", String()),
-        ("user", String()),
-        ("reason", String())
-    ]
-    errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        NoSuchUser: "NO_SUCH_USER",
-        NoSuchChannel: "NO_SUCH_CHANNEL"
     }
     requiresAnswer = False
 
@@ -417,6 +361,33 @@ class ChangeNick(Command):
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class RequestMetadata(Command):
+    arguments = [
+        ("user", String()),
+        ("namespace", String()),
+        ("key", String()),
+        ("value", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class SetMetadata(Command):
+    arguments = [
+        ("target", String()),
+        ("targetts", Integer()),
+        ("namespace", String()),
+        ("key", String()),
+        ("value", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchTarget: "NO_SUCH_TARGET"
     }
     requiresAnswer = False
 
@@ -658,42 +629,6 @@ class ServerProtocol(AMP):
             action(udata, cdata)
         return {}
     JoinChannel.responder(joinChannel)
-    
-    def requestPart(self, channel, user, reason):
-        if not self.name:
-            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if user not in self.ircd.userid:
-            raise NoSuchUser ("The given user is not connected to the network.")
-        if channel not in self.ircd.channels:
-            raise NoSuchChannel ("The given channel does not exist on the network.")
-        cdata = self.ircd.channels[channel]
-        self.ircd.userid[user].part(cdata, reason)
-    RequestPartChannel.responder(requestPart)
-    
-    def partChannel(self, channel, user, reason):
-        if not self.name:
-            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if user not in self.ircd.userid:
-            raise NoSuchUser ("The given user is not connected to the network.")
-        if channel not in self.ircd.channels:
-            raise NoSuchChannel ("The given channel does not exist on the network.")
-        udata = self.ircd.userid[user]
-        cdata = self.ircd.channels[channel]
-        if udata not in cdata.users:
-            return {}
-        for u in cdata.users.iterkeys():
-            if u.server == self.ircd.name:
-                u.sendMessage("PART", ":{}".format(reason), to=cdata.name, prefix=udata.prefix())
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name and server != self:
-                server.callRemote(PartChannel, channel=cdata.name, user=udata.uuid, reason=reason)
-        del cdata.users[udata]
-        if not cdata.users:
-            for action in self.ircd.actions["chandestroy"]:
-                action(cdata)
-            del self.ircd.channels[cdata.name]
-        return {}
-    PartChannel.responder(partChannel)
     
     def leaveChannel(self, channel, user):
         if not self.name:
