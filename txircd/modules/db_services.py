@@ -9,7 +9,7 @@ from Crypto.Random.random import getrandbits
 from Crypto.Cipher import AES
 from Crypto.Cipher import Blowfish
 from random import choice
-import math, os, random, yaml
+import datetime, math, os, random, uuid, yaml
 
 class Service(object):
     class ServiceSocket(object):
@@ -26,6 +26,7 @@ class Service(object):
         # in order to prevent exceptions all over the place
         self.ircd = ircd
         self.socket = self.ServiceSocket()
+        self.uuid = str(uuid.uuid1())
         self.password = None
         self.nickname = nick
         self.username = ident
@@ -33,10 +34,10 @@ class Service(object):
         self.realname = gecos
         self.ip = "127.0.0.1"
         self.server = self.ircd.name
-        self.signon = now()
+        self.signon = datetime.utcfromtimestamp(1) # Give these pseudoclients a really old time so that they won't be disconnected by remote servers
         self.lastactivity = now()
         self.lastpong = now()
-        self.nicktime = now()
+        self.nicktime = datetime.utcfromtimestamp(1)
         self.mode = {}
         self.disconnected = Deferred()
         self.disconnected.callback(None)
@@ -1042,6 +1043,9 @@ class Spawner(object):
         self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
         self.ircd.users[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
         self.ircd.users[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
+        self.ircd.userid[self.nickserv.uuid] = self.nickserv
+        self.ircd.userid[self.chanserv.uuid] = self.chanserv
+        self.ircd.userid[self.bidserv.uuid] = self.bidserv
         
         self.ircd.module_data_cache["sasl_agent"] = self
         
@@ -1094,9 +1098,12 @@ class Spawner(object):
         if self.db:
             self.db.close()
         
-        del self.ircd.users["NickServ"]
-        del self.ircd.users["ChanServ"]
-        del self.ircd.users["BidServ"]
+        del self.ircd.users[self.nickserv.nickname]
+        del self.ircd.users[self.chanserv.nickname]
+        del self.ircd.users[self.bidserv.nickname]
+        del self.ircd.userid[self.nickserv.uuid]
+        del self.ircd.userid[self.chanserv.uuid]
+        del self.ircd.userid[self.bidserv.uuid]
         
         del self.ircd.commands["NICKSERV"]
         del self.ircd.commands["NS"]
