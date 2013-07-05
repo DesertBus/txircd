@@ -82,7 +82,7 @@ class IRCUser(object):
         # Send notification of connection to other servers
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(ConnectUser, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=epoch(self.signon), nickts=epoch(self.nicktime))
+                server.callRemote(ConnectUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=epoch(self.signon), nickts=epoch(self.nicktime))
         
         # Send all those lovely join messages
         chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
@@ -114,7 +114,7 @@ class IRCUser(object):
         if thisline:
             self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
     
-    def disconnect(self, reason):
+    def disconnect(self, reason, sourceServer = None):
         if self.registered == 0 and self.nickname in self.ircd.users: # both checks required in case this is called during the final registration process
             quitdest = set()
             exitChannels = []
@@ -132,8 +132,8 @@ class IRCUser(object):
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
             for server in self.ircd.servers.itervalues():
-                if server.nearHop == self.ircd.name:
-                    server.callRemote(RemoveUser, nick=self.nickname, reason=reason)
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
+                    server.callRemote(RemoveUser, user=self.uuid, reason=reason)
         self.sendMessage("ERROR", ":Closing Link: {}@{} [{}]".format(self.username if self.username else "unknown", self.hostname, reason), to=None, prefix=None)
         self.socket.transport.loseConnection()
     
@@ -237,7 +237,7 @@ class IRCUser(object):
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value=value)
+                    server.callRemote(SetMetadata, target=self.uuid, namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
         oldValue = self.metadata[namespace][key]
@@ -247,7 +247,7 @@ class IRCUser(object):
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMetadata, target=self.nickname, namespace=namespace, key=key, value="")
+                    server.callRemote(SetMetadata, target=self.uuid, namespace=namespace, key=key, value="")
     
     #=====================
     #== Utility Methods ==
@@ -354,7 +354,7 @@ class IRCUser(object):
             
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMode, target=self.nickname, source=lineSource, modestring="".join(modestring), params=showParams)
+                    server.callRemote(SetMode, target=self.uuid, source=lineSource, modestring="".join(modestring), params=showParams)
             return modeLine
         return ""
     
@@ -476,11 +476,11 @@ class IRCUser(object):
         self.report_names(channel)
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(JoinChannel, channel=channel.name, nick=self.nickname)
+                server.callRemote(JoinChannel, channel=channel.name, user=self.uuid)
         if status:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMode, target=self.nickname, source=self.ircd.name, modestring="+{}".format(status), params=[self.nickname for i in range(len(status))])
+                    server.callRemote(SetMode, target=self.uuid, source=self.ircd.name, modestring="+{}".format(status), params=[self.nickname for i in range(len(status))])
         for modfunc in self.ircd.actions["join"]:
             modfunc(self, channel)
     
@@ -491,7 +491,7 @@ class IRCUser(object):
             u.sendMessage("PART", ":{}".format(reason), to=channel.name, prefix=self.prefix())
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(PartChannel, channel=channel.name, nick=self.nickname, reason=reason)
+                server.callRemote(PartChannel, channel=channel.name, user=self.uuid, reason=reason)
         self.leave(channel)
     
     def leave(self, channel):
