@@ -162,7 +162,6 @@ class IRCD(Factory):
         self.config = config
         self.version = "txircd-{}".format(__version__)
         self.created = now()
-        self.token = uuid.uuid1()
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
         self.channels = CaseInsensitiveDictionary()
