@@ -125,7 +125,9 @@ class IRCUser(object):
                 self.leave(channel)
                 for u in channel.users.iterkeys():
                     quitdest.add(u)
-            del self.ircd.users[self.nickname]
+            udata = self.ircd.users[self.nickname]
+            if udata == self:
+                del self.ircd.users[self.nickname]
             del self.ircd.userid[self.uuid]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
