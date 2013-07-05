@@ -148,9 +148,6 @@ class ModuleMismatch(Exception):
 class ServerNotConnected(Exception):
     pass
 
-class UserAlreadyConnected(Exception):
-    pass
-
 class NoSuchTarget(Exception):
     pass
 
@@ -255,7 +252,6 @@ class ConnectUser(Command):
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        UserAlreadyConnected: "USER_ALREADY_CONNECTED",
         NoSuchServer: "NO_SUCH_SERVER"
     }
     requiresAnswer = False
@@ -601,11 +597,25 @@ class ServerProtocol(AMP):
     def addUser(self, nick, ident, host, gecos, ip, server, secure, signon, nickts):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if nick in self.ircd.users:
-            raise UserAlreadyConnected ("The user is already connected to the network.")
         if server not in self.ircd.servers:
             raise NoSuchServer ("The server this user is on is not connected to the network.")
-        self.ircd.users[nick] = RemoteUser(self.ircd, nick, ident, host, gecos, ip, server, secure, datetime.utcfromtimestamp(signon), datetime.utcfromtimestamp(nickts))
+        signontime = datetime.utcfromtimestamp(signon)
+        nicktime = datetime.utcfromtimestamp(nickts)
+        if nick in self.ircd.users:
+            udata = self.ircd.users[nick]
+            if nicktime < udata.nicktime:
+                udata.disconnect("Nickname collision")
+            elif nicktime == udata.nicktime:
+                if signontime < udata.signon:
+                    udata.disconnect("Nickname collision")
+                elif signontime == udata.signon:
+                    udata.disconnect("Nickname collision")
+                    return {}
+                else:
+                    return {}
+            else:
+                return {}
+        self.ircd.users[nick] = RemoteUser(self.ircd, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
         for linkedServer in self.ircd.servers.itervalues():
             if linkedServer.nearHop == self.ircd.name and linkedServer != self:
                 linkedServer.callRemote(ConnectUser, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
