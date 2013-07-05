@@ -1,6 +1,7 @@
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Factory, ClientFactory
 from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
+from twisted.words.protocols import irc
 from txircd.channel import IRCChannel
 from txircd.utils import CaseInsensitiveDictionary, epoch, irc_lower, now
 from datetime import datetime
@@ -644,7 +645,15 @@ class ServerProtocol(AMP):
     RemoveUser.responder(removeUser)
     
     def requestJoin(self, channel, user):
-        pass # TODO
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        if channel in self.ircd.channels:
+            cdata = self.ircd.channels[channel]
+        else:
+            cdata = IRCChannel(self.ircd, channel)
+        self.ircd.userid[user].join(cdata)
     RequestJoinChannel.responder(requestJoin)
     
     def joinChannel(self, channel, user, chants):
@@ -652,14 +661,37 @@ class ServerProtocol(AMP):
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if user not in self.ircd.userid:
             raise NoSuchUser ("The given user is not connected to the network.")
-        user = self.ircd.userid[user]
-        if channel in user.channels:
-            return {}
+        udata = self.ircd.userid[user]
         if channel in self.ircd.channels:
             cdata = self.ircd.channels[channel]
         else:
             cdata = IRCChannel(self.ircd, channel)
-        # TODO
+        if udata in cdata.users:
+            return {}
+        cdata.users[self] = ""
+        joinShowUsers = cdata.users.keys()
+        tryagain = []
+        for action in self.ircd.actions["joinmessage"]:
+            result = action(cdata, udata, joinShowUsers)
+            if result == "again":
+                tryagain.append(action)
+            else:
+                joinShowUsers = result
+        for action in tryagain:
+            joinShowUsers = action(cdata, udata, joinShowUsers)
+        for u in joinShowUsers:
+            if u.server == self.ircd.name:
+                u.sendMessage("JOIN", to=cdata.name, prefix=udata.prefix())
+        if cdata.topic:
+            udata.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
+            udata.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topicSetter, str(epoch(cdata.topicTime)))
+        else:
+            udata.sendMessage(irc.RPL_NOTOPIC, cdata.name, ":No topic is set")
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                server.callRemote(JoinChannel, channel=cdata.name, user=udata.uuid)
+        for action in self.ircd.actions["join"]:
+            action(udata, cdata)
         return {}
     JoinChannel.responder(joinChannel)
     
