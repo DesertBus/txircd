@@ -494,6 +494,8 @@ class IRCUser(object):
             del self.ircd.channels[channel.name] # destroy the empty channel
     
     def nick(self, newNick):
+        if newNick in self.ircd.users:
+            return
         del self.ircd.users[self.nickname]
         self.ircd.users[newNick] = self
         notify = set()
