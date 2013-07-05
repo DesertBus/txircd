@@ -110,6 +110,8 @@ class RemoteUser(object):
         return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
     
     def join(self, channel):
+        if self in channel.users:
+            return
         self.ircd.servers[self.server].callRemote(RequestJoinChannel, channel=channel.name, user=self.uuid)
     
     def part(self, channel, reason):
