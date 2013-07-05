@@ -118,8 +118,15 @@ class RemoteUser(object):
     def part(self, channel, reason):
         self.ircd.servers[self.server].callRemote(RequestPartChannel, channel=channel.name, user=self.uuid)
     
-    def leave(self, channel):
-        pass
+    def leave(self, channel, sourceServer = None):
+        del channel.users[self] # remove channel user entry
+        if not channel.users:
+            for modfunc in self.ircd.actions["chandestroy"]:
+                modfunc(channel)
+            del self.ircd.channels[channel.name] # destroy the empty channel
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server.name != sourceServer:
+                server.callRemote(LeaveChannel, channel=channel.name, user=self.uuid)
     
     def nick(self, newNick):
         if newNick in self.ircd.users:
@@ -653,7 +660,14 @@ class ServerProtocol(AMP):
     JoinChannel.responder(joinChannel)
     
     def requestPart(self, channel, user, reason):
-        pass # TODO
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        if channel not in self.ircd.channels:
+            raise NoSuchChannel ("The given channel does not exist on the network.")
+        cdata = self.ircd.channels[channel]
+        self.ircd.userid[user].part(cdata, reason)
     RequestPartChannel.responder(requestPart)
     
     def partChannel(self, channel, user, reason):
@@ -662,15 +676,33 @@ class ServerProtocol(AMP):
         if user not in self.ircd.userid:
             raise NoSuchUser ("The given user is not connected to the network.")
         if channel not in self.ircd.channels:
-            return {} # If the channel is already destroyed, raising may be from a broadcast throwback
-        user = self.ircd.userid[user]
-        chan = self.ircd.channels[channel]
-        # TODO
+            raise NoSuchChannel ("The given channel does not exist on the network.")
+        udata = self.ircd.userid[user]
+        cdata = self.ircd.channels[channel]
+        if udata not in cdata.users:
+            return {}
+        for u in cdata.users.iterkeys():
+            if u.server == self.ircd.name:
+                u.sendMessage("PART", ":{}".format(reason), to=cdata.name, prefix=udata.prefix())
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                server.callRemote(PartChannel, channel=cdata.name, user=udata.uuid, reason=reason)
+        del cdata.users[udata]
+        if not cdata.users:
+            for action in self.ircd.actions["chandestroy"]:
+                action(cdata)
+            del self.ircd.channels[cdata.name]
         return {}
     PartChannel.responder(partChannel)
     
     def leaveChannel(self, channel, user):
-        pass # TODO
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        if channel not in self.ircd.channels:
+            raise NoSuchChannel ("The given channel does not exist on the network.")
+        self.ircd.userid[user].leave(self.ircd.channels[channel])
     LeaveChannel.responder(leaveChannel)
     
     def requestMode(self, user, source, modestring, params):
