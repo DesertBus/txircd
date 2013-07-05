@@ -709,7 +709,7 @@ class ServerProtocol(AMP):
             if datetime.utcfromtimestamp(targetts) > data.created:
                 return {}
         else:
-            raise NoSuchTarget ("The specified user or channel is not connected to the network.")
+            raise NoSuchTarget ("The specified user or channel is not part of the network.")
         if not value and key not in data.metadata[namespace]:
             return {}
         if not value:
