@@ -23,9 +23,10 @@ class RemoteUser(object):
             self.transport = self.RemoteTransport()
             self.secure = secure
     
-    def __init__(self, ircd, nick, ident, host, gecos, ip, server, secure, signonTime, nickTime):
+    def __init__(self, ircd, uuid, nick, ident, host, gecos, ip, server, secure, signonTime, nickTime):
         self.ircd = ircd
         self.socket = self.RemoteSocket(secure)
+        self.uuid = uuid
         self.password = None
         self.nickname = nick
         self.username = ident
@@ -49,16 +50,16 @@ class RemoteUser(object):
         self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
     
     def disconnect(self, reason):
-        self.ircd.servers[self.server].callRemote(RequestQuit, nick=self.nickname, reason=reason)
+        self.ircd.servers[self.server].callRemote(RequestQuit, user=self.uuid, reason=reason)
     
     def sendMessage(self, command, *parameter_list, **kw):
         pass # TODO
     
     def setMetadata(self, namespace, key, value):
-        self.ircd.servers[self.server].callRemote(RequestMetadata, nick=self.nickname, namespace=namespace, key=key, value=value)
+        self.ircd.servers[self.server].callRemote(RequestMetadata, user=self.uuid, namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
-        self.ircd.servers[self.server].callRemote(RequestMetadata, nick=self.nickname, namespace=namespace, key=key, value="")
+        self.ircd.servers[self.server].callRemote(RequestMetadata, user=self.uuid, namespace=namespace, key=key, value="")
     
     def prefix(self):
         return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
@@ -78,7 +79,7 @@ class RemoteUser(object):
             source = displayPrefix
         else:
             source = self.ircd.name
-        self.ircd.servers[self.server].callRemote(RequestSetMode, nick=self.nickname, source=source, modestring=modes, params=params)
+        self.ircd.servers[self.server].callRemote(RequestSetMode, user=self.uuid, source=source, modestring=modes, params=params)
     
     def modeString(self, user):
         modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
@@ -92,10 +93,10 @@ class RemoteUser(object):
         return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
     
     def join(self, channel):
-        self.ircd.servers[self.server].callRemote(RequestJoinChannel, channel=channel.name, nick=self.nickname)
+        self.ircd.servers[self.server].callRemote(RequestJoinChannel, channel=channel.name, user=self.uuid)
     
     def part(self, channel, reason):
-        self.ircd.servers[self.server].callRemote(RequestPartChannel, channel=channel.name, nick=self.nickname)
+        self.ircd.servers[self.server].callRemote(RequestPartChannel, channel=channel.name, user=self.uuid)
     
     def leave(self, channel):
         pass
@@ -103,7 +104,7 @@ class RemoteUser(object):
     def nick(self, newNick):
         if newNick in self.ircd.users:
             return
-        self.ircd.servers[self.server].callRemote(RequestNick, nick=self.nickname, newnick=newNick)
+        self.ircd.servers[self.server].callRemote(RequestNick, user=self.uuid, newnick=newNick)
 
 class RemoteServer(object):
     def __init__(self, ircd, name, desc, nearestServer, hopCount):
@@ -213,7 +214,7 @@ class DisconnectServer(Command):
 
 class RequestMetadata(Command):
     arguments = [
-        ("nick", String()),
+        ("user", String()),
         ("namespace", String()),
         ("key", String()),
         ("value", String())
@@ -240,6 +241,7 @@ class SetMetadata(Command):
 
 class ConnectUser(Command):
     arguments = [
+        ("uuid", String()),
         ("nick", String()),
         ("ident", String()),
         ("host", String()),
@@ -258,7 +260,7 @@ class ConnectUser(Command):
 
 class RequestQuit(Command):
     arguments = [
-        ("nick", String()),
+        ("user", String()),
         ("reason", String())
     ]
     errors = {
@@ -269,7 +271,7 @@ class RequestQuit(Command):
 
 class RemoveUser(Command):
     arguments = [
-        ("nick", String()),
+        ("user", String()),
         ("reason", String())
     ]
     errors = {
@@ -281,7 +283,7 @@ class RemoveUser(Command):
 class RequestJoinChannel(Command):
     arguments = [
         ("channel", String()),
-        ("nick", String())
+        ("user", String())
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
@@ -292,7 +294,7 @@ class RequestJoinChannel(Command):
 class JoinChannel(Command):
     arguments = [
         ("channel", String()),
-        ("nick", String()),
+        ("user", String()),
         ("chants", Integer())
     ]
     errors = {
@@ -304,7 +306,7 @@ class JoinChannel(Command):
 class RequestPartChannel(Command):
     arguments = [
         ("channel", String()),
-        ("nick", String()),
+        ("user", String()),
         ("reason", String())
     ]
     errors = {
@@ -317,7 +319,7 @@ class RequestPartChannel(Command):
 class PartChannel(Command):
     arguments = [
         ("channel", String()),
-        ("nick", String()),
+        ("user", String()),
         ("reason", String())
     ]
     errors = {
@@ -330,7 +332,7 @@ class PartChannel(Command):
 class LeaveChannel(Command):
     arguments = [
         ("channel", String()),
-        ("nick", String())
+        ("user", String())
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
@@ -341,7 +343,7 @@ class LeaveChannel(Command):
 
 class RequestSetMode(Command):
     arguments = [
-        ("nick", String()),
+        ("user", String()),
         ("source", String()),
         ("modestring", String()),
         ("params", ListOf(String()))
@@ -382,7 +384,7 @@ class SetTopic(Command):
 
 class RequestNick(Command):
     arguments = [
-        ("nick", String()),
+        ("user", String()),
         ("newnick", String())
     ]
     errors = {
@@ -393,8 +395,7 @@ class RequestNick(Command):
 
 class ChangeNick(Command):
     arguments = [
-        ("nick", String()),
-        ("userts", Integer()),
+        ("user", String()),
         ("newnick", String())
     ]
     errors = {
@@ -552,29 +553,30 @@ class ServerProtocol(AMP):
             self.splitServer(self.name)
         AMP.connectionLost(self, reason)
     
-    def requestMetadata(self, nick, namespace, key, value):
+    def requestMetadata(self, user, namespace, key, value):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if nick not in self.ircd.users:
+        if user not in self.ircd.userid:
             raise NoSuchUser ("The user we're to update doesn't actually exist.")
-        self.ircd.users[nick].setMetadata(namespace, key, value) # This is defined in IRCUser to work or RemoteUser to keep passing it on
+        if value:
+            self.ircd.userid[user].setMetadata(namespace, key, value) # This is defined in IRCUser to work or RemoteUser to keep passing it on
+        else:
+            self.ircd.userid[user].delMetadata(namespace, key)
         return {}
     RequestMetadata.responder(requestMetadata)
     
     def setMetadata(self, target, targetts, namespace, key, value):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if target in self.ircd.users:
+        if target in self.ircd.userid:
             data = self.ircd.users[target]
-            datats = data.signon
         elif target in self.ircd.channels:
             data = self.ircd.channels[target]
-            datats = data.created
+            if datetime.utcfromtimestamp(targetts) > data.created:
+                return {}
         else:
             raise NoSuchTarget ("The specified user or channel is not connected to the network.")
         if not value and key not in data.metadata[namespace]:
-            return {}
-        if datetime.utcfromtimestamp(targetts) > datats:
             return {}
         if not value:
             oldValue = data.metadata[namespace][key]
@@ -594,7 +596,7 @@ class ServerProtocol(AMP):
         return {}
     SetMetadata.responder(setMetadata)
     
-    def addUser(self, nick, ident, host, gecos, ip, server, secure, signon, nickts):
+    def addUser(self, uuid, nick, ident, host, gecos, ip, server, secure, signon, nickts):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if server not in self.ircd.servers:
@@ -615,35 +617,42 @@ class ServerProtocol(AMP):
                     return {}
             else:
                 return {}
-        self.ircd.users[nick] = RemoteUser(self.ircd, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
+        newUser = RemoteUser(self.ircd, uuid, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
+        self.ircd.users[nick] = newUser
+        self.ircd.userid[uuid] = newUser
         for linkedServer in self.ircd.servers.itervalues():
             if linkedServer.nearHop == self.ircd.name and linkedServer != self:
-                linkedServer.callRemote(ConnectUser, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
+                linkedServer.callRemote(ConnectUser, uuid=uuid, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
         return {}
     ConnectUser.responder(addUser)
     
-    def requestQuit(self, nick, reason):
-        pass # TODO
-    RequestQuit.responder(requestQuit)
-    
-    def removeUser(self, nick, reason):
+    def requestQuit(self, user, reason):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if nick in self.ircd.users: # If nick is not in self.ircd.users, we're fine; probably is a return from the broadcast
-            self.ircd.users[nick].disconnect(reason)
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not on the network.")
+        self.ircd.userid[user].disconnect(reason)
+    RequestQuit.responder(requestQuit)
+    
+    def removeUser(self, user, reason):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not on the network.")
+        # TODO
         return {}
     RemoveUser.responder(removeUser)
     
-    def requestJoin(self, channel, nick):
+    def requestJoin(self, channel, user):
         pass # TODO
     RequestJoinChannel.responder(requestJoin)
     
-    def joinChannel(self, channel, nick, chants):
+    def joinChannel(self, channel, user, chants):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if nick not in self.ircd.users:
+        if user not in self.ircd.userid:
             raise NoSuchUser ("The given user is not connected to the network.")
-        user = self.ircd.users[nick]
+        user = self.ircd.userid[user]
         if channel in user.channels:
             return {}
         if channel in self.ircd.channels:
@@ -654,28 +663,28 @@ class ServerProtocol(AMP):
         return {}
     JoinChannel.responder(joinChannel)
     
-    def requestPart(self, channel, nick, reason):
+    def requestPart(self, channel, user, reason):
         pass # TODO
     RequestPartChannel.responder(requestPart)
     
-    def partChannel(self, channel, nick, reason):
+    def partChannel(self, channel, user, reason):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if nick not in self.ircd.users:
+        if user not in self.ircd.userid:
             raise NoSuchUser ("The given user is not connected to the network.")
         if channel not in self.ircd.channels:
             return {} # If the channel is already destroyed, raising may be from a broadcast throwback
-        user = self.ircd.users[nick]
+        user = self.ircd.userid[user]
         chan = self.ircd.channels[channel]
         # TODO
         return {}
     PartChannel.responder(partChannel)
     
-    def leaveChannel(self, channel, nick):
+    def leaveChannel(self, channel, user):
         pass # TODO
     LeaveChannel.responder(leaveChannel)
     
-    def requestMode(self, nick, source, modestring, params):
+    def requestMode(self, user, source, modestring, params):
         pass # TODO
     RequestSetMode.responder(requestMode)
     
@@ -684,8 +693,8 @@ class ServerProtocol(AMP):
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if target in self.ircd.channels:
             data = self.ircd.channels[target]
-        elif target in self.ircd.users:
-            data = self.ircd.users[target]
+        elif target in self.ircd.userid:
+            data = self.ircd.userid[target]
         else:
             raise NoSuchTarget ("The target given does not exist on the network.")
         # TODO
@@ -714,11 +723,11 @@ class ServerProtocol(AMP):
         return {}
     SetTopic.responder(setTopic)
     
-    def requestNick(self, nick, newnick):
+    def requestNick(self, user, newnick):
         pass # TODO
     RequestNick.responder(requestNick)
     
-    def changeNick(self, nick, userts, newNick):
+    def changeNick(self, user, newNick):
         pass # TODO
     ChangeNick.responder(changeNick)
 

@@ -5,7 +5,7 @@ from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
 from txircd.server import ConnectUser, JoinChannel, PartChannel, RemoveUser, SetMetadata, SetMode
 from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
-import socket, hashlib
+import socket, hashlib, uuid
 
 class IRCUser(object):
     
@@ -34,6 +34,7 @@ class IRCUser(object):
         # Set attributes
         self.ircd = parent.factory
         self.socket = parent
+        self.uuid = str(uuid.uuid1())
         self.password = None
         self.nickname = None
         self.username = None
@@ -76,6 +77,7 @@ class IRCUser(object):
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
+        self.ircd.userid[self.uuid] = self
         
         # Send notification of connection to other servers
         for server in self.ircd.servers.itervalues():
@@ -124,6 +126,7 @@ class IRCUser(object):
                 for u in channel.users.iterkeys():
                     quitdest.add(u)
             del self.ircd.users[self.nickname]
+            del self.ircd.userid[self.uuid]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
             for server in self.ircd.servers.itervalues():

@@ -9,7 +9,7 @@ from txircd.server import IntroduceServer, ServerProtocol, protocol_version
 from txircd.utils import CaseInsensitiveDictionary, now
 from txircd.user import IRCUser
 from txircd import __version__
-import uuid, socket, yaml, os, json, imp
+import socket, yaml, os, json, imp
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_LOCALUSERS = "265"
@@ -164,6 +164,7 @@ class IRCD(Factory):
         self.created = now()
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
+        self.userid = {}
         self.channels = CaseInsensitiveDictionary()
         self.peerConnections = {}
         self.ssl_cert = sslCert
