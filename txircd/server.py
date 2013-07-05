@@ -49,8 +49,25 @@ class RemoteUser(object):
         self.cache = {}
         self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
     
-    def disconnect(self, reason):
-        self.ircd.servers[self.server].callRemote(RequestQuit, user=self.uuid, reason=reason)
+    def disconnect(self, reason, sourceServer = None):
+        quitdest = set()
+        exitChannels = []
+        for channel in self.ircd.channels.itervalues():
+            if self in channel.users:
+                exitChannels.append(channel)
+        for channel in exitChannels:
+            self.leave(channel)
+            for u in channel.users.iterkeys():
+                quitdest.add(u)
+        udata = self.ircd.users[self.nickname]
+        if udata == self:
+            del self.ircd.users[self.nickname]
+        del self.ircd.userid[self.uuid]
+        for user in quitdest:
+            user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server.name != sourceServer:
+                server.callRemote(RemoveUser, user=self.uuid, reason=reason)
     
     def sendMessage(self, command, *parameter_list, **kw):
         pass # TODO
@@ -255,17 +272,6 @@ class ConnectUser(Command):
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchServer: "NO_SUCH_SERVER"
-    }
-    requiresAnswer = False
-
-class RequestQuit(Command):
-    arguments = [
-        ("user", String()),
-        ("reason", String())
-    ]
-    errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
 
@@ -626,20 +632,12 @@ class ServerProtocol(AMP):
         return {}
     ConnectUser.responder(addUser)
     
-    def requestQuit(self, user, reason):
-        if not self.name:
-            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if user not in self.ircd.userid:
-            raise NoSuchUser ("The given user is not on the network.")
-        self.ircd.userid[user].disconnect(reason)
-    RequestQuit.responder(requestQuit)
-    
     def removeUser(self, user, reason):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if user not in self.ircd.userid:
             raise NoSuchUser ("The given user is not on the network.")
-        # TODO
+        self.ircd.userid[user].disconnect(reason, self.name)
         return {}
     RemoveUser.responder(removeUser)
     
