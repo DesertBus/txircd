@@ -562,49 +562,6 @@ class ServerProtocol(AMP):
             self.splitServer(self.name)
         AMP.connectionLost(self, reason)
     
-    def requestMetadata(self, user, namespace, key, value):
-        if not self.name:
-            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if user not in self.ircd.userid:
-            raise NoSuchUser ("The user we're to update doesn't actually exist.")
-        if value:
-            self.ircd.userid[user].setMetadata(namespace, key, value) # This is defined in IRCUser to work or RemoteUser to keep passing it on
-        else:
-            self.ircd.userid[user].delMetadata(namespace, key)
-        return {}
-    RequestMetadata.responder(requestMetadata)
-    
-    def setMetadata(self, target, targetts, namespace, key, value):
-        if not self.name:
-            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if target in self.ircd.userid:
-            data = self.ircd.users[target]
-        elif target in self.ircd.channels:
-            data = self.ircd.channels[target]
-            if datetime.utcfromtimestamp(targetts) > data.created:
-                return {}
-        else:
-            raise NoSuchTarget ("The specified user or channel is not connected to the network.")
-        if not value and key not in data.metadata[namespace]:
-            return {}
-        if not value:
-            oldValue = data.metadata[namespace][key]
-            del data.metadata[namespace][key]
-            for action in self.ircd.actions["metadataupdate"]:
-                action(data, namespace, key, oldValue, "")
-        else:
-            oldValue = ""
-            if key in data.metadata[namespace]:
-                oldValue = data.metadata[namespace][key]
-            data.metadata[namespace][key] = value
-            for action in self.ircd.actions["metadataupdate"]:
-                action(data, namespace, key, oldValue, value)
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name and server != self:
-                server.callRemote(SetMetadata, target=target, targetts=targetts, namespace=namespace, key=key, value=value)
-        return {}
-    SetMetadata.responder(setMetadata)
-    
     def addUser(self, uuid, nick, ident, host, gecos, ip, server, secure, signon, nickts):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
@@ -762,6 +719,49 @@ class ServerProtocol(AMP):
     def changeNick(self, user, newNick):
         pass # TODO
     ChangeNick.responder(changeNick)
+    
+    def requestMetadata(self, user, namespace, key, value):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The user we're to update doesn't actually exist.")
+        if value:
+            self.ircd.userid[user].setMetadata(namespace, key, value) # This is defined in IRCUser to work or RemoteUser to keep passing it on
+        else:
+            self.ircd.userid[user].delMetadata(namespace, key)
+        return {}
+    RequestMetadata.responder(requestMetadata)
+    
+    def setMetadata(self, target, targetts, namespace, key, value):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if target in self.ircd.userid:
+            data = self.ircd.users[target]
+        elif target in self.ircd.channels:
+            data = self.ircd.channels[target]
+            if datetime.utcfromtimestamp(targetts) > data.created:
+                return {}
+        else:
+            raise NoSuchTarget ("The specified user or channel is not connected to the network.")
+        if not value and key not in data.metadata[namespace]:
+            return {}
+        if not value:
+            oldValue = data.metadata[namespace][key]
+            del data.metadata[namespace][key]
+            for action in self.ircd.actions["metadataupdate"]:
+                action(data, namespace, key, oldValue, "")
+        else:
+            oldValue = ""
+            if key in data.metadata[namespace]:
+                oldValue = data.metadata[namespace][key]
+            data.metadata[namespace][key] = value
+            for action in self.ircd.actions["metadataupdate"]:
+                action(data, namespace, key, oldValue, value)
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                server.callRemote(SetMetadata, target=target, targetts=targetts, namespace=namespace, key=key, value=value)
+        return {}
+    SetMetadata.responder(setMetadata)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
