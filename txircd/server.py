@@ -49,16 +49,16 @@ class RemoteUser(object):
         self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
     
     def disconnect(self, reason):
-        pass # TODO
+        self.ircd.servers[self.server].callRemote(RequestQuit, nick=self.nickname, reason=reason)
     
     def sendMessage(self, command, *parameter_list, **kw):
         pass # TODO
     
     def setMetadata(self, namespace, key, value):
-        pass # TODO
+        self.ircd.servers[self.server].callRemote(RequestMetadata, nick=self.nickname, namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
-        pass # TODO
+        self.ircd.servers[self.server].callRemote(RequestMetadata, nick=self.nickname, namespace=namespace, key=key, value="")
     
     def prefix(self):
         return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
@@ -72,7 +72,13 @@ class RemoteUser(object):
         return self.ircd.prefixes[status[0]][1] >= self.ircd.prefixes[level][1]
     
     def setMode(self, user, modes, params, displayPrefix = None):
-        pass # TODO
+        if user:
+            source = user.prefix()
+        elif displayPrefix:
+            source = displayPrefix
+        else:
+            source = self.ircd.name
+        self.ircd.servers[self.server].callRemote(RequestSetMode, nick=self.nickname, source=source, modestring=modes, params=params)
     
     def modeString(self, user):
         modes = [] # Since we're appending characters to this string, it's more efficient to store the array of characters and join it rather than keep making new strings
@@ -86,16 +92,18 @@ class RemoteUser(object):
         return ("+{} {}".format("".join(modes), " ".join(params)) if params else "+{}".format("".join(modes)))
     
     def join(self, channel):
-        pass # TODO
+        self.ircd.servers[self.server].callRemote(RequestJoinChannel, channel=channel.name, nick=self.nickname)
     
     def part(self, channel, reason):
-        pass # TODO
+        self.ircd.servers[self.server].callRemote(RequestPartChannel, channel=channel.name, nick=self.nickname)
     
     def leave(self, channel):
-        pass # TODO
+        pass
     
     def nick(self, newNick):
-        pass # TODO
+        if newNick in self.ircd.users:
+            return
+        self.ircd.servers[self.server].callRemote(RequestNick, nick=self.nickname, newnick=newNick)
 
 class RemoteServer(object):
     def __init__(self, ircd, name, desc, nearestServer, hopCount):
@@ -323,6 +331,18 @@ class PartChannel(Command):
     }
     requiresAnswer = False
 
+class LeaveChannel(Command):
+    arguments = [
+        ("channel", String()),
+        ("nick", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER",
+        NoSuchChannel: "NO_SUCH_CHANNEL"
+    }
+    requiresAnswer = False
+
 class RequestSetMode(Command):
     arguments = [
         ("nick", String()),
@@ -361,6 +381,29 @@ class SetTopic(Command):
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchChannel: "NO_SUCH_CHANNEL"
+    }
+    requiresAnswer = False
+
+class RequestNick(Command):
+    arguments = [
+        ("nick", String()),
+        ("newnick", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class ChangeNick(Command):
+    arguments = [
+        ("nick", String()),
+        ("userts", Integer()),
+        ("newnick", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
 
@@ -593,6 +636,10 @@ class ServerProtocol(AMP):
         return {}
     PartChannel.responder(partChannel)
     
+    def leaveChannel(self, channel, nick):
+        pass # TODO
+    LeaveChannel.responder(leaveChannel)
+    
     def requestMode(self, nick, source, modestring, params):
         pass # TODO
     RequestSetMode.responder(requestMode)
@@ -631,6 +678,14 @@ class ServerProtocol(AMP):
                     u.sendMessage("TOPIC", ":{}".format(topic), to=cdata.name, prefix=topicsetter)
         return {}
     SetTopic.responder(setTopic)
+    
+    def requestNick(self, nick, newnick):
+        pass # TODO
+    RequestNick.responder(requestNick)
+    
+    def changeNick(self, nick, userts, newNick):
+        pass # TODO
+    ChangeNick.responder(changeNick)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
