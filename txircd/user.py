@@ -115,11 +115,14 @@ class IRCUser(object):
     def disconnect(self, reason):
         if self.registered == 0 and self.nickname in self.ircd.users: # both checks required in case this is called during the final registration process
             quitdest = set()
+            exitChannels = []
             for channel in self.ircd.channels.itervalues():
                 if self in channel.users:
-                    self.leave(channel)
-                    for u in channel.users.iterkeys():
-                        quitdest.add(u)
+                    exitChannels.append(channel)
+            for channel in exitChannels:
+                self.leave(channel)
+                for u in channel.users.iterkeys():
+                    quitdest.add(u)
             del self.ircd.users[self.nickname]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
