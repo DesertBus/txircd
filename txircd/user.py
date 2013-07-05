@@ -454,7 +454,6 @@ class IRCUser(object):
             for modfunc in self.ircd.actions["chancreate"]:
                 modfunc(channel)
             status = self.ircd.servconfig["channel_default_status"]
-        hostmask = irc_lower(self.prefix())
         channel.users[self] = status
         joinShowUsers = channel.users.keys()
         tryagain = []
