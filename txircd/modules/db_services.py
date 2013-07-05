@@ -3,6 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.server import ConnectUser, RemoveUser
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 from base64 import b64decode, b64encode
 from Crypto.Random.random import getrandbits
@@ -52,14 +53,24 @@ class Service(object):
         self.cache = {} # Not only do various other modules potentially play with the cache, but we can do what we want with it to store auction data, etc.
         self.help = helpTexts
     
+    def addToServers(self):
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(ConnectUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
+    
+    def removeFromServers(self):
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(RemoveUser, user=self.uuid, reason="Unloading module")
+    
     def register(self):
         pass
     
     def send_isupport(self):
         pass
     
-    def disconnect(self, reason):
-        pass
+    def disconnect(self, reason, sourceServer = None):
+        if sourceServer is None:
+            return
+        self.ircd.servers[sourceServer].callRemote(ConnectUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
     
     def sendMessage(self, command, *parameter_list, **kw):
         if command == "PRIVMSG" and "prefix" in kw:
@@ -1046,6 +1057,9 @@ class Spawner(object):
         self.ircd.userid[self.nickserv.uuid] = self.nickserv
         self.ircd.userid[self.chanserv.uuid] = self.chanserv
         self.ircd.userid[self.bidserv.uuid] = self.bidserv
+        self.nickserv.addToServers()
+        self.chanserv.addToServers()
+        self.bidserv.addToServers()
         
         self.ircd.module_data_cache["sasl_agent"] = self
         
@@ -1098,6 +1112,9 @@ class Spawner(object):
         if self.db:
             self.db.close()
         
+        self.nickserv.removeFromServers()
+        self.chanserv.removeFromServers()
+        self.bidserv.removeFromServers()
         del self.ircd.users[self.nickserv.nickname]
         del self.ircd.users[self.chanserv.nickname]
         del self.ircd.users[self.bidserv.nickname]
