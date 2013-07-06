@@ -476,7 +476,7 @@ class ServerProtocol(AMP):
         for server in serverOrder:
             self.callRemote(AddNewServer, name=server.name, description=server.description, hopcount=server.hopCount, nearhop=server.nearHop)
         for u in self.ircd.users.itervalues():
-            self.callRemote(ConnectUser, nick=u.nickname, ident=u.username, host=u.hostname, gecos=u.realname, ip=u.ip, server=u.server, secure=u.socket.secure, signon=epoch(u.signon), nickts=epoch(u.nicktime))
+            self.callRemote(ConnectUser, uuid=u.uuid, nick=u.nickname, ident=u.username, host=u.hostname, gecos=u.realname, ip=u.ip, server=u.server, secure=u.socket.secure, signon=epoch(u.signon), nickts=epoch(u.nicktime))
             modes = []
             params = []
             for mode, param in u.mode.iteritems():
@@ -489,15 +489,15 @@ class ServerProtocol(AMP):
                 else:
                     modes.append(mode)
                     params.append(param)
-            self.callRemote(SetMode, target=u.nickname, targetts=epoch(u.signon), source=u.prefix(), modestring="+{}".format("".join(modes)), params=params)
+            self.callRemote(SetMode, target=u.uuid, targetts=epoch(u.signon), source=u.prefix(), modestring="+{}".format("".join(modes)), params=params)
             for namespace, data in u.metadata.iteritems():
                 for key, value in data.iteritems():
-                    self.callRemote(SetMetadata, target=u.nickname, targetts=epoch(u.signon), namespace=namespace, key=key, value=value)
+                    self.callRemote(SetMetadata, target=u.uuid, targetts=epoch(u.signon), namespace=namespace, key=key, value=value)
         for chan in self.ircd.channels.itervalues():
             modes = []
             params = []
             for u, status in chan.users.iteritems():
-                self.callRemote(JoinChannel, channel=chan.name, nick=u.nickname, chants=epoch(chan.created))
+                self.callRemote(JoinChannel, channel=chan.name, user=u.uuid, chants=epoch(chan.created))
                 for mode in status:
                     modes.append(mode)
                     params.append(u.nickname)
