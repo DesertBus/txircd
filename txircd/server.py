@@ -457,8 +457,8 @@ class ServerProtocol(AMP):
             self.sentDataBurst = False
         self.name = name
         self.description = description
-        self.sendBurstData()
         self.ircd.servers[self.name] = self
+        self.sendBurstData()
         return {}
     IntroduceServer.responder(serverHandshake)
     
@@ -469,6 +469,8 @@ class ServerProtocol(AMP):
         serverOrder = []
         while len(serverOrder) < len(self.ircd.servers):
             for server in self.ircd.servers.itervalues():
+                if server == self.name or server in self.remoteServers:
+                    continue
                 if server in serverOrder:
                     continue
                 if server.nearHop == self.ircd.name or server.nearHop in serverOrder:
