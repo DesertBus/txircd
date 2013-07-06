@@ -769,7 +769,7 @@ class ServerProtocol(AMP):
                     data.mode[mode] = param
                 else:
                     del data.mode[mode]
-                modeDisplay.append([Adding, mode, param])
+                modeDisplay.append([adding, mode, param])
         if modeDisplay:
             adding = None
             modestring = []
