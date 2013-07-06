@@ -761,7 +761,7 @@ class ServerProtocol(AMP):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if target in self.ircd.userid:
-            data = self.ircd.users[target]
+            data = self.ircd.userid[target]
         elif target in self.ircd.channels:
             data = self.ircd.channels[target]
             if datetime.utcfromtimestamp(targetts) > data.created:
