@@ -850,6 +850,7 @@ class ServerProtocol(AMP):
         udata.nicktime = now()
         for action in self.ircd.actions["nick"]:
             action(udata, oldNick)
+        return {}
     ChangeNick.responder(changeNick)
     
     def requestMetadata(self, user, namespace, key, value):
