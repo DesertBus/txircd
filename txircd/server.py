@@ -589,6 +589,7 @@ class ServerProtocol(AMP):
         else:
             cdata = IRCChannel(self.ircd, channel)
         self.ircd.userid[user].join(cdata)
+        return {}
     RequestJoinChannel.responder(requestJoin)
     
     def joinChannel(self, channel, user, chants):
