@@ -67,6 +67,7 @@ class RemoteUser(object):
             del self.ircd.users[self.nickname]
         del self.ircd.userid[self.uuid]
         for user in quitdest:
+            print "SENDING QUIT TO {} {}".format(user.nickname, user.uuid)
             user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name and server.name != sourceServer:
@@ -821,6 +822,9 @@ class ServerProtocol(AMP):
             for u in cdata.users.iterkeys():
                 if u.server == self.ircd.name:
                     u.sendMessage("TOPIC", ":{}".format(topic), to=cdata.name, prefix=topicsetter)
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server != self:
+                    server.callRemote(SetTopic, channel=channel, chants=chants, topic=topic, topicsetter=topicsetter, topicts=topicts)
         return {}
     SetTopic.responder(setTopic)
     
