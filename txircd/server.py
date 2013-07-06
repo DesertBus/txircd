@@ -457,8 +457,8 @@ class ServerProtocol(AMP):
             self.sentDataBurst = False
         self.name = name
         self.description = description
-        self.ircd.servers[self.name] = self
         self.sendBurstData()
+        self.ircd.servers[self.name] = self
         return {}
     IntroduceServer.responder(serverHandshake)
     
