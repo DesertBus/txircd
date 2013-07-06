@@ -631,8 +631,34 @@ class ServerProtocol(AMP):
         udata = self.ircd.userid[user]
         if channel in self.ircd.channels:
             cdata = self.ircd.channels[channel]
+            chantime = datetime.utcfromtimestamp(chants)
+            if chantime < cdata.created:
+                modes = []
+                params = []
+                for mode, param in cdata.mode.iteritems():
+                    modetype = self.ircd.channel_mode_type[mode]
+                    if modetype == 0:
+                        for item in param:
+                            modes.append(mode)
+                            params.append(item)
+                    elif modetype == 3:
+                        modes.append(mode)
+                    else:
+                        modes.append(mode)
+                        params.append(param)
+                for u, status in cdata.users.iteritems():
+                    for mode in status:
+                        modes.append(mode)
+                        params.append(u.nickname)
+                    cdata.users[u] = ""
+                cdata.setTopic("", self.ircd.name)
+                for u in cdata.users.iterkeys():
+                    if u.server == self.ircd.name:
+                        u.sendMessage("MODE", "-{}".format("".join(modes)), " ".join(params), to=cdata.name)
+                        u.sendMessage("TOPIC", ":", to=cdata.name)
         else:
             cdata = IRCChannel(self.ircd, channel)
+            cdata.created = datetime.utcfromtimestamp(chants)
         if udata in cdata.users:
             return {}
         cdata.users[udata] = ""
@@ -649,10 +675,10 @@ class ServerProtocol(AMP):
         for u in joinShowUsers:
             if u.server == self.ircd.name:
                 u.sendMessage("JOIN", to=cdata.name, prefix=udata.prefix())
-        if cdata.topic:
+        if cdata.topic and udata.server == self.ircd.name:
             udata.sendMessage(irc.RPL_TOPIC, cdata.name, ":{}".format(cdata.topic))
             udata.sendMessage(irc.RPL_TOPICWHOTIME, cdata.name, cdata.topicSetter, str(epoch(cdata.topicTime)))
-        else:
+        elif udata.server == self.ircd.name:
             udata.sendMessage(irc.RPL_NOTOPIC, cdata.name, ":No topic is set")
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name and server != self:
