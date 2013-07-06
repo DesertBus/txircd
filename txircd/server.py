@@ -636,7 +636,7 @@ class ServerProtocol(AMP):
             cdata = IRCChannel(self.ircd, channel)
         if udata in cdata.users:
             return {}
-        cdata.users[self] = ""
+        cdata.users[udata] = ""
         joinShowUsers = cdata.users.keys()
         tryagain = []
         for action in self.ircd.actions["joinmessage"]:
