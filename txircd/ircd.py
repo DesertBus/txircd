@@ -333,7 +333,7 @@ class IRCD(Factory):
                     bind = (servinfo["bindaddress"], servinfo["bindport"])
                 else:
                     bind = None
-                creator = ClientCreator(reactor, ServerProtocol, self)
+                creator = ClientCreator(reactor, ClientServerProtocol, self)
                 if "ssl" in servinfo and servinfo["ssl"]:
                     d = creator.connectSSL(servinfo["ip"], servinfo["port"], self.ssl_cert, bindAddress=bind)
                 else:
