@@ -71,7 +71,23 @@ class RemoteUser(object):
                 server.callRemote(RemoveUser, user=self.uuid, reason=reason)
     
     def sendMessage(self, command, *parameter_list, **kw):
-        pass # TODO
+        if command in [ "JOIN", "MODE", "TOPIC", "QUIT", "NICK" ]: # some items should only be sent by the remote server via other s2s commands
+            return
+        if "prefix" in kw:
+            if kw["prefix"] is None:
+                prefix = ""
+            else:
+                prefix = kw["prefix"]
+        else:
+            prefix = self.ircd.name
+        if "to" in kw:
+            if kw["to"] is None:
+                to = ""
+            else:
+                to = kw["to"]
+        else:
+            to = self.nickname
+        self.ircd.servers[self.server].callRemote(SendAnnouncement, type=command, args=parameter_list, prefix=prefix, to=to)
     
     def setMetadata(self, namespace, key, value):
         self.ircd.servers[self.server].callRemote(RequestMetadata, user=self.uuid, namespace=namespace, key=key, value=value)
@@ -388,6 +404,20 @@ class SetMetadata(Command):
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchTarget: "NO_SUCH_TARGET"
+    }
+    requiresAnswer = False
+
+class SendAnnouncement(Command):
+    arguments = [
+        ("user", String()),
+        ("type", String()),
+        ("args", ListOf(String())),
+        ("prefix", String()),
+        ("to", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
     }
     requiresAnswer = False
 
@@ -730,6 +760,20 @@ class ServerProtocol(AMP):
                 server.callRemote(SetMetadata, target=target, targetts=targetts, namespace=namespace, key=key, value=value)
         return {}
     SetMetadata.responder(setMetadata)
+    
+    def announce(self, user, type, args, prefix, to):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The specified user is not connected to the network.")
+        udata = self.ircd.userid[user]
+        if not prefix:
+            prefix = None
+        if not to:
+            to = None
+        udata.sendMessage(type, *args, to=to, prefix=prefix)
+        return {}
+    SendAnnouncement.responder(announce)
 
 # ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
 # This is to allow differentiating between a connection we initiated and a connection we received
