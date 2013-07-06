@@ -720,7 +720,7 @@ class ServerProtocol(AMP):
         adding = True
         currentParam = 0
         modeDisplay = []
-        for mode in modes:
+        for mode in modestring:
             if mode == "+":
                 adding = True
                 continue
