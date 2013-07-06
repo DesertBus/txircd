@@ -472,7 +472,7 @@ class ServerProtocol(AMP):
                     continue
                 if server.nearHop == self.ircd.name or server.nearHop in serverOrder:
                     serverOrder.append(server)
-        serverOrder.remove(self.name)
+        serverOrder.remove(self)
         for server in serverOrder:
             self.callRemote(AddNewServer, name=server.name, description=server.description, hopcount=server.hopCount, nearhop=server.nearHop)
         for u in self.ircd.users.itervalues():
