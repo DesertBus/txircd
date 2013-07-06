@@ -684,7 +684,7 @@ class ServerProtocol(AMP):
             udata.sendMessage(irc.RPL_NOTOPIC, cdata.name, ":No topic is set")
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name and server != self:
-                server.callRemote(JoinChannel, channel=cdata.name, user=udata.uuid)
+                server.callRemote(JoinChannel, channel=cdata.name, chants=epoch(cdata.created), user=udata.uuid)
         for action in self.ircd.actions["join"]:
             action(udata, cdata)
         return {}
