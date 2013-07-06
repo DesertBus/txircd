@@ -11,12 +11,12 @@ class WhowasCommand(Command):
             return
         for oldNick in data["nicks"]:
             if oldNick not in self.history:
-                user.sendMessage(irc.RPL_WASNOSUCHNICK, oldNick, ":No such nick")
+                user.sendMessage(irc.ERR_WASNOSUCHNICK, oldNick, ":No such nick")
                 user.sendMessage(irc.RPL_ENDOFWHOWAS, oldNick, ":End of /WHOWAS list")
                 continue
             historyList = self.history[oldNick]
             for entry in historyList:
-                user.sendMessage(irc.RPL_WHOISUSER, entry["nick"], entry["ident"], entry["host"], "*", ":{}".format(entry["gecos"]))
+                user.sendMessage(irc.RPL_WHOWASUSER, entry["nick"], entry["ident"], entry["host"], "*", ":{}".format(entry["gecos"]))
                 user.sendMessage(irc.RPL_WHOISSERVER, entry["nick"], entry["server"], ":{}".format(entry["time"]))
             user.sendMessage(irc.RPL_ENDOFWHOWAS, oldNick, ":End of /WHOWAS list")
     
