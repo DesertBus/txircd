@@ -1,5 +1,5 @@
 from twisted.words.protocols import irc
-from txircd.utils import now
+from txircd.utils import epoch, now
 from copy import deepcopy
 
 class IRCChannel(object):
