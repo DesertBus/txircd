@@ -475,7 +475,7 @@ class IRCUser(object):
         self.report_names(channel)
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(JoinChannel, channel=channel.name, user=self.uuid)
+                server.callRemote(JoinChannel, channel=channel.name, chants=epoch(channel.created), user=self.uuid)
         if status:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
