@@ -712,6 +712,8 @@ class ServerProtocol(AMP):
         if target in self.ircd.channels:
             data = self.ircd.channels[target]
             targettype = "channel"
+            if datetime.utcfromtimestamp(targetts) > data.created:
+                return {}
         elif target in self.ircd.userid:
             data = self.ircd.userid[target]
             targettype = "user"
