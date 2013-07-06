@@ -455,10 +455,10 @@ class ServerProtocol(AMP):
         if self.sentDataBurst is None:
             self.callRemote(IntroduceServer, name=self.ircd.name, password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=protocol_version, commonmodules=self.ircd.common_modules)
             self.sentDataBurst = False
-        self.sendBurstData()
         self.name = name
         self.description = description
         self.ircd.servers[self.name] = self
+        self.sendBurstData()
         return {}
     IntroduceServer.responder(serverHandshake)
     
