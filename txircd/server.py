@@ -700,7 +700,7 @@ class ServerProtocol(AMP):
         if cdata.created < chantime:
             return {} # Ignore the change
         topictime = datetime.utcfromtimestamp(topicts)
-        if chantime < cdata.created or topictime > cdata.topicTime:
+        if chantime < cdata.created or topictime > cdata.topicTime or (topictime == cdata.topicTime and not self.localOrigin):
             for action in self.ircd.actions["topic"]:
                 action(cdata, topic, topicsetter)
             cdata.topic = topic
