@@ -428,7 +428,7 @@ class ServerProtocol(AMP):
         self.name = None
         self.description = None
         self.remoteServers = set()
-        self.localOrigin = False
+        self.localOrigin = True
         self.nearHop = self.ircd.name
         self.nearRemoteLink = self.ircd.name
         self.hopCount = 1
@@ -802,22 +802,6 @@ class ServerProtocol(AMP):
         return {}
     SendAnnouncement.responder(announce)
 
-# ClientServerFactory: Must be used as the factory when initiating a connection to a remote server
-# This is to allow differentiating between a connection we initiated and a connection we received
-# which is used to break ties in bursting when we absolutely cannot break the tie any other way.
-# Failure to use this class as the factory when connecting to a remote server may lead to desyncs!
-class ClientServerFactory(ClientFactory):
-    protocol = ServerProtocol
-    
-    def __init__(self, ircd):
-        self.ircd = ircd
-    
-    def buildProtocol(self, addr):
-        proto = self.protocol(self.ircd)
-        proto.factory = self
-        proto.localOrigin = True
-        return proto
-
 class ServerFactory(Factory):
     protocol = ServerProtocol
     
@@ -828,4 +812,5 @@ class ServerFactory(Factory):
     def buildProtocol(self, addr):
         proto = self.protocol(self.ircd)
         proto.factory = self
+        proto.localOrigin = False
         return proto
