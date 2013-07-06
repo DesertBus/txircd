@@ -323,6 +323,7 @@ class IRCD(Factory):
     def server_autoconnect(self):
         def sendServerHandshake(protocol, password):
             protocol.callRemote(IntroduceServer, name=self.name, password=password, description=self.servconfig["server_description"], version=protocol_version, commonmodules=self.common_modules)
+            protocol.sentDataBurst = False
         for server in self.servconfig["serverlink_autoconnect"]:
             if server not in self.servers and server in self.servconfig["serverlinks"]:
                 log.msg("Initiating autoconnect to server {}".format(server))
