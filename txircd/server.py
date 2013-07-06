@@ -809,13 +809,12 @@ class ServerProtocol(AMP):
 class ClientServerFactory(ClientFactory):
     protocol = ServerProtocol
     
-    def __init__(self, ircd, remoteName):
+    def __init__(self, ircd):
         self.ircd = ircd
-        self.name = remoteName
     
     def buildProtocol(self, addr):
-        proto = ClientFactory.buildProtocol(self, addr)
-        proto.name = self.name
+        proto = self.protocol(self.ircd)
+        proto.factory = self
         proto.localOrigin = True
         return proto
 
