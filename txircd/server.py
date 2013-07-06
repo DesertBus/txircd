@@ -460,6 +460,9 @@ class ServerProtocol(AMP):
         self.description = description
         self.ircd.servers[self.name] = self
         self.sendBurstData()
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                server.callRemote(AddNewServer, name=name, description=description, hopcount=1, nearhop=self.ircd.name)
         return {}
     IntroduceServer.responder(serverHandshake)
     
