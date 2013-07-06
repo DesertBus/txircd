@@ -233,10 +233,9 @@ class AddNewServer(Command):
         ("nearhop", String())
     ]
     errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE"
-    }
-    fatalErrors = {
-        ServerAlreadyConnected: "SERVER_ALREADY_CONNECTED" # If this error is present, the servers are already desynced, so have them fully disconnect and try again
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        ServerAlreadyConnected: "SERVER_ALREADY_CONNECTED",
+        NoSuchServer: "NO_SUCH_SERVER"
     }
     requiresAnswer = False
 
@@ -526,7 +525,8 @@ class ServerProtocol(AMP):
         # check for server-related desyncs
         if name in self.ircd.servers or name == self.ircd.name:
             raise ServerAlreadyConnected ("The server trying to connect to the network is already connected to the network.")
-        
+        if nearhop not in self.ircd.servers:
+            raise NoSuchServer ("The nearhop for the new server is not on the network.")
         # Set up the new server(s)
         newServer = RemoteServer(self.ircd, name, description, nearhop, hopcount + 1)
         nearHop = self.ircd.servers[nearhop]
