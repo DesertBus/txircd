@@ -182,6 +182,10 @@ class IRCChannel(object):
         self.topic = topic
         self.topicSetter = setter
         self.topicTime = now()
+        from txircd.server import SetTopic
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(SetTopic, channel=self.name, chants=epoch(self.created), topic=topic, topicsetter=setter, topicts=epoch(self.topicTime))
     
     def setMetadata(self, namespace, key, value):
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
