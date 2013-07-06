@@ -171,6 +171,8 @@ class MetadataCommand(Command):
                 return # An unregistered user isn't being monitored
         except AttributeError: # don't process channels
             return
+        if oldValue == value:
+            return
         source = None
         if namespace in ["client", "user"]:
             source = target.nickname
