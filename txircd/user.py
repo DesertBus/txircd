@@ -237,7 +237,7 @@ class IRCUser(object):
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMetadata, target=self.uuid, namespace=namespace, key=key, value=value)
+                    server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
         oldValue = self.metadata[namespace][key]
@@ -247,7 +247,7 @@ class IRCUser(object):
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMetadata, target=self.uuid, namespace=namespace, key=key, value="")
+                    server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value="")
     
     #=====================
     #== Utility Methods ==
