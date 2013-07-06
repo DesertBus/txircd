@@ -496,7 +496,7 @@ class ServerProtocol(AMP):
         for chan in self.ircd.channels.itervalues():
             modes = []
             params = []
-            for u, status in chan.user.iteritems():
+            for u, status in chan.users.iteritems():
                 self.callRemote(JoinChannel, channel=chan.name, nick=u.nickname, chants=epoch(chan.created))
                 for mode in status:
                     modes.append(mode)
