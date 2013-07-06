@@ -66,7 +66,6 @@ class RemoteUser(object):
         if udata == self:
             del self.ircd.users[self.nickname]
         del self.ircd.userid[self.uuid]
-        print "SENDING QUIT FOR {} TO {}".format(self.nickname, quitdest)
         for user in quitdest:
             user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         for server in self.ircd.servers.itervalues():
