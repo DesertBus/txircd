@@ -697,7 +697,7 @@ class ServerProtocol(AMP):
             raise NoSuchUser ("The given user is not connected to the network.")
         if channel not in self.ircd.channels:
             raise NoSuchChannel ("The given channel does not exist on the network.")
-        self.ircd.userid[user].leave(self.ircd.channels[channel])
+        self.ircd.userid[user].leave(self.ircd.channels[channel], self.name)
         return {}
     LeaveChannel.responder(leaveChannel)
     
