@@ -698,6 +698,7 @@ class ServerProtocol(AMP):
         if channel not in self.ircd.channels:
             raise NoSuchChannel ("The given channel does not exist on the network.")
         self.ircd.userid[user].leave(self.ircd.channels[channel])
+        return {}
     LeaveChannel.responder(leaveChannel)
     
     def requestMode(self, user, source, modestring, params):
@@ -706,6 +707,7 @@ class ServerProtocol(AMP):
         if user not in self.ircd.userid:
             raise NoSuchUser ("The given user is not connected to the network.")
         self.ircd.userid[user].setMode(None, modestring, params, source)
+        return {}
     RequestSetMode.responder(requestMode)
     
     def setMode(self, target, targetts, source, modestring, params):
