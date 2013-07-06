@@ -711,11 +711,36 @@ class ServerProtocol(AMP):
     SetTopic.responder(setTopic)
     
     def requestNick(self, user, newnick):
-        pass # TODO
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        self.ircd.userid[user].nick(newnick)
+        return {}
     RequestNick.responder(requestNick)
     
-    def changeNick(self, user, newNick):
-        pass # TODO
+    def changeNick(self, user, newnick):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        udata = self.ircd.userid[user]
+        del self.ircd.users[udata.nickname]
+        self.ircd.users[newnick] = udata
+        notify = set()
+        for cdata in self.ircd.channels.itervalues():
+            if udata in cdata.users:
+                for cuser in cdata.users.iterkeys():
+                    notify.add(cuser)
+        prefix = udata.prefix()
+        for u in notify:
+            if u.server == self.ircd.name:
+                u.sendMessage("NICK", to=newnick, prefix=prefix)
+        oldNick = udata.nickname
+        udata.nickname = newnick
+        udata.nicktime = now()
+        for action in self.ircd.actions["nick"]:
+            action(udata, oldNick)
     ChangeNick.responder(changeNick)
     
     def requestMetadata(self, user, namespace, key, value):
