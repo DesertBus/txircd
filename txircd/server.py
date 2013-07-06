@@ -522,7 +522,7 @@ class ServerProtocol(AMP):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         # check for server-related desyncs
-        if name in self.ircd.servers:
+        if name in self.ircd.servers or name == self.ircd.name:
             raise ServerAlreadyConnected ("The server trying to connect to the network is already connected to the network.")
         
         # Set up the new server(s)
