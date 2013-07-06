@@ -87,7 +87,7 @@ class RemoteUser(object):
                 to = kw["to"]
         else:
             to = self.nickname
-        self.ircd.servers[self.server].callRemote(SendAnnouncement, type=command, args=parameter_list, prefix=prefix, to=to)
+        self.ircd.servers[self.server].callRemote(SendAnnouncement, user=self.uuid, type=command, args=parameter_list, prefix=prefix, to=to)
     
     def setMetadata(self, namespace, key, value):
         self.ircd.servers[self.server].callRemote(RequestMetadata, user=self.uuid, namespace=namespace, key=key, value=value)
