@@ -38,6 +38,8 @@ class RemoteUser(object):
         self.signon = signonTime
         self.nicktime = nickTime
         self.lastactivity = now()
+        self.disconnected = Deferred()
+        self.disconnected.callback(None)
         self.mode = {}
         self.registered = 0
         self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
