@@ -699,7 +699,11 @@ class ServerProtocol(AMP):
     LeaveChannel.responder(leaveChannel)
     
     def requestMode(self, user, source, modestring, params):
-        pass # TODO
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The given user is not connected to the network.")
+        self.ircd.userid[user].setMode(None, modestring, params, source)
     RequestSetMode.responder(requestMode)
     
     def setMode(self, target, targetts, source, modestring, params):
@@ -707,11 +711,85 @@ class ServerProtocol(AMP):
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if target in self.ircd.channels:
             data = self.ircd.channels[target]
+            targettype = "channel"
         elif target in self.ircd.userid:
             data = self.ircd.userid[target]
+            targettype = "user"
         else:
             raise NoSuchTarget ("The target given does not exist on the network.")
-        # TODO
+        adding = True
+        currentParam = 0
+        modeDisplay = []
+        for mode in modes:
+            if mode == "+":
+                adding = True
+                continue
+            if mode == "-":
+                adding = False
+                continue
+            if targettype == "channel":
+                modetype = self.ircd.channel_mode_type[mode]
+            else:
+                modetype = self.ircd.user_mode_type[mode]
+            if modetype == -1 or (modetype == 0 and len(params) > currentParam) or modetype == 1 or (adding and modetype == 2):
+                param = params[currentParam]
+                currentParam += 1
+            else:
+                param = None
+            if modetype == -1:
+                udata = self.ircd.users[param]
+                if adding:
+                    status = data.users[udata]
+                    statusList = list(status)
+                    for index, statusLevel in enumerate(status):
+                        if self.ircd.prefixes[statusLevel][1] < self.ircd.prefixes[mode][1]:
+                            statusList.insert(index, mode)
+                            break
+                    if mode not in statusList:
+                        statusList.append(mode)
+                    data.users[udata] = "".join(statusList)
+                    modeDisplay.append([True, mode, param])
+                else:
+                    if mode in cdata.users[udata]:
+                        data.users[udata] = data.users[udata].replace(mode, "")
+                        modeDisplay.append([False, mode, param])
+            elif modetype == 0:
+                if adding:
+                    if mode not in data.mode:
+                        data.mode[mode] = []
+                    data.mode[mode].append(param)
+                    modeDisplay.append([True, mode, param])
+                else:
+                    data.mode[mode].remove(param)
+                    modeDisplay.append([False, mode, param])
+                    if not data.mode[mode]:
+                        del data.mode[mode]
+            else:
+                if adding:
+                    data.mode[mode] = param
+                else:
+                    del data.mode[mode]
+                modeDisplay.append([Adding, mode, param])
+        if modeDisplay:
+            adding = None
+            modestring = []
+            showParams = []
+            for mode in modeDisplay:
+                if mode[0] and adding is not True:
+                    adding = True
+                    modestring.append("+")
+                elif not mode[0] and adding is not False:
+                    adding = False
+                    modestring.append("-")
+                modestring.append(mode[1])
+                if mode[2]:
+                    showParams.append(mode[2])
+            modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
+            if targettype == "user":
+                data.sendMessage("MODE", modeLine, prefix=source)
+            else:
+                for u in data.users:
+                    u.sendMessage("MODE", modeLine, to=data.name, prefix=source)
         return {}
     SetMode.responder(setMode)
     
