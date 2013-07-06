@@ -66,8 +66,8 @@ class RemoteUser(object):
         if udata == self:
             del self.ircd.users[self.nickname]
         del self.ircd.userid[self.uuid]
+        print "SENDING QUIT FOR {} TO {}".format(self.nickname, quitdest)
         for user in quitdest:
-            print "SENDING QUIT TO {} {}".format(user.nickname, user.uuid)
             user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name and server.name != sourceServer:
@@ -556,10 +556,6 @@ class ServerProtocol(AMP):
         servinfo = self.ircd.servers[name]
         leavingServers = servinfo.remoteServers
         leavingServers.add(name)
-        userList = self.ircd.users.values()
-        for user in userList:
-            if user.server in leavingServers:
-                user.disconnect("{} {}".format(servinfo.nearHop, servinfo.name))
         for servname in leavingServers:
             del self.ircd.servers[servname]
         for server in self.ircd.servers.itervalues():
@@ -574,7 +570,22 @@ class ServerProtocol(AMP):
     
     def connectionLost(self, reason):
         if self.name:
-            self.splitServer(self.name)
+            userList = self.ircd.users.values()
+            for user in userList:
+                if user.server == self.ircd.name or user.server in self.remoteServers:
+                    user.disconnect("{} {}".format(self.ircd.name, self.name))
+            for servname in self.remoteServers:
+                del self.ircd.servers[servname]
+            del self.ircd.servers[self.name]
+            for server in self.ircd.servers.itervalues():
+                server.remoteServers.discard(self.name)
+                for servname in self.remoteServers:
+                    server.remoteServers.discard(servname)
+            for server in self.ircd.servers.itervalues():
+                if self.ircd.name == server.nearHop:
+                    server.callRemote(DisconnectServer, name=self.name)
+            for action in self.ircd.actions["netsplit"]:
+                action()
         AMP.connectionLost(self, reason)
     
     def addUser(self, uuid, nick, ident, host, gecos, ip, server, secure, signon, nickts):
