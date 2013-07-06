@@ -513,7 +513,7 @@ class ServerProtocol(AMP):
                 else:
                     modes.append(mode)
                     params.append(param)
-            self.callRemote(SetMode, target=chan.name, targetts=epoch(chan.created), source="", modestring="+{}".format("".join(modes)), params=params)
+            self.callRemote(SetMode, target=chan.name, targetts=epoch(chan.created), source=self.ircd.name, modestring="+{}".format("".join(modes)), params=params)
             if chan.topic:
                 self.callRemote(SetTopic, channel=chan.name, chants=epoch(chan.created), topic=chan.topic, topicsetter=chan.topicSetter, topicts=epoch(chan.topicTime))
             for namespace, data in chan.metadata.iteritems():
