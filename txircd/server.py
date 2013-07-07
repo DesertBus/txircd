@@ -672,7 +672,9 @@ class ServerProtocol(AMP):
                         modes.append(mode)
                         params.append(u.nickname)
                     cdata.users[u] = ""
-                cdata.setTopic("", self.ircd.name)
+                self.topic = topic
+                self.topicSetter = setter
+                self.topicTime = cdata.created
                 for u in cdata.users.iterkeys():
                     if u.server == self.ircd.name:
                         u.sendMessage("MODE", "-{}".format("".join(modes)), " ".join(params), to=cdata.name)
