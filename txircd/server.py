@@ -601,12 +601,12 @@ class ServerProtocol(AMP):
         if nick in self.ircd.users:
             udata = self.ircd.users[nick]
             if nicktime < udata.nicktime:
-                udata.disconnect("Nickname collision")
+                udata.disconnect("Nickname collision", self.name)
             elif nicktime == udata.nicktime:
                 if signontime < udata.signon:
-                    udata.disconnect("Nickname collision")
+                    udata.disconnect("Nickname collision", self.name)
                 elif signontime == udata.signon:
-                    udata.disconnect("Nickname collision")
+                    udata.disconnect("Nickname collision", self.name)
                     return {}
                 else:
                     return {}
