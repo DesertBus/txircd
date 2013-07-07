@@ -298,6 +298,10 @@ class IRCD(Factory):
     def cleanup(self):
         # Track the disconnections so we know they get done
         deferreds = []
+        log.msg("Disconnecting servers...")
+        for server in self.servers.values():
+            if server.nearHop == self.ircd.name:
+                server.transport.loseConnection()
         # Cleanly disconnect all clients
         log.msg("Disconnecting clients...")
         for u in self.users.values():
