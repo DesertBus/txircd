@@ -300,7 +300,7 @@ class IRCD(Factory):
         deferreds = []
         log.msg("Disconnecting servers...")
         for server in self.servers.values():
-            if server.nearHop == self.ircd.name:
+            if server.nearHop == self.name:
                 server.transport.loseConnection()
         # Cleanly disconnect all clients
         log.msg("Disconnecting clients...")
