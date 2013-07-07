@@ -122,7 +122,11 @@ class IRCUser(object):
                 if self in channel.users:
                     exitChannels.append(channel)
             for channel in exitChannels:
-                self.leave(channel, sourceServer)
+                del channel.users[self] # remove channel user entry
+                if not channel.users:
+                    for modfunc in self.ircd.actions["chandestroy"]:
+                        modfunc(channel)
+                    del self.ircd.channels[channel.name] # destroy the empty channel
                 for u in channel.users.iterkeys():
                     quitdest.add(u)
             udata = self.ircd.users[self.nickname]
