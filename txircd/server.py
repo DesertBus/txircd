@@ -77,7 +77,7 @@ class RemoteUser(object):
                 server.callRemote(RemoveUser, user=self.uuid, reason=reason)
     
     def sendMessage(self, command, *parameter_list, **kw):
-        if command in [ "JOIN", "MODE", "TOPIC", "QUIT", "NICK" ]: # some items should only be sent by the remote server via other s2s commands
+        if command in [ "JOIN", "MODE", "TOPIC", "QUIT", "NICK", "ERROR" ]: # some items should only be sent by the remote server via other s2s commands
             return
         if "prefix" in kw:
             if kw["prefix"] is None:
