@@ -778,6 +778,8 @@ class ServerProtocol(AMP):
             else:
                 param = None
             if modetype == -1:
+                if param not in self.ircd.users:
+                    continue
                 udata = self.ircd.users[param]
                 if adding:
                     status = data.users[udata]
