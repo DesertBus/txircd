@@ -39,7 +39,6 @@ class RemoteUser(object):
         self.nicktime = nickTime
         self.lastactivity = now()
         self.disconnected = Deferred()
-        self.disconnected.callback(None)
         self.mode = {}
         self.registered = 0
         self.metadata = { # split into metadata key namespaces, see http://ircv3.atheme.org/specification/metadata-3.2
@@ -72,6 +71,7 @@ class RemoteUser(object):
         del self.ircd.userid[self.uuid]
         for user in quitdest:
             user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+        self.disconnected.callback(None)
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name and server.name != sourceServer:
                 server.callRemote(RemoveUser, user=self.uuid, reason=reason)
@@ -443,6 +443,7 @@ class ServerProtocol(AMP):
         self.nearRemoteLink = self.ircd.name
         self.hopCount = 1
         self.ignoreUsers = set()
+        self.disconnected = Deferred()
     
     def serverHandshake(self, name, password, description, version, commonmodules):
         if self.name is not None:
@@ -594,6 +595,7 @@ class ServerProtocol(AMP):
                     server.callRemote(DisconnectServer, name=self.name)
             for action in self.ircd.actions["netsplit"]:
                 action()
+        self.disconnected.callback(None)
         AMP.connectionLost(self, reason)
     
     def addUser(self, uuid, nick, ident, host, gecos, ip, server, secure, signon, nickts):
