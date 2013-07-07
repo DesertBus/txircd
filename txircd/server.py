@@ -59,7 +59,7 @@ class RemoteUser(object):
             if self in channel.users:
                 exitChannels.append(channel)
         for channel in exitChannels:
-            self.leave(channel)
+            self.leave(channel, sourceServer)
             for u in channel.users.iterkeys():
                 quitdest.add(u)
         udata = self.ircd.users[self.nickname]
