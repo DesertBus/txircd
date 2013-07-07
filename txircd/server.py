@@ -621,6 +621,7 @@ class ServerProtocol(AMP):
                     self.ignoreUsers.add(uuid)
                     return {}
             else:
+                self.ignoreUsers.add(uuid)
                 return {}
         newUser = RemoteUser(self.ircd, uuid, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
         self.ircd.users[nick] = newUser
