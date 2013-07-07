@@ -797,24 +797,27 @@ class ServerProtocol(AMP):
                 modeDisplay.append([adding, mode, param])
         if modeDisplay:
             adding = None
-            modestring = []
+            modestr = []
             showParams = []
             for mode in modeDisplay:
                 if mode[0] and adding is not True:
                     adding = True
-                    modestring.append("+")
+                    modestr.append("+")
                 elif not mode[0] and adding is not False:
                     adding = False
-                    modestring.append("-")
-                modestring.append(mode[1])
+                    modestr.append("-")
+                modestr.append(mode[1])
                 if mode[2]:
                     showParams.append(mode[2])
-            modeLine = "{} {}".format("".join(modestring), " ".join(showParams)) if showParams else "".join(modestring)
+            modeLine = "{} {}".format("".join(modestr), " ".join(showParams)) if showParams else "".join(modestr)
             if targettype == "user":
                 data.sendMessage("MODE", modeLine, prefix=source)
             else:
                 for u in data.users:
                     u.sendMessage("MODE", modeLine, to=data.name, prefix=source)
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server != self:
+                    server.callRemote(SetMode, target=target, targetts=targetts, source=source, modestring="".join(modestr), params=showParams)
         return {}
     SetMode.responder(setMode)
     
