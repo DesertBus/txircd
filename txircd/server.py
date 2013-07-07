@@ -591,7 +591,7 @@ class ServerProtocol(AMP):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if server not in self.ircd.servers:
-            raise NoSuchServer ("The server this user is on is not connected to the network.")
+            raise NoSuchServer ("The server {} is not connected to the network.".format(server))
         signontime = datetime.utcfromtimestamp(signon)
         nicktime = datetime.utcfromtimestamp(nickts)
         if nick in self.ircd.users:
@@ -643,7 +643,7 @@ class ServerProtocol(AMP):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if user not in self.ircd.userid:
-            raise NoSuchUser ("The given user is not connected to the network.")
+            raise NoSuchUser ("The user {} is not connected to the network.".format(user))
         udata = self.ircd.userid[user]
         if channel in self.ircd.channels:
             cdata = self.ircd.channels[channel]
@@ -736,7 +736,7 @@ class ServerProtocol(AMP):
             data = self.ircd.userid[target]
             targettype = "user"
         else:
-            raise NoSuchTarget ("The target given does not exist on the network.")
+            raise NoSuchTarget ("The target {} does not exist on the network.".format(target))
         adding = True
         currentParam = 0
         modeDisplay = []
@@ -894,7 +894,7 @@ class ServerProtocol(AMP):
             if datetime.utcfromtimestamp(targetts) > data.created:
                 return {}
         else:
-            raise NoSuchTarget ("The specified user or channel is not part of the network.")
+            raise NoSuchTarget ("The specified target {} is not part of the network.".format(target))
         if not value and key not in data.metadata[namespace]:
             return {}
         if not value:
