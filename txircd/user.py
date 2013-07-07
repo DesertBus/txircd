@@ -38,7 +38,8 @@ class IRCUser(object):
         while self.uuid in self.ircd.userid:
             self.uuid = str(uuid.uuid1())
         for server in self.ircd.servers.itervalues():
-            server.ignoreUsers.discard(self.uuid)
+            if server.nearHop == self.ircd.name: # only operate on servers with the attribute
+                server.ignoreUsers.discard(self.uuid)
         self.password = None
         self.nickname = None
         self.username = None
