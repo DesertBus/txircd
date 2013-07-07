@@ -483,6 +483,8 @@ class ServerProtocol(AMP):
         self.description = description
         self.ircd.servers[self.name] = self
         self.sendBurstData()
+        for action in self.ircd.actions["netmerge"]:
+            action(self.name)
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name and server != self:
                 server.callRemote(AddNewServer, name=name, description=description, hopcount=1, nearhop=self.ircd.name)
@@ -567,6 +569,8 @@ class ServerProtocol(AMP):
                 # The server is connected to this server but is NOT this server link
                 # so that it goes to each server once and does not get sent back where it came from
                 server.callRemote(AddNewServer, name=name, description=description, hopcount=hopcount+1, nearhop=nearhop)
+        for action in self.ircd.actions["netmerge"]:
+            action(name)
         return {}
     AddNewServer.responder(newServer)
     
@@ -586,7 +590,7 @@ class ServerProtocol(AMP):
             if self.ircd.name == server.nearHop and server != self: # propagate to the rest of the servers
                 server.callRemote(DisconnectServer, name=name)
         for action in self.ircd.actions["netsplit"]:
-            action()
+            action(name)
         return {}
     DisconnectServer.responder(splitServer)
     
@@ -607,7 +611,7 @@ class ServerProtocol(AMP):
                 if self.ircd.name == server.nearHop:
                     server.callRemote(DisconnectServer, name=self.name)
             for action in self.ircd.actions["netsplit"]:
-                action()
+                action(self.name)
         self.disconnected.callback(None)
         AMP.connectionLost(self, reason)
     
