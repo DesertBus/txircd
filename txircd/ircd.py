@@ -198,6 +198,7 @@ class IRCD(Factory):
         self.prefixes = {}
         self.prefix_symbols = {}
         self.prefix_order = []
+        self.server_commands = {}
         self.module_data_cache = {}
         self.server_factory = None
         self.common_modules = set()
@@ -465,6 +466,11 @@ class IRCD(Factory):
                         self.actions[actiontype].append(func)
                 else:
                     self.actions[actiontype] = actionfuncs
+        if "server" in mod_contains:
+            for commandtype, commandfunc in mod_contains["server"].iteritems():
+                if commandtype not in self.server_commands:
+                    self.server_commands[commandtype] = []
+                self.server_commands[commandtype].append(commandfunc)
         if "common" in mod_contains and mod_contains["common"]:
             self.common_modules.add(name)
         if not saved_data and name in self.serialized_data:

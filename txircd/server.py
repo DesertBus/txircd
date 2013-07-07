@@ -432,6 +432,17 @@ class SendAnnouncement(Command):
     }
     requiresAnswer = False
 
+class ModuleMessage(Command):
+    arguments = [
+        ("destserver", String()),
+        ("command", String()),
+        ("args", ListOf(String()))
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE"
+    }
+    requiresAnswer = False
+
 
 class ServerProtocol(AMP):
     def __init__(self, ircd):
@@ -964,6 +975,17 @@ class ServerProtocol(AMP):
         udata.sendMessage(type, *args, to=to, prefix=prefix)
         return {}
     SendAnnouncement.responder(announce)
+    
+    def modMessage(self, destserver, command, args):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if destserver != self.ircd.name:
+            self.ircd.servers[destserver].callRemote(ModuleMessage, destserver=destserver, command=command, args=args)
+        elif command in self.ircd.server_commands:
+            for modfunc in self.ircd.server_commands[command]:
+                modfunc(command, args)
+        return {}
+    ModuleMessage.responder(modMessage)
 
 class ServerFactory(Factory):
     protocol = ServerProtocol
