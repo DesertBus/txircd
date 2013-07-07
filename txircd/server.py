@@ -438,6 +438,7 @@ class ServerProtocol(AMP):
         self.nearHop = self.ircd.name
         self.nearRemoteLink = self.ircd.name
         self.hopCount = 1
+        self.ignoreUsers = set()
     
     def serverHandshake(self, name, password, description, version, commonmodules):
         if self.name is not None:
@@ -596,6 +597,7 @@ class ServerProtocol(AMP):
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if server not in self.ircd.servers:
             raise NoSuchServer ("The server {} is not connected to the network.".format(server))
+        self.ignoreUsers.discard(uuid) # very unlikely, but if a user is being introduced reusing a UUID, remove from ignored
         signontime = datetime.utcfromtimestamp(signon)
         nicktime = datetime.utcfromtimestamp(nickts)
         if nick in self.ircd.users:
@@ -646,6 +648,8 @@ class ServerProtocol(AMP):
     def joinChannel(self, channel, user, chants):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user in self.ignoreUsers:
+            return {}
         if user not in self.ircd.userid:
             raise NoSuchUser ("The user {} is not connected to the network.".format(user))
         udata = self.ircd.userid[user]
@@ -734,6 +738,8 @@ class ServerProtocol(AMP):
     def setMode(self, target, targetts, source, modestring, params):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if target in self.ignoreUsers:
+            return {}
         if target in self.ircd.channels:
             data = self.ircd.channels[target]
             targettype = "channel"
@@ -897,6 +903,8 @@ class ServerProtocol(AMP):
     def setMetadata(self, target, targetts, namespace, key, value):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if target in self.ignoreUsers:
+            return {}
         if target in self.ircd.userid:
             data = self.ircd.userid[target]
         elif target in self.ircd.channels:
