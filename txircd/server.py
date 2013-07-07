@@ -195,6 +195,9 @@ class ModuleMismatch(Exception):
 class ServerNotConnected(Exception):
     pass
 
+class UserAlreadyConnected(Exception):
+    pass
+
 class NoSuchTarget(Exception):
     pass
 
@@ -272,7 +275,8 @@ class ConnectUser(Command):
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        NoSuchServer: "NO_SUCH_SERVER"
+        NoSuchServer: "NO_SUCH_SERVER",
+        UserAlreadyConnected: "UUID_ALREADY_CONNECTED"
     }
     requiresAnswer = False
 
@@ -598,6 +602,8 @@ class ServerProtocol(AMP):
         if server not in self.ircd.servers:
             raise NoSuchServer ("The server {} is not connected to the network.".format(server))
         self.ignoreUsers.discard(uuid) # very unlikely, but if a user is being introduced reusing a UUID, remove from ignored
+        if uuid in self.ircd.userid:
+            raise UserAlreadyConnected ("The uuid {} already exists on the network.".format(uuid))
         signontime = datetime.utcfromtimestamp(signon)
         nicktime = datetime.utcfromtimestamp(nickts)
         if nick in self.ircd.users:

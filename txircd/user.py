@@ -35,6 +35,10 @@ class IRCUser(object):
         self.ircd = parent.factory
         self.socket = parent
         self.uuid = str(uuid.uuid1())
+        while self.uuid in self.ircd.userid:
+            self.uuid = str(uuid.uuid1())
+        for server in self.ircd.servers.itervalues():
+            server.ignoreUsers.discard(self.uuid)
         self.password = None
         self.nickname = None
         self.username = None
