@@ -571,7 +571,7 @@ class ServerProtocol(AMP):
         if self.name:
             userList = self.ircd.users.values()
             for user in userList:
-                if user.server == self.ircd.name or user.server in self.remoteServers:
+                if user.server == self.name or user.server in self.remoteServers:
                     user.disconnect("{} {}".format(self.ircd.name, self.name))
             for servname in self.remoteServers:
                 del self.ircd.servers[servname]
