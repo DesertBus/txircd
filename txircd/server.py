@@ -615,8 +615,10 @@ class ServerProtocol(AMP):
                     udata.disconnect("Nickname collision", self.name)
                 elif signontime == udata.signon:
                     udata.disconnect("Nickname collision", self.name)
+                    self.ignoreUsers.add(uuid)
                     return {}
                 else:
+                    self.ignoreUsers.add(uuid)
                     return {}
             else:
                 return {}
