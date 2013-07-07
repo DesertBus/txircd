@@ -119,7 +119,7 @@ class IRCUser(object):
             self.sendMessage(irc.RPL_ISUPPORT, " ".join(thisline), ":are supported by this server")
     
     def disconnect(self, reason, sourceServer = None):
-        if self.registered == 0 and self.nickname in self.ircd.users: # both checks required in case this is called during the final registration process
+        if self.registered == 0 and self.uuid in self.ircd.userid:
             quitdest = set()
             exitChannels = []
             for channel in self.ircd.channels.itervalues():
