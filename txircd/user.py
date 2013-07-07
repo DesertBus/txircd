@@ -140,6 +140,8 @@ class IRCUser(object):
             del self.ircd.userid[self.uuid]
             for user in quitdest:
                 user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+            for modfunc in self.ircd.actions["quit"]:
+                modfunc(self, reason)
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name and server.name != sourceServer:
                     server.callRemote(RemoveUser, user=self.uuid, reason=reason)
@@ -153,8 +155,6 @@ class IRCUser(object):
     
     def connectionLost(self, reason):
         self.disconnect("Connection Lost")
-        for modfunc in self.ircd.actions["quit"]:
-            modfunc(self, reason)
         self.disconnected.callback(None)
     
     def handleCommand(self, command, prefix, params):

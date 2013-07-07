@@ -71,6 +71,8 @@ class RemoteUser(object):
         del self.ircd.userid[self.uuid]
         for user in quitdest:
             user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+        for modfunc in self.ircd.actions["quit"]:
+            modfunc(self, reason)
         self.disconnected.callback(None)
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name and server.name != sourceServer:
