@@ -621,7 +621,7 @@ class ServerProtocol(AMP):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if user not in self.ircd.userid:
-            raise NoSuchUser ("The given user is not on the network.")
+            raise NoSuchUser ("The user {} is not on the network.".format(user))
         self.ircd.userid[user].disconnect(reason, self.name)
         return {}
     RemoveUser.responder(removeUser)
