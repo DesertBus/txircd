@@ -649,6 +649,7 @@ class ServerProtocol(AMP):
             cdata = self.ircd.channels[channel]
             chantime = datetime.utcfromtimestamp(chants)
             if chantime < cdata.created:
+                cdata.created = chantime
                 modes = []
                 params = []
                 for mode, param in cdata.mode.iteritems():
