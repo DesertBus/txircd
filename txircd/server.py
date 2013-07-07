@@ -895,7 +895,7 @@ class ServerProtocol(AMP):
         udata.nickname = newnick
         udata.nicktime = now()
         for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
+            if server.nearHop == self.ircd.name and server != self:
                 server.callRemote(ChangeNick, user=user, newnick=newnick)
         for action in self.ircd.actions["nick"]:
             action(udata, oldNick)
