@@ -66,12 +66,20 @@
 # one.  Servers not specified here will be denied linking.  The default value is
 # none; the value listed here is to illustrate the values used for linking
 # servers.
+# ip, port, incoming_password, and outgoing_password are all required values in
+# order for a server to link successfully.  ssl is required only if set to true
+# (i.e. an SSL connection is being established).  bindaddress and bindport only
+# work when specified together and are only needed if the connection must
+# originate from a specific one of multiple IP addresses assigned to a server.
 #serverlinks:
 #  servername.example.com:
 #    ip: 12.34.56.78
+#    port: 7000
+#    bindaddress: 98.76.54.32
+#    bindport: 7001
+#    ssl: false
 #    incoming_password: lolol
 #    outgoing_password: whateven
-#XXX TODO: document the rest of the server options
 
 # serverlink_autoconnect: This is a list of server names specified above to
 # automatically connect to.
