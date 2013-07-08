@@ -882,6 +882,7 @@ class ServerProtocol(AMP):
         else:
             cdata = IRCChannel(self.ircd, channel)
             cdata.created = datetime.utcfromtimestamp(chants)
+            cdata.topicTime = cdata.created
             self.ircd.channels[channel] = cdata
             for action in self.ircd.actions["chancreate"]:
                 action(cdata)
