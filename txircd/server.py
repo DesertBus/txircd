@@ -121,7 +121,7 @@ class RemoteUser(object):
             else:
                 to = kw["to"]
         else:
-            to = self.nickname
+            to = self.nickname if self.nickname else "*"
         self.ircd.servers[self.server].callRemote(SendAnnouncement, user=self.uuid, type=command, args=parameter_list, prefix=prefix, to=to)
     
     def handleCommand(self, command, prefix, params):
