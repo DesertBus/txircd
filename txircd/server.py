@@ -723,6 +723,9 @@ class ServerProtocol(AMP):
         if uuid in self.ircd.userid:
             raise UserAlreadyConnected ("The uuid {} already exists on the network.".format(uuid))
         self.ircd.userid[uuid] = RemoteUser(self.ircd, uuid, None, None, None, None, ip, server, secure, datetime.utcfromtimestamp(signon), now())
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                server.callRemote(ConnectUser, uuid=uuid, ip=ip, server=server, secure=secure, signon=signon)
         return {}
     ConnectUser.responder(basicConnectUser)
     
