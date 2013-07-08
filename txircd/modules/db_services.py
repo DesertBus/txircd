@@ -3,7 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.words.protocols import irc
 from txircd.modbase import Command
-from txircd.server import ConnectUser, RemoveUser
+from txircd.server import ConnectUser, RemoveUser, ModuleMessage
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 from base64 import b64decode, b64encode
 from Crypto.Random.random import getrandbits
@@ -1223,8 +1223,7 @@ class Spawner(object):
     
     def checkNick(self, user):
         if user in self.auth_timer:
-            self.auth_timer[user].cancel()
-            del self.auth_timer[user]
+            self.removeAuthTimer(user)
         if irc_lower(user.nickname).startswith(irc_lower(self.ircd.servconfig["services_nickserv_guest_prefix"])):
             return # Don't check guest nicks
         d = self.query("SELECT donor_id FROM ircnicks WHERE nick = {0}", irc_lower(user.nickname))
@@ -1277,8 +1276,7 @@ class Spawner(object):
         user.setMetadata("ext", "accountid", str(result[0][0]))
         user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
         if user in self.auth_timer:
-            self.auth_timer[user].cancel()
-            del self.auth_timer[user]
+            self.removeAuthTimer(user)
         if user in self.saslUsers:
             self.saslUsers[user]["success"](user)
             del self.saslUsers[user]
@@ -1302,18 +1300,28 @@ class Spawner(object):
             id = str(result[0][0])
             if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
                 if user in self.auth_timer: # Clear the timer
-                    self.auth_timer[user].cancel()
-                    del self.auth_timer[user]
+                    self.removeAuthTimer(user)
                 return # Already identified
             user.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg {} login EMAIL PASSWORD\x0F to verify your identity.".format(self.nickserv.nickname), prefix=self.nickserv.prefix())
             if user in self.auth_timer:
-                self.auth_timer[user].cancel() # In case we had another going
-            self.auth_timer[user] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
+                self.removeAuthTimer(user)
+            self.setAuthTimer(user)
         elif "accountid" in user.metadata["ext"]:
             # Try to register the nick
             d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
             d.addCallback(self.registerNick, user, user.nickname)
             d.addErrback(self.failedRegisterNick, user, user.nickname)
+    
+    def setAuthTimer(self, user):
+        self.auth_timer[user] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
+        if user.server != self.ircd.name:
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, command="ServiceBlockUser", args=[user.uuid])
+    
+    def removeAuthTimer(self, user):
+        self.auth_timer[user].cancel()
+        del self.auth_timer[user]
+        if user.server != self.ircd.name:
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, command="ServiceUnblockUser", args=[user.uuid])
     
     def setDonorInfo(self, result, user):
         if not result:
@@ -1553,8 +1561,7 @@ class Spawner(object):
     
     def onQuit(self, user, reason):
         if user in self.auth_timer:
-            self.auth_timer[user].cancel()
-            del self.auth_timer[user]
+            self.removeAuthTimer[user]
     
     def onNickChange(self, user, oldNick):
         if irc_lower(user.nickname) != irc_lower(oldNick):
@@ -1570,9 +1577,8 @@ class Spawner(object):
             channel.setTopic(topicData[0], topicData[1])
             channel.topicTime = topicData[2]
     
-    def onNetmerge(self):
-        for user in self.ircd.users.itervalues(): # check the nicks of all users
-            self.checkNick(user)
+    def onNetmerge(self, serverName):
+        # TODO
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
