@@ -1271,16 +1271,15 @@ class Spawner(object):
             failValidation()
     
     def loginUser(self, result, user):
-        accountname = result[0][1].replace(" ", "_")
         user.setMetadata("ext", "accountid", str(result[0][0]))
-        user.setMetadata("ext", "accountname", accountname)
+        user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
         if user in self.auth_timer:
             self.removeAuthTimer(user)
         if user in self.saslUsers:
             self.saslUsers[user]["success"](user)
             del self.saslUsers[user]
         else:
-            user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(accountname), prefix=self.nickserv.prefix())
+            user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
             self.checkNick(user)
         self.registered(user)
     

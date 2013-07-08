@@ -237,24 +237,24 @@ class IRCUser(object):
             arglist = [command] + list(parameter_list)
         self.socket.sendMessage(*arglist, **kw)
     
-    def setMetadata(self, namespace, key, value):
+    def setMetadata(self, namespace, key, value, sourceServer = None):
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
         self.metadata[namespace][key] = value
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, value)
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
-                if server.nearHop == self.ircd.name:
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
                     server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value=value)
     
-    def delMetadata(self, namespace, key):
+    def delMetadata(self, namespace, key, sourceServer = None):
         oldValue = self.metadata[namespace][key]
         del self.metadata[namespace][key]
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, "")
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
-                if server.nearHop == self.ircd.name:
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
                     server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value="")
     
     #=====================

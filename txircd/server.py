@@ -184,10 +184,22 @@ class RemoteUser(object):
             modfunc(command, data)
     
     def setMetadata(self, namespace, key, value):
-        self.ircd.servers[self.server].callRemote(RequestMetadata, user=self.uuid, namespace=namespace, key=key, value=value)
+        oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
+        self.metadata[namespace][key] = value
+        for action in self.ircd.actions["metadataupdate"]:
+            action(self, namespace, key, oldValue, value)
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server != self:
+                server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key):
-        self.ircd.servers[self.server].callRemote(RequestMetadata, user=self.uuid, namespace=namespace, key=key, value="")
+        oldValue = self.metadata[namespace][key]
+        del self.metadata[namespace][key]
+        for modfunc in self.ircd.actions["metadataupdate"]:
+            modfunc(self, namespace, key, oldValue, "")
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server.name != sourceServer:
+                server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value="")
     
     def prefix(self):
         return "{}!{}@{}".format(self.nickname, self.username, self.hostname)
@@ -485,19 +497,6 @@ class ChangeNick(Command):
     arguments = [
         ("user", String()),
         ("newnick", String())
-    ]
-    errors = {
-        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
-        NoSuchUser: "NO_SUCH_USER"
-    }
-    requiresAnswer = False
-
-class RequestMetadata(Command):
-    arguments = [
-        ("user", String()),
-        ("namespace", String()),
-        ("key", String()),
-        ("value", String())
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
@@ -1055,18 +1054,6 @@ class ServerProtocol(AMP):
         return {}
     ChangeNick.responder(changeNick)
     
-    def requestMetadata(self, user, namespace, key, value):
-        if not self.name:
-            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
-        if user not in self.ircd.userid:
-            raise NoSuchUser ("The user we're to update doesn't actually exist.")
-        if value:
-            self.ircd.userid[user].setMetadata(namespace, key, value) # This is defined in IRCUser to work or RemoteUser to keep passing it on
-        else:
-            self.ircd.userid[user].delMetadata(namespace, key)
-        return {}
-    RequestMetadata.responder(requestMetadata)
-    
     def setMetadata(self, target, targetts, namespace, key, value):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
@@ -1080,23 +1067,10 @@ class ServerProtocol(AMP):
                 return {}
         else:
             raise NoSuchTarget ("The specified target {} is not part of the network.".format(target))
-        if not value and key not in data.metadata[namespace]:
-            return {}
-        if not value:
-            oldValue = data.metadata[namespace][key]
-            del data.metadata[namespace][key]
-            for action in self.ircd.actions["metadataupdate"]:
-                action(data, namespace, key, oldValue, "")
+        if value:
+            target.setMetadata(namespace, key, value, self.name)
         else:
-            oldValue = ""
-            if key in data.metadata[namespace]:
-                oldValue = data.metadata[namespace][key]
-            data.metadata[namespace][key] = value
-            for action in self.ircd.actions["metadataupdate"]:
-                action(data, namespace, key, oldValue, value)
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name and server != self:
-                server.callRemote(SetMetadata, target=target, targetts=targetts, namespace=namespace, key=key, value=value)
+            target.delMetadata(namespace, key, self.name)
         return {}
     SetMetadata.responder(setMetadata)
     

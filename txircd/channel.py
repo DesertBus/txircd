@@ -187,22 +187,22 @@ class IRCChannel(object):
             if server.nearHop == self.ircd.name:
                 server.callRemote(SetTopic, channel=self.name, chants=epoch(self.created), topic=topic, topicsetter=setter, topicts=epoch(self.topicTime))
     
-    def setMetadata(self, namespace, key, value):
+    def setMetadata(self, namespace, key, value, sourceServer = None):
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
         self.metadata[namespace][key] = value
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, value)
         from txircd.server import SetMetadata # This import is moved to here to alleviate issues with circular dependencies
         for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
+            if server.nearHop == self.ircd.name and server.name != sourceServer:
                 server.callRemote(SetMetadata, target=self.name, targetts=epoch(self.created), namespace=namespace, key=key, value=value)
     
-    def delMetadata(self, namespace, key):
+    def delMetadata(self, namespace, key, sourceServer = None):
         oldValue = self.metadata[namespace][key]
         del self.metadata[namespace][key]
         for modfunc in self.ircd.actions["metadataupdate"]:
             modfunc(self, namespace, key, oldValue, "")
         from txircd.server import SetMetadata
         for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
+            if server.nearHop == self.ircd.name and server.name != sourceServer:
                 server.callRemote(SetMetadata, target=self.name, targetts=epoch(self.created), namespace=namespace, key=key, value="")
