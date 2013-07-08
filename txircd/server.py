@@ -985,7 +985,7 @@ class ServerProtocol(AMP):
                     data.users[udata] = "".join(statusList)
                     modeDisplay.append([True, mode, param])
                 else:
-                    if mode in cdata.users[udata]:
+                    if mode in data.users[udata]:
                         data.users[udata] = data.users[udata].replace(mode, "")
                         modeDisplay.append([False, mode, param])
             elif modetype == 0:
