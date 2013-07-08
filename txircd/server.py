@@ -78,25 +78,26 @@ class RemoteUser(object):
                 return
     
     def disconnect(self, reason, sourceServer = None):
-        quitdest = set()
-        exitChannels = []
-        for channel in self.ircd.channels.itervalues():
-            if self in channel.users:
-                exitChannels.append(channel)
-        for channel in exitChannels:
-            del channel.users[self] # remove channel user entry
-            if not channel.users:
-                for modfunc in self.ircd.actions["chandestroy"]:
-                    modfunc(channel)
-                del self.ircd.channels[channel.name] # destroy the empty channel
-            for u in channel.users.iterkeys():
-                quitdest.add(u)
-        udata = self.ircd.users[self.nickname]
-        if udata == self:
-            del self.ircd.users[self.nickname]
         del self.ircd.userid[self.uuid]
-        for user in quitdest:
-            user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
+        if self.nickname:
+            quitdest = set()
+            exitChannels = []
+            for channel in self.ircd.channels.itervalues():
+                if self in channel.users:
+                    exitChannels.append(channel)
+            for channel in exitChannels:
+                del channel.users[self] # remove channel user entry
+                if not channel.users:
+                    for modfunc in self.ircd.actions["chandestroy"]:
+                        modfunc(channel)
+                    del self.ircd.channels[channel.name] # destroy the empty channel
+                for u in channel.users.iterkeys():
+                    quitdest.add(u)
+            udata = self.ircd.users[self.nickname]
+            if udata == self:
+                del self.ircd.users[self.nickname]
+            for user in quitdest:
+                user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
         for modfunc in self.ircd.actions["quit"]:
             modfunc(self, reason)
         self.disconnected.callback(None)
