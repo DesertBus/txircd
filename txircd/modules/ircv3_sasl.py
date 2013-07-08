@@ -151,3 +151,4 @@ class Spawner(object):
         del self.ircd.commands["AUTHENTICATE"]
         del self.ircd.module_data_cache["cap"]["sasl"]
         self.ircd.actions["register"].remove(self.sasl.checkInProgress)
+        self.ircd.server_commands["SASL"].remove(self.sasl.saslMessage)
