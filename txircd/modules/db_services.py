@@ -1558,7 +1558,7 @@ class Spawner(object):
     
     def onQuit(self, user, reason):
         if user in self.auth_timer:
-            self.removeAuthTimer[user]
+            self.removeAuthTimer(user)
     
     def onNickChange(self, user, oldNick):
         if irc_lower(user.nickname) != irc_lower(oldNick):
