@@ -458,6 +458,9 @@ class IRCUser(object):
         if self in channel.users:
             return
         status = ""
+        for server in self.ircd.servers.itervalues(): # Send this first before the chancreate hook screws up everything
+            if server.nearHop == self.ircd.name:
+                server.callRemote(JoinChannel, channel=channel.name, chants=epoch(channel.created), user=self.uuid)
         if channel.name not in self.ircd.channels:
             self.ircd.channels[channel.name] = channel
             for modfunc in self.ircd.actions["chancreate"]:
@@ -482,9 +485,6 @@ class IRCUser(object):
         else:
             self.sendMessage(irc.RPL_NOTOPIC, channel.name, ":No topic is set")
         self.report_names(channel)
-        for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name:
-                server.callRemote(JoinChannel, channel=channel.name, chants=epoch(channel.created), user=self.uuid)
         if status:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
