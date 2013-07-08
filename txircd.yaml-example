@@ -427,7 +427,7 @@
 # through some module or a different software altogether connected to the
 # network).  If left as an empty string, uses an internal agent provided by
 # another module (e.g. db_services).  The default value is ''.
-#sasl_agent: ''
+#server_sasl_agent: ''
 
 
 # denychans config
