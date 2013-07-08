@@ -1190,8 +1190,6 @@ class Spawner(object):
         return self.db.runQuery(query, args)
     
     def exclaimServerError(self, result, user, service):
-        from traceback import print_exc
-        print_exc()
         if user in self.saslUsers:
             self.saslUsers[user]["failure"](user)
             del self.saslUsers[user]
@@ -1273,15 +1271,16 @@ class Spawner(object):
             failValidation()
     
     def loginUser(self, result, user):
+        accountname = result[0][1].replace(" ", "_")
         user.setMetadata("ext", "accountid", str(result[0][0]))
-        user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
+        user.setMetadata("ext", "accountname", accountname)
         if user in self.auth_timer:
             self.removeAuthTimer(user)
         if user in self.saslUsers:
             self.saslUsers[user]["success"](user)
             del self.saslUsers[user]
         else:
-            user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
+            user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(accountname), prefix=self.nickserv.prefix())
             self.checkNick(user)
         self.registered(user)
     
@@ -1501,7 +1500,6 @@ class Spawner(object):
     def registered(self, user):
         for c in self.ircd.channels.itervalues():
             if user in c.users:
-                c = self.ircd.channels[channel]
                 self.promote(user, c, True)
         if "certfp" in user.metadata["server"]:
             self.addCert(user, user.metadata["server"]["certfp"])
