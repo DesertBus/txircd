@@ -97,6 +97,66 @@ class RemoteUser(object):
             to = self.nickname
         self.ircd.servers[self.server].callRemote(SendAnnouncement, user=self.uuid, type=command, args=parameter_list, prefix=prefix, to=to)
     
+    def handleCommand(self, command, prefix, params):
+        cmd = self.ircd.commands[command]
+        cmd.updateActivity(self)
+        data = cmd.processParams(self, params)
+        if not data:
+            return
+        permData = self.commandPermission(command, data)
+        if permData:
+            cmd.onUse(self, permData)
+            if not self.cmd_extra:
+                self.commandExtraHook(command, permData)
+            self.cmd_extra = False
+    
+    def commandPermission(self, command, data):
+        tryagain = set()
+        for modfunc in self.ircd.actions["commandpermission"]:
+            permData = modfunc(self, command, data)
+            if permData == "again":
+                tryagain.add(modfunc)
+            else:
+                data = permData
+                if "force" in data and data["force"]:
+                    return data
+                if not data:
+                    return {}
+        for modeset in self.ircd.channel_modes:
+            for implementation in modeset.itervalues():
+                permData = implementation.checkPermission(self, command, data)
+                if permData == "again":
+                    tryagain.add(implementation.checkPermission)
+                else:
+                    data = permData
+                    if "force" in data and data["force"]:
+                        return data
+                    if not data:
+                        return {}
+        for modeset in self.ircd.user_modes:
+            for implementation in modeset.itervalues():
+                permData = implementation.checkPermission(self, command, data)
+                if permData == "again":
+                    tryagain.add(implementation.checkPermission)
+                else:
+                    data = permData
+                    if "force" in data and data["force"]:
+                        return data
+                    if not data:
+                        return {}
+        for modfunc in tryagain:
+            data = modfunc(self, command, data)
+            if "force" in data and data["force"]:
+                return data
+            if not data:
+                return {}
+        return data
+    
+    def commandExtraHook(self, command, data):
+        self.cmd_extra = True
+        for modfunc in self.ircd.actions["commandextra"]:
+            modfunc(command, data)
+    
     def setMetadata(self, namespace, key, value):
         self.ircd.servers[self.server].callRemote(RequestMetadata, user=self.uuid, namespace=namespace, key=key, value=value)
     
