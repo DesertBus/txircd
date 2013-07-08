@@ -1068,9 +1068,9 @@ class ServerProtocol(AMP):
         else:
             raise NoSuchTarget ("The specified target {} is not part of the network.".format(target))
         if value:
-            target.setMetadata(namespace, key, value, self.name)
+            data.setMetadata(namespace, key, value, self.name)
         else:
-            target.delMetadata(namespace, key, self.name)
+            data.delMetadata(namespace, key, self.name)
         return {}
     SetMetadata.responder(setMetadata)
     
