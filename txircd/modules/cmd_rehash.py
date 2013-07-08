@@ -29,7 +29,7 @@ class RehashCommand(Command):
             }
         return {
             "user": user,
-            "servers" = self.ircd.name
+            "servers": self.ircd.name
         }
     
     def remoteRehash(self, command, args):
