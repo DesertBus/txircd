@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.utils import irc_lower
 
 class NickServAlias(Command):
     def onUse(self, user, data):
