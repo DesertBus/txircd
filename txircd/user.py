@@ -8,7 +8,6 @@ from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk
 import socket, hashlib, uuid
 
 class IRCUser(object):
-    
     def __init__(self, parent):
         # Mask the IP
         ip = parent.transport.getPeer().host
