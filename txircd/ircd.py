@@ -205,6 +205,7 @@ class IRCD(Factory):
         self.module_data_cache = {}
         self.server_factory = None
         self.common_modules = set()
+        log.msg("Loading module data...")
         try:
             with open("data.yaml", "r") as dataFile:
                 self.serialized_data = yaml.safe_load(dataFile)
@@ -216,11 +217,13 @@ class IRCD(Factory):
             "localmax": 0,
             "globalmax": 0
         }
+        log.msg("Loading configuration...")
         self.servconfig = {}
         if not options:
             options = {}
         self.load_options(options)
         self.name = self.servconfig["server_name"]
+        log.msg("Loading modules...")
         self.all_module_load()
         self.autoconnect_servers = LoopingCall(self.server_autoconnect)
         self.autoconnect_servers.start(60, now=False) # The server factory isn't added to here yet
