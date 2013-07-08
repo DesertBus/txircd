@@ -56,11 +56,13 @@ class Service(object):
     
     def addToServers(self):
         for server in self.ircd.servers.itervalues():
-            server.callRemote(ConnectUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
+            if server.nearHop == self.ircd.name:
+                server.callRemote(ConnectUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
     
     def removeFromServers(self):
         for server in self.ircd.servers.itervalues():
-            server.callRemote(RemoveUser, user=self.uuid, reason="Unloading module")
+            if server.nearHop == self.ircd.name:
+                server.callRemote(RemoveUser, user=self.uuid, reason="Unloading module")
     
     def register(self):
         pass
