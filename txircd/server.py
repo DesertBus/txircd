@@ -183,16 +183,16 @@ class RemoteUser(object):
         for modfunc in self.ircd.actions["commandextra"]:
             modfunc(command, data)
     
-    def setMetadata(self, namespace, key, value):
+    def setMetadata(self, namespace, key, value, sourceServer = None):
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
         self.metadata[namespace][key] = value
         for action in self.ircd.actions["metadataupdate"]:
             action(self, namespace, key, oldValue, value)
         for server in self.ircd.servers.itervalues():
-            if server.nearHop == self.ircd.name and server != self:
+            if server.nearHop == self.ircd.name and server.name != sourceServer:
                 server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value=value)
     
-    def delMetadata(self, namespace, key):
+    def delMetadata(self, namespace, key, sourceServer = None):
         oldValue = self.metadata[namespace][key]
         del self.metadata[namespace][key]
         for modfunc in self.ircd.actions["metadataupdate"]:
