@@ -1081,7 +1081,7 @@ class ServerProtocol(AMP):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if user not in self.ircd.userid:
-            raise NoSuchUser ("The specified user is not connected to the network.")
+            raise NoSuchUser ("The user {} is not connected to the network.".format(user))
         udata = self.ircd.userid[user]
         if not prefix:
             prefix = None
