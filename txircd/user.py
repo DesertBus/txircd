@@ -488,7 +488,7 @@ class IRCUser(object):
         if status:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
-                    server.callRemote(SetMode, target=self.uuid, source=self.ircd.name, modestring="+{}".format(status), params=[self.nickname for i in range(len(status))])
+                    server.callRemote(SetMode, target=self.uuid, targetts=epoch(self.signon), source=self.ircd.name, modestring="+{}".format(status), params=[self.nickname for i in range(len(status))])
         for modfunc in self.ircd.actions["join"]:
             modfunc(self, channel)
     
