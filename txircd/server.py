@@ -745,6 +745,7 @@ class ServerProtocol(AMP):
                     server.callRemote(DisconnectServer, name=self.name)
             for action in self.ircd.actions["netsplit"]:
                 action(self.name)
+        self.pinger.stop()
         self.disconnected.callback(None)
         AMP.connectionLost(self, reason)
     
