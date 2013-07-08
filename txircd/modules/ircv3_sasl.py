@@ -76,13 +76,13 @@ class Sasl(Command):
         user.sendMessage(irc.RPL_SASLSUCCESS, ":SASL authentication successful")
         del user.cache["sasl_authenticating"]
         if user.server != self.ircd.name:
-            self.ircd.servers[user.server].callRemote(ModuleMessage, type="SASL", args=["release", user.uuid])
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="SASL", args=["release", user.uuid])
     
     def sendFailure(self, user):
         user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
         del user.cache["sasl_authenticating"]
         if user.server != self.ircd.name:
-            self.ircd.servers[user.server].callRemote(ModuleMessage, type="SASL", args=["release", user.uuid])
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="SASL", args=["release", user.uuid])
     
     def saslMessage(self, command, args):
         if args[1] in self.ircd.userid:
