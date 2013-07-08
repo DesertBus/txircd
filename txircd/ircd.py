@@ -5,8 +5,8 @@ from twisted.internet.task import LoopingCall
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
-from txircd.server import IntroduceServer, ServerProtocol, protocol_version
-from txircd.utils import CaseInsensitiveDictionary, now
+from txircd.server import ConnectUser, IntroduceServer, ServerProtocol, protocol_version
+from txircd.utils import CaseInsensitiveDictionary, epoch, now
 from txircd.user import IRCUser
 from txircd import __version__
 import socket, yaml, os, json, imp
@@ -92,6 +92,9 @@ class IRCProtocol(irc.IRC):
             self.secure = ISSLTransport(self.transport, None) is not None
             self.data_checker.start(5)
             self.pinger.start(self.factory.servconfig["client_ping_interval"], now=False)
+            for server in self.factory.servers.itervalues():
+                if server.nearHop == self.factory.name:
+                    server.callRemote(ConnectUser, uuid=self.type.uuid, ip=self.type.ip, server=self.factory.name, secure=self.secure, signon=epoch(self.type.signon))
 
     def dataReceived(self, data):
         if self.dead:

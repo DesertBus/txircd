@@ -351,6 +351,21 @@ class DisconnectServer(Command):
 class ConnectUser(Command):
     arguments = [
         ("uuid", String()),
+        ("ip", String()),
+        ("server", String()),
+        ("secure", Boolean()),
+        ("signon", Integer())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchServer: "NO_SUCH_SERVER",
+        UserAlreadyConnected: "UUID_ALREADY_CONNECTED"
+    }
+    requiresAnswer = False
+
+class RegisterUser(Command):
+    arguments = [
+        ("uuid", String()),
         ("nick", String()),
         ("ident", String()),
         ("host", String()),
@@ -592,7 +607,7 @@ class ServerProtocol(AMP):
         for server in serverOrder:
             self.callRemote(AddNewServer, name=server.name, description=server.description, hopcount=server.hopCount, nearhop=server.nearHop)
         for u in self.ircd.users.itervalues():
-            self.callRemote(ConnectUser, uuid=u.uuid, nick=u.nickname, ident=u.username, host=u.hostname, gecos=u.realname, ip=u.ip, server=u.server, secure=u.socket.secure, signon=epoch(u.signon), nickts=epoch(u.nicktime))
+            self.callRemote(RegisterUser, uuid=u.uuid, nick=u.nickname, ident=u.username, host=u.hostname, gecos=u.realname, ip=u.ip, server=u.server, secure=u.socket.secure, signon=epoch(u.signon), nickts=epoch(u.nicktime))
             modes = []
             params = []
             for mode, param in u.mode.iteritems():
@@ -701,14 +716,28 @@ class ServerProtocol(AMP):
         self.disconnected.callback(None)
         AMP.connectionLost(self, reason)
     
+    def basicConnectUser(self, uuid, ip, server, secure, signon):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if server not in self.ircd.servers:
+            raise NoSuchServer ("The server {} is not connected to the network.".format(server))
+        if uuid in self.ircd.userid:
+            raise UserAlreadyConnected ("The uuid {} already exists on the network.".format(uuid))
+        self.ircd.userid[uuid] = RemoteUser(self.ircd, uuid, None, None, None, None, ip, server, secure, datetime.utcfromtimestamp(signon), now())
+        return {}
+    ConnectUser.responder(basicConnectUser)
+    
     def addUser(self, uuid, nick, ident, host, gecos, ip, server, secure, signon, nickts):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if server not in self.ircd.servers:
             raise NoSuchServer ("The server {} is not connected to the network.".format(server))
         self.ignoreUsers.discard(uuid) # very unlikely, but if a user is being introduced reusing a UUID, remove from ignored
+        oldUser = None
         if uuid in self.ircd.userid:
-            raise UserAlreadyConnected ("The uuid {} already exists on the network.".format(uuid))
+            oldUser = self.ircd.userid[uuid]
+            if oldUser.nickname:
+                raise UserAlreadyConnected ("The uuid {} already exists on the network.".format(uuid))
         signontime = datetime.utcfromtimestamp(signon)
         nicktime = datetime.utcfromtimestamp(nickts)
         if nick in self.ircd.users:
@@ -721,22 +750,38 @@ class ServerProtocol(AMP):
                 elif signontime == udata.signon:
                     udata.disconnect("Nickname collision", self.name)
                     self.ignoreUsers.add(uuid)
+                    if oldUser:
+                        del self.ircd.userid[uuid]
                     return {}
                 else:
                     self.ignoreUsers.add(uuid)
+                    if oldUser:
+                        del self.ircd.userid[uuid]
                     return {}
             else:
                 self.ignoreUsers.add(uuid)
+                if oldUser:
+                    del self.ircd.userid[uuid]
                 return {}
-        newUser = RemoteUser(self.ircd, uuid, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
+        if oldUser:
+            newUser = oldUser
+            newUser.nickname = nick
+            newUser.username = ident
+            newUser.hostname = host
+            newUser.realname = gecos
+            newUser.nicktime = nicktime
+            newUser.metadata = oldUser.metadata
+            newUser.cache = oldUser.cache
+        else:
+            newUser = RemoteUser(self.ircd, uuid, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
         self.ircd.users[nick] = newUser
         self.ircd.userid[uuid] = newUser
         newUser.callConnectHooks()
         for linkedServer in self.ircd.servers.itervalues():
             if linkedServer.nearHop == self.ircd.name and linkedServer != self:
-                linkedServer.callRemote(ConnectUser, uuid=uuid, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
+                linkedServer.callRemote(RegisterUser, uuid=uuid, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
         return {}
-    ConnectUser.responder(addUser)
+    RegisterUser.responder(addUser)
     
     def removeUser(self, user, reason):
         if not self.name:

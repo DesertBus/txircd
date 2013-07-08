@@ -3,7 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.words.protocols import irc
 from txircd.modbase import Command
-from txircd.server import ConnectUser, RemoveUser, ModuleMessage
+from txircd.server import RegisterUser, RemoveUser, ModuleMessage
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 from base64 import b64decode, b64encode
 from Crypto.Random.random import getrandbits
@@ -57,7 +57,7 @@ class Service(object):
     def addToServers(self):
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(ConnectUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
+                server.callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
     
     def removeFromServers(self):
         for server in self.ircd.servers.itervalues():
@@ -73,7 +73,7 @@ class Service(object):
     def disconnect(self, reason, sourceServer = None):
         if sourceServer is None:
             return
-        self.ircd.servers[sourceServer].callRemote(ConnectUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
+        self.ircd.servers[sourceServer].callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
     
     def sendMessage(self, command, *parameter_list, **kw):
         if command == "PRIVMSG" and "prefix" in kw:
