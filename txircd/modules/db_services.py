@@ -1440,7 +1440,10 @@ class Spawner(object):
         sharedSecret = self.binaryString(pow(pubkey, self.dh_params["privkey"], self.dh_params["prime"]))
         
         blowfishKey = Blowfish.new(sharedSecret)
-        password = blowfishKey.decrypt(encryptedData)
+        try:
+            password = blowfishKey.decrypt(encryptedData)
+        except ValueError: # decrypt raises ValueError if the message is not of the correct length
+            return "done"
         self.auth(user, username, password)
         return "wait"
     
