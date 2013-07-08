@@ -1592,6 +1592,7 @@ class Spawner(object):
             if to_nickserv:
                 data["targetuser"] = [self.nickserv]
                 data["targetchan"] = []
+                data["chanmod"] = []
                 return data
             user.sendMessage("NOTICE", ":You cannot message anyone other than NickServ until you identify or change nicks.", prefix=self.nickserv.prefix())
             return {}
