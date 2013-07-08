@@ -90,7 +90,7 @@ class Sasl(Command):
         else:
             return
         if args[0] == "start":
-            user.cache["sasl_authenticating"] = [mechanism, ""]
+            user.cache["sasl_authenticating"] = [args[2], ""]
             self.startSaslAuth(user, args[2])
         elif args[0] == "process":
             self.processSaslAuth(user, args[2])
