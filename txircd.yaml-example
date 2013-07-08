@@ -406,6 +406,17 @@
 # 
 # db_services: Implements the Desert Bus services suite.
 #- db_services
+#
+# db_services_leaf: Serves as a leaf to the Desert Bus services suite.
+# Desert Bus services is designed to run on one server of the network;
+# db_services_leaf should be loaded on all others.  This module implements
+# command aliases for services and implements the command blocking functionality
+# for users not on the main services server.
+# Of the db_services config below, this module only requires
+# services_nickserv_nick, services_chanserv_nick, and services_bidserv_nick.
+# The three values MUST be set to the same as the services nicks for the server
+# with db_services loaded (or identical across the network).
+#-db_services_leaf
 
 
 # shun config
