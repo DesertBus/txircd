@@ -239,6 +239,8 @@ class Spawner(object):
         self.ircd.server_commands["ServiceUnblockUser"].remove(self.removeBlock)
     
     def commandPermission(self, user, cmd, data):
+        if self.ircd.servconfig["services_nickserv_nick"] not in self.ircd.users:
+            return data
         nickserv = self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]]
         if user not in self.blockedUsers:
             return data
