@@ -422,9 +422,11 @@
 
 
 # ircv3_sasl config
-# sasl_agent: The SASL agent for this server.  If left as an empty string, uses
-# an internal agent provided by another module (e.g. db_services).  The default
-# value is ''.
+# sasl_agent: The SASL agent for this network.  The SASL agent specified must be
+# another server connected to the network which operates as a SASL agent (either
+# through some module or a different software altogether connected to the
+# network).  If left as an empty string, uses an internal agent provided by
+# another module (e.g. db_services).  The default value is ''.
 #sasl_agent: ''
 
 
