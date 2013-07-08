@@ -881,7 +881,7 @@ class ServerProtocol(AMP):
         else:
             cdata = IRCChannel(self.ircd, channel)
             cdata.created = datetime.utcfromtimestamp(chants)
-            for action in self.ircd.channels["chancreate"]:
+            for action in self.ircd.actions["chancreate"]:
                 action(cdata)
         if udata in cdata.users:
             return {}
