@@ -1,5 +1,6 @@
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Factory, ClientFactory
+from twisted.internet.task import LoopingCall
 from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
 from twisted.words.protocols import irc
 from txircd.channel import IRCChannel
@@ -544,6 +545,14 @@ class ModuleMessage(Command):
     }
     requiresAnswer = False
 
+class PingServer(Command):
+    arguments = [
+        ("data", String())
+    ]
+    response = [
+        ("data", String())
+    ]
+
 
 class ServerProtocol(AMP):
     def __init__(self, ircd):
@@ -558,6 +567,12 @@ class ServerProtocol(AMP):
         self.hopCount = 1
         self.ignoreUsers = set()
         self.disconnected = Deferred()
+        self.lastping = now()
+        self.lastpong = now()
+        self.pinger = LoopingCall(self.ping)
+    
+    def connectionMade(self):
+        self.pinger.start(60, now=False)
     
     def serverHandshake(self, name, password, description, version, commonmodules):
         if self.name is not None:
@@ -591,6 +606,23 @@ class ServerProtocol(AMP):
                 server.callRemote(AddNewServer, name=name, description=description, hopcount=1, nearhop=self.ircd.name)
         return {}
     IntroduceServer.responder(serverHandshake)
+    
+    def ping(self):
+        if self.lastping > self.lastpong:
+            self.transport.loseConnection()
+            return
+        self.lastping = now()
+        d = self.callRemote(PingServer, data="{} {}".format(self.name, epoch(self.lastping)))
+        d.addCallback(self.handlePong)
+    
+    def handlePong(self, data):
+        self.lastpong = now()
+    
+    def handlePing(self, data):
+        return {
+            "data": data
+        }
+    PingServer.responder(handlePing)
     
     def sendBurstData(self):
         if self.sentDataBurst is not False:
