@@ -126,7 +126,7 @@ class Spawner(object):
     def spawn(self):
         if "cap" not in self.ircd.module_data_cache:
             self.ircd.module_data_cache["cap"] = {}
-        self.cap_cmd = CapCommand
+        self.cap_cmd = CapCommand()
         return {
             "commands": {
                 "CAP": self.cap_cmd
