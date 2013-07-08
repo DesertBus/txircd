@@ -1162,7 +1162,6 @@ class Spawner(object):
         self.ircd.actions["topic"].remove(self.onTopicChange)
         self.ircd.actions["chancreate"].remove(self.onChanCreate)
         self.ircd.actions["commandpermission"].remove(self.commandPermission)
-        self.ircd.actions["netmerge"].remove(self.onNetmerge)
     
     def data_serialize(self):
         outputDict = {}
