@@ -1035,7 +1035,7 @@ class ServerProtocol(AMP):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if channel not in self.ircd.channels:
-            raise NoSuchChannel ("The specified channel does not exist on this network.")
+            raise NoSuchChannel ("The channel {} does not exist on this network.".format(channel))
         cdata = self.ircd.channels[channel]
         chantime = datetime.utcfromtimestamp(chants)
         if cdata.created < chantime:
