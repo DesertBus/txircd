@@ -51,6 +51,32 @@ class RemoteUser(object):
         self.cache = {}
         self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
     
+    def callConnectHooks(self):
+        tryagain = []
+        for action in self.ircd.actions["connect"]:
+            result = action(self)
+            if result == "again":
+                tryagain.append(action)
+            elif not result:
+                self.disconnect("Connection lost")
+                return
+        for action in tryagain:
+            if not action(self):
+                self.disconnect("Connection lost")
+                return
+        tryagain = []
+        for action in self.ircd.actions["register"]:
+            result = action(self)
+            if result == "again":
+                tryagain.append(action)
+            elif not result:
+                self.disconnect("Connection lost")
+                return
+        for action in tryagain:
+            if not action(self):
+                self.disconnect("Connection lost")
+                return
+    
     def disconnect(self, reason, sourceServer = None):
         quitdest = set()
         exitChannels = []
@@ -705,6 +731,7 @@ class ServerProtocol(AMP):
         newUser = RemoteUser(self.ircd, uuid, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
         self.ircd.users[nick] = newUser
         self.ircd.userid[uuid] = newUser
+        newUser.callConnectHooks()
         for linkedServer in self.ircd.servers.itervalues():
             if linkedServer.nearHop == self.ircd.name and linkedServer != self:
                 linkedServer.callRemote(ConnectUser, uuid=uuid, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
@@ -774,6 +801,8 @@ class ServerProtocol(AMP):
         else:
             cdata = IRCChannel(self.ircd, channel)
             cdata.created = datetime.utcfromtimestamp(chants)
+            for action in self.ircd.channels["chancreate"]:
+                action(cdata)
         if udata in cdata.users:
             return {}
         cdata.users[udata] = ""
