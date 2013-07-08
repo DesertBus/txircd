@@ -446,7 +446,7 @@ class CSRegisterCommand(Command):
     
     def onUse(self, user, data):
         channel = data["targetchan"]
-        self.chanserv.cache["registered"][channel.name] = {"founder": user.metadata["ext"]["accountid"], "access": {}}
+        self.chanserv.cache["registered"][channel.name] = {"founder": user.metadata["ext"]["accountid"], "access": {}, "registertime": now()}
         user.sendMessage("NOTICE", ":The channel {} has been registered under your account.".format(channel.name), prefix=self.chanserv.prefix())
     
     def processParams(self, user, params):
@@ -1576,6 +1576,7 @@ class Spawner(object):
             topicData = self.chanserv.cache["registered"][channel.name]["topic"]
             channel.setTopic(topicData[0], topicData[1])
             channel.topicTime = topicData[2]
+            channel.created = self.chanserv.cache["registered"][channel.name]["registertime"]
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
