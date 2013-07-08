@@ -109,7 +109,7 @@ class CapCommand(Command):
             return # only send once, not from every server
         for u in self.ircd.users.itervalues():
             if "cap" in u.cache:
-                servinfo.callRemote(ModuleMessage, destserver=serverName, command="SyncCap", args=[u.uuid] + u.cache["cap"])
+                servinfo.callRemote(ModuleMessage, destserver=serverName, type="SyncCap", args=[u.uuid] + u.cache["cap"])
     
     def syncCap(self, command, args):
         uuid = args[0]

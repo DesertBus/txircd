@@ -1313,13 +1313,13 @@ class Spawner(object):
     def setAuthTimer(self, user):
         self.auth_timer[user] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
         if user.server != self.ircd.name:
-            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, command="ServiceBlockUser", args=[user.uuid])
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceBlockUser", args=[user.uuid])
     
     def removeAuthTimer(self, user):
         self.auth_timer[user].cancel()
         del self.auth_timer[user]
         if user.server != self.ircd.name:
-            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, command="ServiceUnblockUser", args=[user.uuid])
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceUnblockUser", args=[user.uuid])
     
     def setDonorInfo(self, result, user):
         if not result:

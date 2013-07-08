@@ -521,7 +521,7 @@ class SendAnnouncement(Command):
 class ModuleMessage(Command):
     arguments = [
         ("destserver", String()),
-        ("command", String()),
+        ("type", String()),
         ("args", ListOf(String()))
     ]
     errors = {
@@ -1069,14 +1069,14 @@ class ServerProtocol(AMP):
         return {}
     SendAnnouncement.responder(announce)
     
-    def modMessage(self, destserver, command, args):
+    def modMessage(self, destserver, type, args):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if destserver != self.ircd.name:
-            self.ircd.servers[destserver].callRemote(ModuleMessage, destserver=destserver, command=command, args=args)
-        elif command in self.ircd.server_commands:
-            for modfunc in self.ircd.server_commands[command]:
-                modfunc(command, args)
+            self.ircd.servers[destserver].callRemote(ModuleMessage, destserver=destserver, type=type, args=args)
+        elif type in self.ircd.server_commands:
+            for modfunc in self.ircd.server_commands[type]:
+                modfunc(type, args)
         return {}
     ModuleMessage.responder(modMessage)
 
