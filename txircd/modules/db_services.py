@@ -1331,6 +1331,8 @@ class Spawner(object):
     def changeNick(self, user, id, nickname):
         if user in self.auth_timer:
             del self.auth_timer[user]
+            if user.server != self.ircd.name:
+                self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceUnblockUser", args=[user.uuid])
         if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
             return # Somehow we auth'd and didn't clear the timer?
         if irc_lower(user.nickname) != irc_lower(nickname):
