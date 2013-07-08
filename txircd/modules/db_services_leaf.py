@@ -240,6 +240,9 @@ class Spawner(object):
         self.ircd.server_commands["ServiceUnblockUser"].remove(self.removeBlock)
     
     def commandPermission(self, user, cmd, data):
+        if cmd == "NICK" and data["nick"] in [ self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_bidserv_nick"] ]:
+            user.sendMessage(irc.ERR_ERRONEUSNICKNAME, data["nick"], ":Invalid nickname: Reserved for Services")
+            return {}
         if self.ircd.servconfig["services_nickserv_nick"] not in self.ircd.users:
             return data
         nickserv = self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]]
