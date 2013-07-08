@@ -1106,8 +1106,7 @@ class Spawner(object):
                 "nick": [self.onNickChange],
                 "topic": [self.onTopicChange],
                 "chancreate": [self.onChanCreate],
-                "commandpermission": [self.commandPermission],
-                "netmerge": [self.onNetmerge]
+                "commandpermission": [self.commandPermission]
             }
         }
     
@@ -1576,9 +1575,6 @@ class Spawner(object):
             topicData = self.chanserv.cache["registered"][channel.name]["topic"]
             channel.setTopic(topicData[0], topicData[1])
             channel.topicTime = topicData[2]
-    
-    def onNetmerge(self, serverName):
-        # TODO
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
