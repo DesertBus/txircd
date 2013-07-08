@@ -62,6 +62,7 @@ class IRCUser(object):
         }
         self.cache = {}
         self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
+        self.ircd.userid[self.uuid] = self
     
     def register(self):
         if self.nickname in self.ircd.users:
@@ -81,7 +82,6 @@ class IRCUser(object):
         
         # Add self to user list
         self.ircd.users[self.nickname] = self
-        self.ircd.userid[self.uuid] = self
         
         # Send notification of connection to other servers
         for server in self.ircd.servers.itervalues():
