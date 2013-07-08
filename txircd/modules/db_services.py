@@ -1190,6 +1190,8 @@ class Spawner(object):
         return self.db.runQuery(query, args)
     
     def exclaimServerError(self, result, user, service):
+        from traceback import print_exc
+        print_exc()
         if user in self.saslUsers:
             self.saslUsers[user]["failure"](user)
             del self.saslUsers[user]
