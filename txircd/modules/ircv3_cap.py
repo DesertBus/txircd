@@ -136,6 +136,7 @@ class Spawner(object):
             },
             "server": {
                 "SyncCap": self.cap_cmd.syncCap
+            }
         }
     
     def cleanup(self):
