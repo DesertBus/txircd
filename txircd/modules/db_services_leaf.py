@@ -151,6 +151,7 @@ class BSCurrentAuctionCommand(Command):
 class Spawner(object):
     def __init__(self, ircd):
         self.ircd = ircd
+        self.serviceServer = None
         self.blockedUsers = set()
     
     def spawn(self):
@@ -194,9 +195,11 @@ class Spawner(object):
                 "CURRENTAUCTION": BSCurrentAuctionCommand()
             },
             "actions": {
-                "commandpermission": [self.commandPermission]
+                "commandpermission": [self.commandPermission],
+                "netsplit": [self.onNetsplit]
             },
             "server": {
+                "ServiceServer": self.noteServer,
                 "ServiceBlockUser": self.addBlock,
                 "ServiceUnblockUser": self.removeBlock
             }
@@ -235,7 +238,9 @@ class Spawner(object):
         del self.ircd.commands["CURRENTAUCTION"]
         
         self.ircd.actions["commandpermission"].remove(self.commandPermission)
+        self.ircd.actions["netsplit"].remove(self.onNetsplit)
         
+        self.ircd.server_commands["ServiceServer"].remove(self.noteServer)
         self.ircd.server_commands["ServiceBlockUser"].remove(self.addBlock)
         self.ircd.server_commands["ServiceUnblockUser"].remove(self.removeBlock)
     
@@ -265,6 +270,14 @@ class Spawner(object):
             return data
         user.sendMessage("NOTICE", ":You cannot use the command \x02{}\x02 until you identify or change nicks.".format(cmd), prefix=nickserv.prefix())
         return {}
+    
+    def onNetsplit(self, name):
+        if name == self.serviceServer:
+            self.blockedUsers = set()
+            self.serviceServer = None
+    
+    def noteServer(self, command, args):
+        self.serviceServer = args[0]
     
     def addBlock(self, command, args):
         if args[0] not in self.ircd.userid:
