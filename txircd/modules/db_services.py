@@ -996,7 +996,7 @@ class Spawner(object):
                 77605853594559162243575384531288420166266958774785718529594030783621600613987
             ]),
             "generator": 2,
-            "privkey": getrandbits(448)
+            "privkey": getrandbits(512)
         }
         self.dh_params["pubkey"] = pow(self.dh_params["generator"], self.dh_params["privkey"], self.dh_params["prime"])
         # The Diffie-Hellman parameters are generated here for the DH-BLOWFISH and DH-AES mechanisms for SASL authentication.
@@ -1005,7 +1005,7 @@ class Spawner(object):
         # 
         # 2 and 5 are common values for the generator.  I chose two.  You can change it to five if you want.
         # 
-        # The private key is just random bits.  It is currently generated at 448 bits.
+        # The private key is just random bits.  It is currently generated at 512 bits.
         # 
         # The public key must be generated from these other three values ((generator ^ private_key) mod prime), and is stored here as well.
         # 
