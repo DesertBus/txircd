@@ -723,7 +723,8 @@ class ServerProtocol(AMP):
             if self.ircd.name == server.nearHop and server != self: # propagate to the rest of the servers
                 server.callRemote(DisconnectServer, name=name)
         for action in self.ircd.actions["netsplit"]:
-            action(name)
+            for server in leavingServers:
+                action(server)
         return {}
     DisconnectServer.responder(splitServer)
     
@@ -745,6 +746,8 @@ class ServerProtocol(AMP):
                     server.callRemote(DisconnectServer, name=self.name)
             for action in self.ircd.actions["netsplit"]:
                 action(self.name)
+                for server in self.remoteServers:
+                    action(server)
         self.pinger.stop()
         self.disconnected.callback(None)
         AMP.connectionLost(self, reason)
