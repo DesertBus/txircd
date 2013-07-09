@@ -852,11 +852,11 @@ class ServerProtocol(AMP):
         if user not in self.ircd.userid:
             raise NoSuchUser ("The user {} is not connected to the network.".format(user))
         udata = self.ircd.userid[user]
-        for server in self.ircd.servers.itervalues(): # Propagate first so the chancreate hook can't screw things up (if being created)
-            if server.nearHop == self.ircd.name and server != self:
-                server.callRemote(JoinChannel, channel=cdata.name, chants=epoch(cdata.created), user=udata.uuid)
         if channel in self.ircd.channels:
             cdata = self.ircd.channels[channel]
+            for server in self.ircd.servers.itervalues(): # Propagate first so the chancreate hook can't screw things up (if being created)
+                if server.nearHop == self.ircd.name and server != self:
+                    server.callRemote(JoinChannel, channel=cdata.name, chants=epoch(cdata.created), user=udata.uuid)
             chantime = datetime.utcfromtimestamp(chants)
             if chantime < cdata.created:
                 cdata.created = chantime
@@ -889,6 +889,9 @@ class ServerProtocol(AMP):
             cdata = IRCChannel(self.ircd, channel)
             cdata.created = datetime.utcfromtimestamp(chants)
             cdata.topicTime = cdata.created
+            for server in self.ircd.servers.itervalues(): # Propagate first so the chancreate hook can't screw things up (if being created)
+                if server.nearHop == self.ircd.name and server != self:
+                    server.callRemote(JoinChannel, channel=cdata.name, chants=epoch(cdata.created), user=udata.uuid)
             self.ircd.channels[channel] = cdata
             for action in self.ircd.actions["chancreate"]:
                 action(cdata)
