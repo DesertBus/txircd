@@ -454,13 +454,13 @@
 # denychans: Allows you to choose which channels cannot be joined by normal
 # users.  Opers will still be able to join these channels.  This is a list of
 # channels; the * and ? wildcards may be used.
-#server_denychans:
+#channel_denychans:
 #- '*'
 
 # allowchans: This serves as a whitelist; channels in this list will be
 # available even if they match a channel in denychans.  This list of channels
 # also supports the * and ? wildcards.
-#server_allowchans:
+#channel_allowchans:
 #- '#desertbus'
 #- '#help'
 
