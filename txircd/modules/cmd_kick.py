@@ -25,7 +25,7 @@ class KickCommand(Command):
         if params[1] not in self.ircd.users:
             user.sendMessage(irc.ERR_NOSUCHNICK, params[1], ":No such nick")
             return {}
-        if len(params) < 2 or not params[2]:
+        if len(params) < 3 or not params[2]:
             reason = user.nickname
         else:
             reason = params[2]
