@@ -18,6 +18,7 @@ class AccountNotify(Module):
     
     def notifyUsers(self, user, namespace, key, oldValue, value):
         try:
+            user.nickname # Cause a failure if it's not a user
             if not (namespace == "ext" and key == "accountname"):
                 return
             notify = set()
