@@ -537,7 +537,27 @@
 # Madness levels: The madness levels to display when they are passed in bid
 # amount.
 #services_bidserv_madness_levels:
+#  300: MADNESS
+#  600: DOUBLE MADNESS
+#  900: TRIPLE MADNESS
 #  1000: Myth Busted
+#  1200: QUADRUPLE MADNESS
+#  1500: QUINTUPLE MADNESS
+#  1800: SEXTUPLE MADNESS
+#  2100: SEPTUPLE MADNESS
+#  2400: OCTUPLE MADNESS
+#  2700: NONUPLE MADNESS
+#  3000: DECUPLE MADNESS
+#  3300: UNDECUPLE MADNESS
+#  3600: WHARRGARBL MADNESS
+#  3900: TREDECUPLE MADNESS
+#  4200: QUATTUORDECUPLE MADNESS
+#  4500: QUINDECUPLE MADNESS
+#  4800: SEXDECUPLE MADNESS
+#  5100: SEPTENDECUPLE MADNESS
+#  5400: OCTODECUPLE MADNESS
+#  5700: NOVEMDECUPLE MADNESS
+#  6000: VIGUPLE MADNESS
 
 # Show all madness: Whether to show all madness levels passed by a bid (true) or
 # just the highest one (false).  The default value is false.
