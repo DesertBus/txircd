@@ -616,7 +616,7 @@ class BSStartCommand(Command):
             user.sendMessage("NOTICE", ":The item {} ({}) has already been sold.".format(results[0][0], results[0][1]), prefix=self.bidserv.prefix())
             return
         self.bidserv.cache["auction"] = {
-            "item": results[0][0],
+            "item": int(results[0][0]),
             "name": results[0][1],
             "highbid": float(results[0][3]),
             "highbidder": "Nobody",
