@@ -26,6 +26,11 @@ class SakickCommand(Command):
         if params[1] not in self.ircd.users:
             user.sendMessage(irc.ERR_NOSUCHNICK, params[1], ":No such nick")
             return {}
+        cdata = self.ircd.channels[params[0]]
+        udata = self.ircd.users[params[1]]
+        if udata not in cdata.users:
+            user.sendMessage(irc.ERR_USERNOTINCHANNEL, udata.nickname, cdata.name, ":They are not on that channel")
+            return {}
         if len(params) >= 3:
             reason = " ".join(params[2:])
         else:
