@@ -24,7 +24,7 @@ class KickCommand(Command):
             return {}
         cdata = self.ircd.channels[params[0]]
         if not user.hasAccess(cdata, self.ircd.servconfig["channel_minimum_level"]["KICK"]):
-            user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You must have channel operator access to set channel modes")
+            user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You must have channel operator access to kick users")
             return {}
         if params[1] not in self.ircd.users:
             user.sendMessage(irc.ERR_NOSUCHNICK, params[1], ":No such nick")
