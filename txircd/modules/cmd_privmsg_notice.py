@@ -20,9 +20,7 @@ class MessageCommand(object):
                     if u != user and u.hasAccess(channel, prefixMode):
                         u.sendMessage(cmd, ":{}".format(message), to="{}{}".format(channelModifiers[index], channel.name), prefix=user.prefix())
             else:
-                for u in channel.users.iterkeys():
-                    if u != user:
-                        u.sendMessage(cmd, ":{}".format(message), to=channel.name, prefix=user.prefix())
+                channel.sendChannelMessage(cmd, ":{}".format(message), prefix=user.prefix(), skip=[user])
         for udata in data["targetuser"]:
             udata.sendMessage(cmd, ":{}".format(message), prefix=user.prefix())
     

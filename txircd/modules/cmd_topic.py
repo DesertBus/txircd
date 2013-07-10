@@ -13,8 +13,7 @@ class TopicCommand(Command):
                 user.sendMessage(irc.RPL_NOTOPIC, cdata.name, "No topic is set")
         else:
             cdata.setTopic(data["topic"], user.prefix())
-            for u in cdata.users.iterkeys():
-                u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=user.prefix())
+            cdata.sendChannelMessage("TOPIC", ":{}".format(cdata.topic), prefix=user.prefix())
     
     def processParams(self, user, params):
         if user.registered > 0:

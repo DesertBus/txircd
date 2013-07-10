@@ -635,9 +635,8 @@ class BSStartCommand(Command):
         lines.append(":\x02\x034Please do not make any fake bids")
         lines.append(":\x02\x034Beginning bidding at ${:,.2f}".format(float(results[0][3])))
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users.iterkeys():
-                for line in lines:
-                    u.sendMessage("PRIVMSG", line, to=channel.name, prefix=self.bidserv.prefix())
+            for line in lines:
+                channel.sendChannelMessage("PRIVMSG", line, prefix=self.bidserv.prefix())
         user.sendMessage("NOTICE", ":The auction has been started.", prefix=self.bidserv.prefix())
 
 class BSStopCommand(Command):
@@ -654,8 +653,7 @@ class BSStopCommand(Command):
         itemName = self.bidserv.cache["auction"]["name"]
         cancelMsg = ":\x02\x034Auction for {} canceled.\x02 - Called by {}".format(itemName, user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users.iterkeys():
-                u.sendMessage("PRIVMSG", cancelMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", cancelMsg, prefix=self.bidserv.prefix())
         del self.bidserv.cache["auction"]
         user.sendMessage("NOTICE", ":The auction has been canceled.", prefix=self.bidserv.prefix())
     
@@ -709,8 +707,7 @@ class BSBidCommand(Command):
         self.bidserv.cache["auction"]["highbidder"] = user.nickname
         self.bidserv.cache["auction"]["highbidderid"] = user.metadata["ext"]["accountid"]
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users.iterkeys():
-                u.sendMessage("PRIVMSG", bidMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", bidMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "accountid" not in user.metadata["ext"]:
@@ -767,8 +764,7 @@ class BSRevertCommand(Command):
         self.bidserv.cache["auction"]["highbidderid"] = newHighBidderID
         self.bidserv.cache["auction"]["called"] = 0
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users.iterkeys():
-                u.sendMessage("PRIVMSG", revertMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", revertMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "o" not in user.mode:
@@ -793,8 +789,7 @@ class BSOnceCommand(Command):
         self.bidserv.cache["auction"]["called"] = 1
         onceMsg = ":\x02\x034Going Once! To {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users.iterkeys():
-                u.sendMessage("PRIVMSG", onceMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", onceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "o" not in user.mode:
@@ -819,8 +814,7 @@ class BSTwiceCommand(Command):
         self.bidserv.cache["auction"]["called"] = 2
         twiceMsg = ":\x02\x034Going Twice! To {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users.iterkeys():
-                u.sendMessage("PRIVMSG", twiceMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", twiceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "o" not in user.mode:
@@ -849,8 +843,7 @@ class BSSoldCommand(Command):
             user.sendMessage("NOTICE", ":The log file for this auction could not be written.", prefix=self.bidserv.prefix())
         soldMsg = ":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users.iterkeys():
-                u.sendMessage("PRIVMSG", soldMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", soldMsg, prefix=self.bidserv.prefix())
         if self.bidserv.cache["auction"]["highbidder"] in self.ircd.users:
             udata = self.ircd.users[self.bidserv.cache["auction"]["highbidder"]]
             if "accountid" in udata.metadata["ext"] and udata.metadata["ext"]["accountid"] == self.bidserv.cache["auction"]["highbidderid"]:

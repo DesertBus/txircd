@@ -8,8 +8,7 @@ class PartCommand(Command):
         for channel in data["targetchan"]:
             if user not in channel.users:
                 continue
-            for u in channel.users.iterkeys():
-                u.sendMessage("PART", ":{}".format(data["reason"]), to=channel.name, prefix=user.prefix())
+            channel.sendChannelMessage("PART", ":{}".format(data["reason"]), prefix=user.prefix())
             user.leave(channel)
     
     def processParams(self, user, params):

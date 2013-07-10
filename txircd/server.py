@@ -534,6 +534,21 @@ class SendAnnouncement(Command):
     }
     requiresAnswer = False
 
+class ChannelMessage(Command):
+    arguments = [
+        ("channel", String()),
+        ("type", String()),
+        ("args", ListOf(String())),
+        ("prefix", String()),
+        ("to", String()),
+        ("skip", ListOf(String()))
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchChannel: "NO_SUCH_CHANNEL"
+    }
+    requiresAnswer = False
+
 class ModuleMessage(Command):
     arguments = [
         ("destserver", String()),
@@ -1132,6 +1147,19 @@ class ServerProtocol(AMP):
         udata.sendMessage(type, *args, to=to, prefix=prefix)
         return {}
     SendAnnouncement.responder(announce)
+    
+    def chanMessage(self, channel, type, args, prefix, to, skip):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if channel not in self.ircd.channels:
+            raise NoSuchChannel ("The channel {} does not exist on the network.".format(channel))
+        uskip = []
+        for uuid in skip:
+            if uuid in self.ircd.userid:
+                uskip.append(self.ircd.userid[uuid])
+        self.ircd.channels[channel].sendChannelMessage(type, *args, prefix=prefix, to=to, skip=uskip, sourceServer=self.name)
+        return {}
+    ChannelMessage.responder(chanMessage)
     
     def modMessage(self, destserver, type, args):
         if not self.name:

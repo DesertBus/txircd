@@ -7,9 +7,7 @@ class KickCommand(Command):
             return
         cdata = data["targetchan"]
         udata = data["targetuser"]
-        reason = data["reason"]
-        for u in data["targetchan"].users.iterkeys():
-            u.sendMessage("KICK", udata.nickname, ":{}".format(reason), to=cdata.name, prefix=user.prefix())
+        cdata.sendChannelMessage("KICK", udata.nickname, ":{}".format(data["reason"]), prefix=user.prefix())
         udata.leave(cdata)
     
     def processParams(self, user, params):

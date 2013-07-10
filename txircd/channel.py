@@ -21,6 +21,45 @@ class IRCChannel(object):
         }
         self.cache = {}
     
+    def sendChannelMessage(self, type, *args, **kw):
+        if "sourceServer" in kw:
+            sourceServer = kw["sourceServer"]
+            del kw["sourceServer"]
+        else:
+            sourceServer = None
+        if "prefix" in kw:
+            if kw["prefix"]:
+                prefix = kw["prefix"]
+            else:
+                prefix = None
+        else:
+            prefix = self.ircd.name
+        if "to" in kw:
+            if kw["to"]:
+                to = kw["to"]
+            else:
+                to = None
+        else:
+            to = self.name
+        if "skip" in kw and kw["skip"]:
+            skip = kw["skip"]
+        else:
+            skip = []
+        for u in self.users.iterkeys():
+            if u.server == self.ircd.name and u not in skip:
+                u.sendMessage(type, *args, prefix=prefix, to=to)
+        from txircd.server import ChannelMessage
+        if prefix is None:
+            prefix = ""
+        if to is None:
+            to = ""
+        servskip = []
+        for u in skip:
+            servskip.append(u.uuid)
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name and server.name != sourceServer:
+                server.callRemote(ChannelMessage, channel=self.name, type=type, args=args, prefix=prefix, to=to, skip=servskip)
+    
     def setMode(self, user, modes, params, displayPrefix = None):
         adding = True
         currentParam = 0
