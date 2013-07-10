@@ -743,7 +743,7 @@ class BSBidCommand(Command):
         return {
             "user": user,
             "bid": bid,
-            "smacktalk": " ".join(params[1:]).strip()
+            "smacktalk": " ".join(params[1:]).strip()[:250]
         }
 
 class BSRevertCommand(Command):
