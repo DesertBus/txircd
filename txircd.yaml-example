@@ -167,6 +167,7 @@
 # channel.  The default level is 'o' for everything.  You may add more commands
 # to this list provided in additional modules that you load (below).
 #channel_minimum_level:
+#  KICK: o
 #  INVITE: o
 #  METADATA: o
 #  MODE: o
