@@ -608,7 +608,7 @@ class ServerProtocol(AMP):
         if "incoming_password" not in linkData or password != linkData["incoming_password"]:
             raise ServerPasswordIncorrect ("The password provided by the server does not match the one in the configuration.")
         if self.sentDataBurst is None:
-            self.callRemote(IntroduceServer, name=self.ircd.name, password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=protocol_version, commonmodules=self.ircd.common_modules)
+            self.callRemote(IntroduceServer, name=self.ircd.name, password=linkData["outgoing_password"], description=self.ircd.servconfig["server_description"], version=version, commonmodules=self.ircd.common_modules)
             self.sentDataBurst = False
         self.name = name
         self.description = description
