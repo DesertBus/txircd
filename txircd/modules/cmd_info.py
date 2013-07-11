@@ -7,7 +7,7 @@ class InfoCommand(Command):
         user.sendMessage(irc.RPL_INFO, ":Developed by the Desert Bus for Hope Engineering Team")
         user.sendMessage(irc.RPL_INFO, ": -")
         user.sendMessage(irc.RPL_INFO, ":Original txircd by Fugiman, ElementalAlchemist, and ojii")
-        user.sendMessage(irc.RPL_INFO, ":Modular txircd by ElementalAlchemist with some parts from the original version")
+        user.sendMessage(irc.RPL_INFO, ":Modular txircd by ElementalAlchemist and Fugiman")
         user.sendMessage(irc.RPL_ENDOFINFO, ":End of /INFO list")
     
     def processParams(self, user, params):
