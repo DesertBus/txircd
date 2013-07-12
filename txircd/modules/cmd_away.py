@@ -12,7 +12,7 @@ class AwayCommand(Command):
             user.sendMessage(irc.RPL_UNAWAY, ":You are no longer marked as being away")
     
     def processParams(self, user, params):
-        if not params:
+        if not params or not params[0]:
             return {
                 "user": user
             }
