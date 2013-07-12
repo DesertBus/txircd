@@ -239,6 +239,9 @@ class IRCUser(object):
         self.socket.sendMessage(*arglist, **kw)
     
     def setMetadata(self, namespace, key, value, sourceServer = None):
+        if not value:
+            self.delMetadata(namespace, key, sourceServer)
+            return
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
         self.metadata[namespace][key] = value
         for modfunc in self.ircd.actions["metadataupdate"]:
