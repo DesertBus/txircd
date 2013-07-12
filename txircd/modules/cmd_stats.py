@@ -12,6 +12,7 @@ class StatsCommand(Command):
     def onUse(self, user, data):
         if "server" in data:
             data["server"].callRemote(ModuleMessage, destserver=data["server"].name, type="StatsRequest", args=[user.uuid, data["statstype"]])
+            data["statstype"] = "" # supress the commandextra hook response
         else:
             user.commandExtraHook("STATS", data)
             user.sendMessage(irc.RPL_ENDOFSTATS, data["statstype"], ":End of /STATS report")
