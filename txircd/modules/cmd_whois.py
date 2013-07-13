@@ -5,6 +5,7 @@ from txircd.utils import epoch, now
 irc.RPL_WHOISACCOUNT = "330"
 irc.RPL_WHOISSECURE  = "671"
 irc.RPL_WHOISCERTFP = "276"
+irc.RPL_WHOISHOST = "378"
 
 class WhoisCommand(Command):
     def onUse(self, user, data):
@@ -13,6 +14,8 @@ class WhoisCommand(Command):
         targets = data["targetuser"]
         for u in targets:
             user.sendMessage(irc.RPL_WHOISUSER, u.nickname, u.username, u.hostname, "*", ":{}".format(u.realname))
+            if "o" in user.mode or user == u:
+                user.sendMessage(irc.RPL_WHOISHOST, u.nickname, ":is connecting from {}@{} {}".format(u.username, u.realhost, u.ip))
             chanlist = []
             for chan in self.ircd.channels.itervalues():
                 if u in chan.users:
