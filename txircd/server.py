@@ -689,7 +689,7 @@ class ServerProtocol(AMP):
         for server in serverOrder:
             self.callRemote(AddNewServer, name=server.name, description=server.description, hopcount=server.hopCount, nearhop=server.nearHop)
         for u in self.ircd.users.itervalues():
-            self.callRemote(RegisterUser, uuid=u.uuid, nick=u.nickname, ident=u.username, host=u.hostname, gecos=u.realname, ip=u.ip, server=u.server, secure=u.socket.secure, signon=epoch(u.signon), nickts=epoch(u.nicktime))
+            self.callRemote(RegisterUser, uuid=u.uuid, nick=u.nickname, ident=u.username, host=u.hostname, realhost=u.realhost, gecos=u.realname, ip=u.ip, server=u.server, secure=u.socket.secure, signon=epoch(u.signon), nickts=epoch(u.nicktime))
             modes = []
             params = []
             for mode, param in u.mode.iteritems():
@@ -869,7 +869,7 @@ class ServerProtocol(AMP):
         newUser.callConnectHooks()
         for linkedServer in self.ircd.servers.itervalues():
             if linkedServer.nearHop == self.ircd.name and linkedServer != self:
-                linkedServer.callRemote(RegisterUser, uuid=uuid, nick=nick, ident=ident, host=host, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
+                linkedServer.callRemote(RegisterUser, uuid=uuid, nick=nick, ident=ident, host=host, realhost=realhost, gecos=gecos, ip=ip, server=server, secure=secure, signon=signon, nickts=nickts)
         return {}
     RegisterUser.responder(addUser)
     

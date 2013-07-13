@@ -73,7 +73,7 @@ class IRCUser(object):
         # Send notification of connection to other servers
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=epoch(self.signon), nickts=epoch(self.nicktime))
+                server.callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, realhost=self.realhost, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=epoch(self.signon), nickts=epoch(self.nicktime))
         
         # Send all those lovely join messages
         chanmodelist = "".join("".join(["".join(modedict.keys()) for modedict in self.ircd.channel_modes]) + "".join(self.ircd.prefixes.keys()))
