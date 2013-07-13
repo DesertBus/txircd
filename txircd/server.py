@@ -215,6 +215,27 @@ class RemoteUser(object):
             return False
         return self.ircd.prefixes[status[0]][1] >= self.ircd.prefixes[level][1]
     
+    def setUsername(self, newUsername, sourceServer = None):
+        self.username = newUsername
+        if self.registered == 0:
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
+                    server.callRemote(SetIdent, user=self.uuid, ident=newUsername)
+    
+    def setHostname(self, newHostname, sourceServer = None):
+        self.hostname = newHostname
+        if self.registered == 0:
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
+                    server.callRemote(SetHost, user=self.uuid, host=newHostname)
+    
+    def setRealname(self, newRealname, sourceServer = None):
+        self.realname = newRealname
+        if self.registered == 0:
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
+                    server.callRemote(SetName, user=self.uuid, gecos=newRealname)
+    
     def setMode(self, user, modes, params, displayPrefix = None):
         if user:
             source = user.prefix()

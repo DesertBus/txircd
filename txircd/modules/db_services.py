@@ -3,7 +3,7 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.words.protocols import irc
 from txircd.modbase import Command
-from txircd.server import RegisterUser, RemoveUser, ModuleMessage
+from txircd.server import RegisterUser, RemoveUser, ModuleMessage, SetIdent, SetHost, SetName
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 from base64 import b64decode, b64encode
 from Crypto.Random.random import getrandbits
@@ -132,8 +132,20 @@ class Service(object):
     def hasAccess(self, channel, level):
         return True # access to change anything in all channels
     
-    def status(self, channel):
-        return self.ircd.prefix_order # Just have all statuses always.  It's easier that way.
+    def setUsername(self, newUsername, sourceServer = None):
+        if sourceServer:
+            self.ircd.servers[sourceServer].callRemote(SetIdent, user=self.uuid, ident=self.username)
+    
+    def setHostname(self, newHostname, sourceServer = None):
+        if sourceServer:
+            self.ircd.servers[sourceServer].callRemote(SetHost, user=self.uuid, host=self.hostname)
+    
+    def setRealname(self, newRealname, sourceServer = None):
+        if sourceServer:
+            self.ircd.servers[sourceServer].callRemote(SetName, user=self.uuid, gecos=self.realname)
+    
+    def setMode(self, user, modes, params, displayPrefix = None):
+        pass
     
     def modeString(self, user):
         return "+" # user modes are for chumps
