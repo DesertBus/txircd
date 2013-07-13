@@ -412,6 +412,10 @@
 # 
 # conn_join: Forces clients to join one or more channels on connect.
 #- conn_join
+#
+# cloaking: Implements user mode +x, which allows users to apply a hostname
+# cloak.
+#- cloaking
 # 
 # db_services: Implements the Desert Bus services suite.
 #- db_services
