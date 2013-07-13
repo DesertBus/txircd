@@ -3,32 +3,18 @@ from twisted.python import log
 from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
-from txircd.server import ChangeNick, JoinChannel, LeaveChannel, RegisterUser, RemoveUser, SetMetadata, SetMode
+from txircd.server import ChangeNick, JoinChannel, LeaveChannel, RegisterUser, RemoveUser, SetHost, SetIdent, SetMetadata, SetMode, SetName
 from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
-import socket, hashlib, uuid
+import socket, uuid
 
 class IRCUser(object):
     def __init__(self, parent):
         # Mask the IP
         ip = parent.transport.getPeer().host
-        if ip in parent.factory.servconfig["client_vhosts"]:
-            hostname = parent.factory.servconfig["client_vhosts"][ip]
-        else:
-            try:
-                hostname = socket.gethostbyaddr(ip)[0]
-                if ip == socket.gethostbyname(hostname):
-                    index = hostname.find(ip)
-                    index = hostname.find(".") if index < 0 else index + len(ip)
-                    if index < 0:
-                        # Give up
-                        hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
-                    else:
-                        mask = "tx{}".format(hashlib.md5(hostname[:index]).hexdigest()[12:20])
-                        hostname = "{}{}".format(mask, hostname[index:])
-                else:
-                    hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
-            except IOError:
-                hostname = "tx{}.IP".format(hashlib.md5(ip).hexdigest()[12:20])
+        try:
+            hostname = socket.gethostbyaddr(ip)[0]
+        except:
+            hostname = ip
         
         # Set attributes
         self.ircd = parent.factory
@@ -45,6 +31,7 @@ class IRCUser(object):
         self.realname = None
         self.hostname = hostname
         self.ip = ip
+        self.realhost = hostname
         self.server = parent.factory.name
         self.signon = now()
         self.nicktime = now()
@@ -274,6 +261,27 @@ class IRCUser(object):
         if not status:
             return False
         return self.ircd.prefixes[status[0]][1] >= self.ircd.prefixes[level][1]
+    
+    def setUsername(self, newUsername, sourceServer = None):
+        self.username = newUsername
+        if self.registered == 0:
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
+                    server.callRemote(SetIdent, user=self.uuid, ident=newUsername)
+    
+    def setHostname(self, newHostname, sourceServer = None):
+        self.hostname = newHostname
+        if self.registered == 0:
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
+                    server.callRemote(SetHost, user=self.uuid, host=newHostname)
+    
+    def setRealname(self, newRealname, sourceServer = None):
+        self.realname = newRealname
+        if self.registered == 0:
+            for server in self.ircd.servers.itervalues():
+                if server.nearHop == self.ircd.name and server.name != sourceServer:
+                    server.callRemote(SetName, user=self.uuid, gecos=newRealname)
     
     def setMode(self, user, modes, params, displayPrefix = None):
         adding = True

@@ -33,6 +33,7 @@ class Service(object):
         self.nickname = nick
         self.username = ident
         self.hostname = host
+        self.realhost = host
         self.realname = gecos
         self.ip = "127.0.0.1"
         self.server = self.ircd.name

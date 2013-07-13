@@ -6,7 +6,7 @@ class UserCommand(Command):
     def onUse(self, user, data):
         if not user.username:
             user.registered -= 1
-        user.username = data["ident"]
+        user.setUsername(data["ident"])
         user.realname = data["gecos"]
         if user.registered == 0:
             user.register()

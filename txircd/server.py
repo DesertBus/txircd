@@ -25,7 +25,7 @@ class RemoteUser(object):
             self.transport = self.RemoteTransport()
             self.secure = secure
     
-    def __init__(self, ircd, uuid, nick, ident, host, gecos, ip, server, secure, signonTime, nickTime):
+    def __init__(self, ircd, uuid, nick, ident, host, realhost, gecos, ip, server, secure, signonTime, nickTime):
         self.ircd = ircd
         self.socket = self.RemoteSocket(secure)
         self.uuid = uuid
@@ -34,6 +34,7 @@ class RemoteUser(object):
         self.username = ident
         self.realname = gecos
         self.hostname = host
+        self.realhost = realhost
         self.ip = ip
         self.server = server
         self.signon = signonTime
@@ -383,6 +384,7 @@ class RegisterUser(Command):
         ("nick", String()),
         ("ident", String()),
         ("host", String()),
+        ("realhost", String()),
         ("gecos", String()),
         ("ip", String()),
         ("server", String()),
@@ -401,6 +403,39 @@ class RemoveUser(Command):
     arguments = [
         ("user", String()),
         ("reason", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class SetIdent(Command):
+    arguments = [
+        ("user", String()),
+        ("ident", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class SetHost(Command):
+    arguments = [
+        ("user", String()),
+        ("host", String())
+    ]
+    errors = {
+        HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
+        NoSuchUser: "NO_SUCH_USER"
+    }
+    requiresAnswer = False
+
+class SetName(Command):
+    arguments = [
+        ("user", String()),
+        ("gecos", String())
     ]
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
@@ -774,14 +809,14 @@ class ServerProtocol(AMP):
             raise NoSuchServer ("The server {} is not connected to the network.".format(server))
         if uuid in self.ircd.userid:
             raise UserAlreadyConnected ("The uuid {} already exists on the network.".format(uuid))
-        self.ircd.userid[uuid] = RemoteUser(self.ircd, uuid, None, None, None, None, ip, server, secure, datetime.utcfromtimestamp(signon), now())
+        self.ircd.userid[uuid] = RemoteUser(self.ircd, uuid, None, None, None, None, None, ip, server, secure, datetime.utcfromtimestamp(signon), now())
         for remoteserver in self.ircd.servers.itervalues():
             if remoteserver.nearHop == self.ircd.name and remoteserver != self:
                 remoteserver.callRemote(ConnectUser, uuid=uuid, ip=ip, server=server, secure=secure, signon=signon)
         return {}
     ConnectUser.responder(basicConnectUser)
     
-    def addUser(self, uuid, nick, ident, host, gecos, ip, server, secure, signon, nickts):
+    def addUser(self, uuid, nick, ident, host, realhost, gecos, ip, server, secure, signon, nickts):
         if not self.name:
             raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
         if server not in self.ircd.servers:
@@ -822,12 +857,13 @@ class ServerProtocol(AMP):
             newUser.nickname = nick
             newUser.username = ident
             newUser.hostname = host
+            newUser.realhost = realhost
             newUser.realname = gecos
             newUser.nicktime = nicktime
             newUser.metadata = oldUser.metadata
             newUser.cache = oldUser.cache
         else:
-            newUser = RemoteUser(self.ircd, uuid, nick, ident, host, gecos, ip, server, secure, signontime, nicktime)
+            newUser = RemoteUser(self.ircd, uuid, nick, ident, host, realhost, gecos, ip, server, secure, signontime, nicktime)
         self.ircd.users[nick] = newUser
         self.ircd.userid[uuid] = newUser
         newUser.callConnectHooks()
@@ -845,6 +881,33 @@ class ServerProtocol(AMP):
         self.ircd.userid[user].disconnect(reason, self.name)
         return {}
     RemoveUser.responder(removeUser)
+    
+    def setIdent(self, user, ident):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The user {} is not on the network.".format(user))
+        self.ircd.userid[user].setUsername(ident, self.name)
+        return {}
+    SetIdent.responder(setIdent)
+    
+    def setHost(self, user, host):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The user {} is not on the network.".format(user))
+        self.ircd.userid[user].setHostname(host, self.name)
+        return {}
+    SetHost.responder(setHost)
+    
+    def setName(self, user, gecos):
+        if not self.name:
+            raise HandshakeNotYetComplete ("The initial handshake has not occurred over this link.")
+        if user not in self.ircd.userid:
+            raise NoSuchUser ("The user {} is not on the network.".format(user))
+        self.ircd.userid[user].setRealname(gecos, self.name)
+        return {}
+    SetName.responder(setName)
     
     def requestJoin(self, channel, user):
         if not self.name:
