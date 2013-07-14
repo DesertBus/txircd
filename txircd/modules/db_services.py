@@ -145,7 +145,7 @@ class Service(object):
             self.ircd.servers[sourceServer].callRemote(SetName, user=self.uuid, gecos=self.realname)
     
     def setMode(self, user, modes, params, displayPrefix = None):
-        pass
+        return ""
     
     def modeString(self, user):
         return "+" # user modes are for chumps
