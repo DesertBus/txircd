@@ -1,3 +1,4 @@
+from twisted.internet.abstract import isIPv6Address
 from txircd.modbase import Mode
 from Crypto.Hash import SHA256
 
@@ -11,7 +12,7 @@ class CloakingMode(Mode):
         return [True, param]
     
     def applyCloak(self, ip):
-        if ":" in ip:
+        if isIPv6Address(ip):
             return self.applyCloak6(ip)
         else:
             return self.applyCloak4(ip)
