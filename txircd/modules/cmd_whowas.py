@@ -78,6 +78,15 @@ class Spawner(object):
         self.ircd.actions["quit"].remove(self.whowasCmd.addToWhowas)
     
     def data_serialize(self):
+        expiryTime = epoch(now()) - parse_duration(self.ircd.servconfig["client_whowas_expire"])
+        remove = []
+        for nick, data in self.whowasCmd.history.iteritems():
+            while data and epoch(data[0]["time"]) < expiryTime:
+                data.pop(0)
+            if not data:
+                remove.append(nick)
+        for nick in remove:
+            del self.whowasCmd.history[nick]
         return [self.whowasCmd.history._data, {}]
     
     def data_unserialize(self, data):
