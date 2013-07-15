@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.server import ModuleMessage
 from txircd.utils import epoch, now
 import collections
 
@@ -9,8 +10,12 @@ irc.RPL_STATSPORTS = "249"
 
 class StatsCommand(Command):
     def onUse(self, user, data):
-        user.commandExtraHook("STATS", data)
-        user.sendMessage(irc.RPL_ENDOFSTATS, data["statstype"], ":End of /STATS report")
+        if "server" in data:
+            data["server"].callRemote(ModuleMessage, destserver=data["server"].name, type="StatsRequest", args=[user.uuid, data["statstype"]])
+            data["statstype"] = "" # supress the commandextra hook response
+        else:
+            user.commandExtraHook("STATS", data)
+            user.sendMessage(irc.RPL_ENDOFSTATS, data["statstype"], ":End of /STATS report")
     
     def processParams(self, user, params):
         if user.registered > 0:
@@ -23,9 +28,18 @@ class StatsCommand(Command):
         if "o" not in user.mode and statschar not in self.ircd.servconfig["server_stats_public"]:
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - Stats {} requires operator privileges".format(statschar))
             return {}
+        if len(params) == 1:
+            return {
+                "user": user,
+                "statstype": statschar
+            }
+        if params[1] not in self.ircd.servers:
+            user.sendMessage(irc.ERR_NOSUCHSERVER, params[1], ":No such server")
+            return {}
         return {
             "user": user,
-            "statstype": statschar
+            "statstype": statschar,
+            "server": self.ircd.servers[params[1]]
         }
     
     def statsChars(self, cmd, data):
@@ -53,10 +67,25 @@ class StatsCommand(Command):
                     caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
             else:
                 caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.servconfig["server_port_web"]))
-            # Add server ports here when we get s2s
+            if isinstance(self.ircd.servconfig["serverlink_port_tcp"], collections.Sequence):
+                for port in self.ircd.servconfig["serverlink_port_tcp"]:
+                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(port))
+            else:
+                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(self.ircd.servconfig["serverlink_port_tcp"]))
+            if isinstance(self.ircd.servconfig["serverlink_port_ssl"], collections.Sequence):
+                for port in self.ircd.servconfig["serverlink_port_ssl"]:
+                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(port))
+            else:
+                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(self.ircd.servconfig["serverlink_port_ssl"]))
         elif statschar == "u":
             uptime = now() - self.ircd.created
             caller.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
+    
+    def servResponse(self, command, args):
+        if args[0] not in self.ircd.userid:
+            return
+        udata = self.ircd.userid[args[0]]
+        udata.handleCommand("STATS", None, [args[1]])
 
 class Spawner(object):
     def __init__(self, ircd):
@@ -71,6 +100,9 @@ class Spawner(object):
             },
             "actions": {
                 "commandextra": [self.statsCmd.statsChars]
+            },
+            "server": {
+                "StatsRequest": self.statsCmd.servResponse
             }
         }
     

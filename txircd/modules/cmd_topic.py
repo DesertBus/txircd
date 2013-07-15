@@ -12,9 +12,8 @@ class TopicCommand(Command):
             else:
                 user.sendMessage(irc.RPL_NOTOPIC, cdata.name, "No topic is set")
         else:
-            cdata.setTopic(data["topic"], user.nickname)
-            for u in cdata.users:
-                u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=user.prefix())
+            cdata.setTopic(data["topic"], user.prefix())
+            cdata.sendChannelMessage("TOPIC", ":{}".format(cdata.topic), prefix=user.prefix())
     
     def processParams(self, user, params):
         if user.registered > 0:
@@ -26,17 +25,18 @@ class TopicCommand(Command):
         if params[0] not in self.ircd.channels:
             user.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
             return {}
-        if params[0] not in user.channels:
+        cdata = self.ircd.channels[params[0]]
+        if user not in cdata.users:
             user.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not in that channel")
             return {}
         if len(params) == 1:
             return {
                 "user": user,
-                "targetchan": self.ircd.channels[params[0]]
+                "targetchan": cdata
             }
         return {
             "user": user,
-            "targetchan": self.ircd.channels[params[0]],
+            "targetchan": cdata,
             "topic": params[1]
         }
 

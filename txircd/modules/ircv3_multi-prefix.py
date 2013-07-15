@@ -21,12 +21,12 @@ class MultiPrefix(Module):
             return representation
         while representation[0] in self.ircd.prefix_symbols:
             representation = representation[1:]
-        statusModes = listingUser.status(channel.name)
+        statusModes = channel.users[listingUser]
         return "{}{}".format("".join([self.ircd.prefixes[status][0] for status in statusModes]), representation)
     
     def whoStatus(self, user, targetUser, filters, fields, channel, udata):
         if channel:
-            udata["status"] = "".join([self.ircd.prefixes[status][0] for status in targetUser.status(channel.name)])
+            udata["status"] = "".join([self.ircd.prefixes[status][0] for status in channel.users[targetUser]])
         return udata
 
 class Spawner(object):

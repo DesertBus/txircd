@@ -3,16 +3,17 @@ from twisted.internet import reactor
 from twisted.internet.defer import Deferred
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.server import RegisterUser, RemoveUser, ModuleMessage, SetIdent, SetHost, SetName
 from txircd.utils import chunk_message, crypt, irc_lower, now, CaseInsensitiveDictionary
 from base64 import b64decode, b64encode
 from Crypto.Random.random import getrandbits
 from Crypto.Cipher import AES
 from Crypto.Cipher import Blowfish
+from datetime import datetime
 from random import choice
-import math, os, random, yaml
+import math, os, random, uuid, yaml
 
 class Service(object):
-    
     class ServiceSocket(object):
         class ServiceTransport(object):
             def loseConnection(self):
@@ -20,25 +21,27 @@ class Service(object):
         
         def __init__(self):
             self.transport = self.ServiceTransport()
-            self.secure = False
+            self.secure = True
     
     def __init__(self, ircd, nick, ident, host, gecos, helpTexts):
         # We're going to try to keep Service fairly consistent with IRCUser, even if most of these variables will never be used
         # in order to prevent exceptions all over the place
         self.ircd = ircd
         self.socket = self.ServiceSocket()
+        self.uuid = str(uuid.uuid1())
         self.password = None
         self.nickname = nick
         self.username = ident
         self.hostname = host
+        self.realhost = host
         self.realname = gecos
         self.ip = "127.0.0.1"
-        self.server = self.ircd.servconfig["server_name"]
-        self.signon = now()
+        self.server = self.ircd.name
+        self.signon = datetime.utcfromtimestamp(1) # Give these pseudoclients a really old time so that they won't be disconnected by remote servers
         self.lastactivity = now()
         self.lastpong = now()
+        self.nicktime = datetime.utcfromtimestamp(1)
         self.mode = {}
-        self.channels = CaseInsensitiveDictionary()
         self.disconnected = Deferred()
         self.disconnected.callback(None)
         self.registered = 0
@@ -52,17 +55,26 @@ class Service(object):
         self.cache = {} # Not only do various other modules potentially play with the cache, but we can do what we want with it to store auction data, etc.
         self.help = helpTexts
     
+    def addToServers(self):
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, realhost=self.realhost, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
+    
+    def removeFromServers(self):
+        for server in self.ircd.servers.itervalues():
+            if server.nearHop == self.ircd.name:
+                server.callRemote(RemoveUser, user=self.uuid, reason="Unloading module")
+    
     def register(self):
         pass
     
     def send_isupport(self):
         pass
     
-    def disconnect(self, reason):
-        pass
-    
-    def connectionLost(self, reason):
-        pass
+    def disconnect(self, reason, sourceServer = None):
+        if sourceServer is None:
+            return
+        self.ircd.servers[sourceServer].callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, realhost=self.realhost, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
     
     def sendMessage(self, command, *parameter_list, **kw):
         if command == "PRIVMSG" and "prefix" in kw:
@@ -120,8 +132,20 @@ class Service(object):
     def hasAccess(self, channel, level):
         return True # access to change anything in all channels
     
-    def status(self, channel):
-        return self.ircd.prefix_order # Just have all statuses always.  It's easier that way.
+    def setUsername(self, newUsername, sourceServer = None):
+        if sourceServer:
+            self.ircd.servers[sourceServer].callRemote(SetIdent, user=self.uuid, ident=self.username)
+    
+    def setHostname(self, newHostname, sourceServer = None):
+        if sourceServer:
+            self.ircd.servers[sourceServer].callRemote(SetHost, user=self.uuid, host=self.hostname)
+    
+    def setRealname(self, newRealname, sourceServer = None):
+        if sourceServer:
+            self.ircd.servers[sourceServer].callRemote(SetName, user=self.uuid, gecos=self.realname)
+    
+    def setMode(self, user, modes, params, displayPrefix = None):
+        return ""
     
     def modeString(self, user):
         return "+" # user modes are for chumps
@@ -275,7 +299,7 @@ class NSLogoutCommand(Command):
     
     def processParams(self, user, params):
         if "accountid" not in user.metadata["ext"]:
-            user.sendMessage("NOTICE", ":You must be logged in to log out!", prefix=self.nickserv.prefix())
+            user.sendMessage("NOTICE", ":You're already logged out.", prefix=self.nickserv.prefix())
             return {}
         return {
             "user": user
@@ -435,7 +459,7 @@ class CSRegisterCommand(Command):
     
     def onUse(self, user, data):
         channel = data["targetchan"]
-        self.chanserv.cache["registered"][channel.name] = {"founder": user.metadata["ext"]["accountid"], "access": {}}
+        self.chanserv.cache["registered"][channel.name] = {"founder": user.metadata["ext"]["accountid"], "access": {}, "registertime": now()}
         user.sendMessage("NOTICE", ":The channel {} has been registered under your account.".format(channel.name), prefix=self.chanserv.prefix())
     
     def processParams(self, user, params):
@@ -452,7 +476,7 @@ class CSRegisterCommand(Command):
             user.sendMessage("NOTICE", ":That channel is already registered.", prefix=self.chanserv.prefix())
             return {}
         cdata = self.ircd.channels[params[0]]
-        if not user.hasAccess(cdata.name, "o"):
+        if not user.hasAccess(cdata, "o"):
             user.sendMessage("NOTICE", ":You must be a channel operator to register that channel.", prefix=self.chanserv.prefix())
             return {}
         return {
@@ -605,7 +629,7 @@ class BSStartCommand(Command):
             user.sendMessage("NOTICE", ":The item {} ({}) has already been sold.".format(results[0][0], results[0][1]), prefix=self.bidserv.prefix())
             return
         self.bidserv.cache["auction"] = {
-            "item": results[0][0],
+            "item": int(results[0][0]),
             "name": results[0][1],
             "highbid": float(results[0][3]),
             "highbidder": "Nobody",
@@ -624,9 +648,8 @@ class BSStartCommand(Command):
         lines.append(":\x02\x034Please do not make any fake bids")
         lines.append(":\x02\x034Beginning bidding at ${:,.2f}".format(float(results[0][3])))
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
-                for line in lines:
-                    u.sendMessage("PRIVMSG", line, to=channel.name, prefix=self.bidserv.prefix())
+            for line in lines:
+                channel.sendChannelMessage("PRIVMSG", line, prefix=self.bidserv.prefix())
         user.sendMessage("NOTICE", ":The auction has been started.", prefix=self.bidserv.prefix())
 
 class BSStopCommand(Command):
@@ -643,8 +666,7 @@ class BSStopCommand(Command):
         itemName = self.bidserv.cache["auction"]["name"]
         cancelMsg = ":\x02\x034Auction for {} canceled.\x02 - Called by {}".format(itemName, user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
-                u.sendMessage("PRIVMSG", cancelMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", cancelMsg, prefix=self.bidserv.prefix())
         del self.bidserv.cache["auction"]
         user.sendMessage("NOTICE", ":The auction has been canceled.", prefix=self.bidserv.prefix())
     
@@ -698,8 +720,7 @@ class BSBidCommand(Command):
         self.bidserv.cache["auction"]["highbidder"] = user.nickname
         self.bidserv.cache["auction"]["highbidderid"] = user.metadata["ext"]["accountid"]
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
-                u.sendMessage("PRIVMSG", bidMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", bidMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "accountid" not in user.metadata["ext"]:
@@ -732,7 +753,7 @@ class BSBidCommand(Command):
         return {
             "user": user,
             "bid": bid,
-            "smacktalk": " ".join(params[1:]).strip()
+            "smacktalk": " ".join(params[1:]).strip()[:250]
         }
 
 class BSRevertCommand(Command):
@@ -756,8 +777,7 @@ class BSRevertCommand(Command):
         self.bidserv.cache["auction"]["highbidderid"] = newHighBidderID
         self.bidserv.cache["auction"]["called"] = 0
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
-                u.sendMessage("PRIVMSG", revertMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", revertMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "o" not in user.mode:
@@ -782,8 +802,7 @@ class BSOnceCommand(Command):
         self.bidserv.cache["auction"]["called"] = 1
         onceMsg = ":\x02\x034Going Once! To {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
-                u.sendMessage("PRIVMSG", onceMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", onceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "o" not in user.mode:
@@ -808,8 +827,7 @@ class BSTwiceCommand(Command):
         self.bidserv.cache["auction"]["called"] = 2
         twiceMsg = ":\x02\x034Going Twice! To {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
-                u.sendMessage("PRIVMSG", twiceMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", twiceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
         if "o" not in user.mode:
@@ -838,8 +856,7 @@ class BSSoldCommand(Command):
             user.sendMessage("NOTICE", ":The log file for this auction could not be written.", prefix=self.bidserv.prefix())
         soldMsg = ":\x02\x034Sold! {} to {} for ${:,.2f}!\x02 - Called by {}".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["highbidder"], self.bidserv.cache["auction"]["highbid"], user.nickname)
         for channel in self.ircd.channels.itervalues():
-            for u in channel.users:
-                u.sendMessage("PRIVMSG", soldMsg, to=channel.name, prefix=self.bidserv.prefix())
+            channel.sendChannelMessage("PRIVMSG", soldMsg, prefix=self.bidserv.prefix())
         if self.bidserv.cache["auction"]["highbidder"] in self.ircd.users:
             udata = self.ircd.users[self.bidserv.cache["auction"]["highbidder"]]
             if "accountid" in udata.metadata["ext"] and udata.metadata["ext"]["accountid"] == self.bidserv.cache["auction"]["highbidderid"]:
@@ -985,7 +1002,7 @@ class Spawner(object):
                 77605853594559162243575384531288420166266958774785718529594030783621600613987
             ]),
             "generator": 2,
-            "privkey": getrandbits(448)
+            "privkey": getrandbits(512)
         }
         self.dh_params["pubkey"] = pow(self.dh_params["generator"], self.dh_params["privkey"], self.dh_params["prime"])
         # The Diffie-Hellman parameters are generated here for the DH-BLOWFISH and DH-AES mechanisms for SASL authentication.
@@ -994,7 +1011,7 @@ class Spawner(object):
         # 
         # 2 and 5 are common values for the generator.  I chose two.  You can change it to five if you want.
         # 
-        # The private key is just random bits.  It is currently generated at 448 bits.
+        # The private key is just random bits.  It is currently generated at 512 bits.
         # 
         # The public key must be generated from these other three values ((generator ^ private_key) mod prime), and is stored here as well.
         # 
@@ -1044,11 +1061,14 @@ class Spawner(object):
         self.nickserv.cache["certfp"] = {}
         
         self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
-        self.ircd.localusers[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
         self.ircd.users[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
-        self.ircd.localusers[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
         self.ircd.users[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
-        self.ircd.localusers[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
+        self.ircd.userid[self.nickserv.uuid] = self.nickserv
+        self.ircd.userid[self.chanserv.uuid] = self.chanserv
+        self.ircd.userid[self.bidserv.uuid] = self.bidserv
+        self.nickserv.addToServers()
+        self.chanserv.addToServers()
+        self.bidserv.addToServers()
         
         self.ircd.module_data_cache["sasl_agent"] = self
         
@@ -1092,6 +1112,7 @@ class Spawner(object):
                 "nick": [self.onNickChange],
                 "topic": [self.onTopicChange],
                 "chancreate": [self.onChanCreate],
+                "netmerge": [self.onNetmerge],
                 "commandpermission": [self.commandPermission]
             }
         }
@@ -1100,12 +1121,15 @@ class Spawner(object):
         if self.db:
             self.db.close()
         
-        del self.ircd.users["NickServ"]
-        del self.ircd.localusers["NickServ"]
-        del self.ircd.users["ChanServ"]
-        del self.ircd.localusers["ChanServ"]
-        del self.ircd.users["BidServ"]
-        del self.ircd.localusers["BidServ"]
+        self.nickserv.removeFromServers()
+        self.chanserv.removeFromServers()
+        self.bidserv.removeFromServers()
+        del self.ircd.users[self.nickserv.nickname]
+        del self.ircd.users[self.chanserv.nickname]
+        del self.ircd.users[self.bidserv.nickname]
+        del self.ircd.userid[self.nickserv.uuid]
+        del self.ircd.userid[self.chanserv.uuid]
+        del self.ircd.userid[self.bidserv.uuid]
         
         del self.ircd.commands["NICKSERV"]
         del self.ircd.commands["NS"]
@@ -1144,34 +1168,15 @@ class Spawner(object):
         self.ircd.actions["nick"].remove(self.onNickChange)
         self.ircd.actions["topic"].remove(self.onTopicChange)
         self.ircd.actions["chancreate"].remove(self.onChanCreate)
+        self.ircd.actions["netmerge"].remove(self.onNetmerge)
         self.ircd.actions["commandpermission"].remove(self.commandPermission)
     
     def data_serialize(self):
         outputDict = {}
-        registeredChannels = self.chanserv.cache["registered"]._data
-        for chandata in registeredChannels.itervalues():
-            chandata["founder"] = int(chandata["founder"])
-            accessDict = chandata["access"]
-            for key, value in accessDict.iteritems():
-                try:
-                    newKey = int(key)
-                    del chandata["access"][key]
-                    chandata["access"][newKey] = value
-                except ValueError:
-                    pass
-        outputDict["registeredchannels"] = registeredChannels
+        outputDict["registeredchannels"] = self.chanserv.cache["registered"]._data
         if "auction" in self.bidserv.cache:
-            auctionDict = self.bidserv.cache["auction"]
-            auctionDict["item"] = int(auctionDict["item"])
-            auctionDict["highbidderid"] = int(auctionDict["highbidderid"])
-            for bid in auctionDict["bids"]:
-                bid["bidder"] = int(bid["bidder"])
-            outputDict["currentauction"] = auctionDict
-        certData = self.nickserv.cache["certfp"]
-        for userid, certlist in self.nickserv.cache["certfp"].iteritems():
-            del certData[userid]
-            certData[int(userid)] = certlist
-        outputDict["certfp"] = certData
+            outputDict["currentauction"] = self.bidserv.cache["auction"]
+        outputDict["certfp"] = self.nickserv.cache["certfp"]
         return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
     
     def data_unserialize(self, data):
@@ -1224,8 +1229,7 @@ class Spawner(object):
     
     def checkNick(self, user):
         if user in self.auth_timer:
-            self.auth_timer[user].cancel()
-            del self.auth_timer[user]
+            self.removeAuthTimer(user)
         if irc_lower(user.nickname).startswith(irc_lower(self.ircd.servconfig["services_nickserv_guest_prefix"])):
             return # Don't check guest nicks
         d = self.query("SELECT donor_id FROM ircnicks WHERE nick = {0}", irc_lower(user.nickname))
@@ -1275,11 +1279,10 @@ class Spawner(object):
             failValidation()
     
     def loginUser(self, result, user):
-        user.setMetadata("ext", "accountid", result[0][0])
+        user.setMetadata("ext", "accountid", str(result[0][0]))
         user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
         if user in self.auth_timer:
-            self.auth_timer[user].cancel()
-            del self.auth_timer[user]
+            self.removeAuthTimer(user)
         if user in self.saslUsers:
             self.saslUsers[user]["success"](user)
             del self.saslUsers[user]
@@ -1300,21 +1303,31 @@ class Spawner(object):
     
     def beginVerify(self, result, user):
         if result:
-            id = result[0][0]
+            id = str(result[0][0])
             if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
                 if user in self.auth_timer: # Clear the timer
-                    self.auth_timer[user].cancel()
-                    del self.auth_timer[user]
+                    self.removeAuthTimer(user)
                 return # Already identified
             user.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg {} login EMAIL PASSWORD\x0F to verify your identity.".format(self.nickserv.nickname), prefix=self.nickserv.prefix())
             if user in self.auth_timer:
-                self.auth_timer[user].cancel() # In case we had another going
-            self.auth_timer[user] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
+                self.removeAuthTimer(user)
+            self.setAuthTimer(user)
         elif "accountid" in user.metadata["ext"]:
             # Try to register the nick
             d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
             d.addCallback(self.registerNick, user, user.nickname)
             d.addErrback(self.failedRegisterNick, user, user.nickname)
+    
+    def setAuthTimer(self, user):
+        self.auth_timer[user] = reactor.callLater(self.ircd.servconfig["services_nickserv_timeout"] if "services_nickserv_timeout" in self.ircd.servconfig else 60, self.changeNick, user, id, user.nickname)
+        if user.server != self.ircd.name:
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceBlockUser", args=[user.uuid])
+    
+    def removeAuthTimer(self, user):
+        self.auth_timer[user].cancel()
+        del self.auth_timer[user]
+        if user.server != self.ircd.name:
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceUnblockUser", args=[user.uuid])
     
     def setDonorInfo(self, result, user):
         if not result:
@@ -1326,6 +1339,8 @@ class Spawner(object):
     def changeNick(self, user, id, nickname):
         if user in self.auth_timer:
             del self.auth_timer[user]
+            if user.server != self.ircd.name:
+                self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceUnblockUser", args=[user.uuid])
         if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
             return # Somehow we auth'd and didn't clear the timer?
         if irc_lower(user.nickname) != irc_lower(nickname):
@@ -1435,7 +1450,10 @@ class Spawner(object):
         sharedSecret = self.binaryString(pow(pubkey, self.dh_params["privkey"], self.dh_params["prime"]))
         
         blowfishKey = Blowfish.new(sharedSecret)
-        password = blowfishKey.decrypt(encryptedData)
+        try:
+            password = blowfishKey.decrypt(encryptedData)
+        except ValueError: # decrypt raises ValueError if the message is not of the correct length
+            return "done"
         self.auth(user, username, password)
         return "wait"
     
@@ -1479,10 +1497,9 @@ class Spawner(object):
             username = b64decode(data[0])
         except TypeError:
             return "done"
-        certfp = user.certFP()
-        if not certfp:
+        if "certfp" not in user.metadata["server"]:
             return "done"
-        self.authByCert(user, certfp, username)
+        self.authByCert(user, user.metadata["server"]["certfp"], username)
         return "wait"
     
     def saslDone(self, user, success):
@@ -1493,19 +1510,18 @@ class Spawner(object):
         self.saslUsers[user]["failure"] = failureFunction
     
     def registered(self, user):
-        for channel in user.channels.iterkeys():
-            c = self.ircd.channels[channel]
-            self.promote(user, c, True)
-        self.addCert(user, user.certFP())
+        for c in self.ircd.channels.itervalues():
+            if user in c.users:
+                self.promote(user, c, True)
+        if "certfp" in user.metadata["server"]:
+            self.addCert(user, user.metadata["server"]["certfp"])
     
     def unregistered(self, user):
-        for channel, data in user.channels.iteritems():
-            c = self.ircd.channels[channel]
-            status = data["status"]
-            if status:
-                for u in c.users:
-                    u.sendMessage("MODE", "-{} {}".format(status, " ".join([user.nickname for i in status])), to=c.name, prefix=self.chanserv.prefix())
-                data["status"] = ""
+        for channel in self.ircd.channels.itervalues():
+            if user in channel.users:
+                status = channel.users[user]
+                if status:
+                    channel.setMode(None, "-{}".format(status), [user.nickname for i in range(len(status))], self.chanserv.prefix())
     
     def promote(self, user, channel, keepOldStatus=False):
         if channel.name in self.chanserv.cache["registered"]:
@@ -1521,40 +1537,21 @@ class Spawner(object):
                     for flag in self.chanserv.cache["registered"][channel.name]["access"][user.metadata["ext"]["accountid"]]:
                         flags.add(flag)
             if keepOldStatus:
-                for flag in user.status(channel.name):
-                    try:
-                        flags.remove(flag)
-                    except KeyError:
-                        pass
+                for flag in channel.users[user]:
+                    flags.discard(flag)
             else:
-                userStatus = user.status(channel.name)
+                userStatus = channel.users[user]
                 if userStatus:
-                    modeMsg = "-{} {}".format(userStatus, " ".join([user.nickname for i in userStatus]))
-                    for u in channel.users:
-                        u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
-                    user.channels[channel.name]["status"] = ""
+                    channel.setMode(None, "-{}".format(userStatus), [user.nickname for i in range(len(userStatus))], self.chanserv.prefix())
             
             if flags:
-                for flag in flags:
-                    currentStatus = user.channels[channel.name]["status"]
-                    statusList = list(currentStatus)
-                    for index, statusLevel in enumerate(currentStatus):
-                        if self.ircd.prefixes[statusLevel][1] < self.ircd.prefixes[flag][1]:
-                            statusList.insert(index, flag)
-                            break
-                    if flag not in statusList:
-                        statusList.append(flag)
-                    user.channels[channel.name]["status"] = "".join(statusList)
-                
-                modeMsg = "+{} {}".format("".join(flags), " ".join([user.nickname for i in flags]))
-                for u in channel.users:
-                    u.sendMessage("MODE", modeMsg, to=channel.name, prefix=self.chanserv.prefix())
+                channel.setMode(None, "+{}".format("".join(flags)), [user.nickname for i in range(len(flags))], self.chanserv.prefix())
     
     def addCert(self, user, certfp):
         accountid = user.metadata["ext"]["accountid"]
         if accountid not in self.nickserv.cache["certfp"]:
             self.nickserv.cache["certfp"][accountid] = []
-        if certfp and certfp not in self.nickserv.cache["certfp"][accountid]:
+        if certfp not in self.nickserv.cache["certfp"][accountid]:
             self.nickserv.cache["certfp"][accountid].append(certfp)
             return True
         return False
@@ -1574,8 +1571,7 @@ class Spawner(object):
     
     def onQuit(self, user, reason):
         if user in self.auth_timer:
-            self.auth_timer[user].cancel()
-            del self.auth_timer[user]
+            self.removeAuthTimer(user)
     
     def onNickChange(self, user, oldNick):
         if irc_lower(user.nickname) != irc_lower(oldNick):
@@ -1590,6 +1586,10 @@ class Spawner(object):
             topicData = self.chanserv.cache["registered"][channel.name]["topic"]
             channel.setTopic(topicData[0], topicData[1])
             channel.topicTime = topicData[2]
+            channel.created = self.chanserv.cache["registered"][channel.name]["registertime"]
+    
+    def onNetmerge(self, name):
+        self.ircd.servers[name].callRemote(ModuleMessage, destserver=name, type="ServiceServer", args=[self.ircd.name])
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
@@ -1603,6 +1603,7 @@ class Spawner(object):
             if to_nickserv:
                 data["targetuser"] = [self.nickserv]
                 data["targetchan"] = []
+                data["chanmod"] = []
                 return data
             user.sendMessage("NOTICE", ":You cannot message anyone other than NickServ until you identify or change nicks.", prefix=self.nickserv.prefix())
             return {}

@@ -13,7 +13,7 @@ class PasswordMode(Mode):
         return [False, param]
     
     def showParam(self, user, target, param):
-        if target.name not in user.channels:
+        if user not in target.users:
             return "*"
         return param
     
@@ -43,7 +43,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cuk": PasswordMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

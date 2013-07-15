@@ -6,8 +6,7 @@ class SakickCommand(Command):
         cdata = data["targetchan"]
         udata = data["targetuser"]
         reason = data["reason"]
-        for u in cdata.users:
-            u.sendMessage("KICK", udata.nickname, ":{}".format(reason), to=cdata.name, prefix=user.prefix())
+        cdata.sendChannelMessage("KICK", udata.nickname, ":{}".format(reason), prefix=user.prefix())
         udata.leave(cdata)
     
     def processParams(self, user, params):
@@ -25,6 +24,11 @@ class SakickCommand(Command):
             return {}
         if params[1] not in self.ircd.users:
             user.sendMessage(irc.ERR_NOSUCHNICK, params[1], ":No such nick")
+            return {}
+        cdata = self.ircd.channels[params[0]]
+        udata = self.ircd.users[params[1]]
+        if udata not in cdata.users:
+            user.sendMessage(irc.ERR_USERNOTINCHANNEL, udata.nickname, cdata.name, ":They are not on that channel")
             return {}
         if len(params) >= 3:
             reason = " ".join(params[2:])

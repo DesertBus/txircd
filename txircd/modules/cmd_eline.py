@@ -54,7 +54,11 @@ class ElineCommand(Command):
         elif "@" not in banmask:
             banmask = "*@{}".format(banmask)
         self.expire_elines()
-        if len(params) < 3 or not params[2]:
+        if banmask[0] == "-":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "ELINE", ":Not enough parameters")
+                return {}
             if banmask not in self.exceptList:
                 user.sendMessage("NOTICE", ":*** E:line for {} not found! Check /stats E to view currently set e:lines.".format(banmask))
                 return {}
@@ -62,6 +66,14 @@ class ElineCommand(Command):
                 "user": user,
                 "mask": banmask
             }
+        if len(params) < 3 or not params[2]:
+            user.sendMessage(irc.ERR_NEEDMOREPARAMS, "ELINE", ":Not enough parameters")
+            return {}
+        if banmask[0] == "+":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "ELINE", ":Not enough parameters")
+                return {}
         if banmask in self.exceptList:
             user.sendMessage("NOTICE", ":*** An e:line is already set on {}!  Check /stats E to view currently set e:lines.".format(banmask))
             return {}

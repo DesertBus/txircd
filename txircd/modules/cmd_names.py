@@ -11,18 +11,21 @@ class NamesCommand(Command):
             user.sendMessage(irc.ERR_NOTREGISTERED, "NAMES", ":You have not registered")
             return {}
         if params:
-            channels = params[0].split(",")
+            channames = params[0].split(",")
+            channels = []
+            for chan in channames:
+                if chan in self.ircd.channels:
+                    channels.append(self.ircd.channels[chan])
+                else:
+                    user.sendMessage(irc.ERR_NOSUCHNICK, chan, ":No such nick/channel")
         else:
-            channels = user.channels.keys()
-        chan_param = []
-        for chan in channels:
-            if chan in self.ircd.channels:
-                chan_param.append(self.ircd.channels[chan])
-            else:
-                user.sendMessage(irc.ERR_NOSUCHNICK, chan, ":No such nick/channel")
+            channels = []
+            for chan in self.ircd.channels.itervalues:
+                if user in chan.users:
+                    channels.append(chan)
         return {
             "user": user,
-            "targetchan": chan_param
+            "targetchan": channels
         }
 
 class Spawner(object):

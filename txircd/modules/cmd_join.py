@@ -20,20 +20,25 @@ class JoinCommand(Command):
         keys = params[1].split(",") if len(params) > 1 else []
         joining = []
         for i in range(0, len(channels)):
-            joining.append({"channel": channels[i][:64], "key": keys[i] if i < len(keys) else None})
+            channame = channels[i][:64]
+            if channame[0] != "#":
+                user.sendMessage(irc.ERR_BADCHANMASK, channame, ":Bad Channel Mask")
+                continue
+            if channame in self.ircd.channels:
+                cdata = self.ircd.channels[channame]
+            else:
+                cdata = IRCChannel(self.ircd, channame)
+            joining.append({"channel": cdata, "key": keys[i] if i < len(keys) else None})
         remove = []
         for chan in joining:
-            if chan["channel"] in user.channels:
-                remove.append(chan)
-            if chan["channel"][0] != "#":
-                user.sendMessage(irc.ERR_BADCHANMASK, chan["channel"], ":Bad Channel Mask")
+            if user in chan["channel"].users:
                 remove.append(chan)
         for chan in remove:
             joining.remove(chan)
         channels = []
         keys = []
         for chan in joining:
-            channels.append(self.ircd.channels[chan["channel"]] if chan["channel"] in self.ircd.channels else IRCChannel(self.ircd, chan["channel"]))
+            channels.append(chan["channel"])
             keys.append(chan["key"])
         return {
             "user": user,

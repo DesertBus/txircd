@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.server import ModuleMessage
 
 # These numerics are defined for use in the IRCv3 SASL documentation
 # located at http://ircv3.atheme.org/extensions/sasl-3.1
@@ -31,32 +32,23 @@ class Sasl(Command):
             mechanism = data["authentication"].upper()
             user.cache["sasl_authenticating"] = [mechanism, ""]
             if "server_sasl_agent" in self.ircd.servconfig and self.ircd.servconfig["server_sasl_agent"]:
-                pass # TODO after s2s
+                if self.ircd.servconfig["server_sasl_agent"] not in self.ircd.servers:
+                    del user.cache["sasl_authenticating"]
+                    user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
+                else:
+                    server = self.ircd.servers[self.ircd.servconfig["server_sasl_agent"]]
+                    server.callRemote(ModuleMessage, destserver=server.name, type="SASL", args=["start", user.uuid, mechanism])
             elif "sasl_agent" in self.ircd.module_data_cache:
-                result = self.ircd.module_data_cache["sasl_agent"].saslStart(user, mechanism)
-                if result == "fail":
-                    self.sendFailure(user)
+                self.startSaslAuth(user, mechanism)
             else:
                 del user.cache["sasl_authenticating"]
                 user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
         else:
             if "server_sasl_agent" in self.ircd.servconfig and self.ircd.servconfig["server_sasl_agent"]:
-                pass # TODO after s2s
+                server = self.ircd.servers[self.ircd.servconfig["server_sasl_agent"]]
+                server.callRemote(ModuleMessage, destserver=server.name, type="SASL", args=["process", user.uuid, data["authentication"]])
             else:
-                if data["authentication"] != "+": # A single plus sign as input indicates an empty SASL packet that we shouldn't append to data
-                    user.cache["sasl_authenticating"][1] += data["authentication"]
-                if len(data["authentication"]) == 400:
-                    return # A string of length 400 means another line is coming with additional data, so don't process any more yet
-                result = self.ircd.module_data_cache["sasl_agent"].saslNext(user, user.cache["sasl_authenticating"][1])
-                if result == "done":
-                    if "accountname" in user.metadata["ext"]:
-                        self.sendSuccess(user)
-                        self.ircd.module_data_cache["sasl_agent"].saslDone(user, True)
-                    else:
-                        self.sendFailure(user)
-                        self.ircd.module_data_cache["sasl_agent"].saslDone(user, False)
-                elif result == "wait":
-                    self.ircd.module_data_cache["sasl_agent"].bindSaslResult(user, self.sendSuccess, self.sendFailure)
+                self.processSaslAuth(user, data["authentication"])
     
     def processParams(self, user, params):
         if user.registered == 0:
@@ -83,10 +75,51 @@ class Sasl(Command):
         user.sendMessage(irc.RPL_SASLACCOUNT, "{}!{}@{}".format(user.nickname if user.nickname else "unknown", user.username if user.username else "unknown", user.hostname), user.metadata["ext"]["accountname"], ":You are now logged in as {}".format(user.metadata["ext"]["accountname"]))
         user.sendMessage(irc.RPL_SASLSUCCESS, ":SASL authentication successful")
         del user.cache["sasl_authenticating"]
+        if user.server != self.ircd.name:
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="SASL", args=["release", user.uuid])
     
     def sendFailure(self, user):
         user.sendMessage(irc.ERR_SASLFAILED, ":SASL authentication failed")
         del user.cache["sasl_authenticating"]
+        if user.server != self.ircd.name:
+            self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="SASL", args=["release", user.uuid])
+    
+    def saslMessage(self, command, args):
+        if args[1] in self.ircd.userid:
+            user = self.ircd.userid[args[1]]
+        else:
+            return
+        if args[0] == "start":
+            user.cache["sasl_authenticating"] = [args[2], ""]
+            self.startSaslAuth(user, args[2])
+        elif args[0] == "process":
+            self.processSaslAuth(user, args[2])
+        elif args[0] == "release":
+            del user.cache["sasl_authenticating"]
+    
+    def startSaslAuth(self, user, mechanism):
+        result = self.ircd.module_data_cache["sasl_agent"].saslStart(user, mechanism)
+        if result == "fail":
+            self.sendFailure(user)
+    
+    def processSaslAuth(self, user, authstr):
+        if authstr == "*": # indicates client is aborting authentication
+            self.sendFailure(user)
+            return
+        if authstr != "+": # A single plus sign as input indicates an empty SASL packet that we shouldn't append to data
+            user.cache["sasl_authenticating"][1] += authstr
+        if len(authstr) == 400:
+            return # A string of length 400 means another line is coming with additional data, so don't process any more yet
+        result = self.ircd.module_data_cache["sasl_agent"].saslNext(user, user.cache["sasl_authenticating"][1])
+        if result == "done":
+            if "accountname" in user.metadata["ext"]:
+                self.sendSuccess(user)
+                self.ircd.module_data_cache["sasl_agent"].saslDone(user, True)
+            else:
+                self.sendFailure(user)
+                self.ircd.module_data_cache["sasl_agent"].saslDone(user, False)
+        elif result == "wait":
+            self.ircd.module_data_cache["sasl_agent"].bindSaslResult(user, self.sendSuccess, self.sendFailure)
 
 class Spawner(object):
     def __init__(self, ircd):
@@ -108,6 +141,9 @@ class Spawner(object):
             },
             "actions": {
                 "register": [self.sasl.checkInProgress]
+            },
+            "server": {
+                "SASL": self.sasl.saslMessage
             }
         }
     
@@ -115,3 +151,4 @@ class Spawner(object):
         del self.ircd.commands["AUTHENTICATE"]
         del self.ircd.module_data_cache["cap"]["sasl"]
         self.ircd.actions["register"].remove(self.sasl.checkInProgress)
+        self.ircd.server_commands["SASL"].remove(self.sasl.saslMessage)

@@ -132,6 +132,14 @@ the user object and the line that was sent.
 Modules may also implement their own actions.  Actions returned with keys that 
 are not in this list will be added under the new action given.
 
+The "server" dictionary is used if your module is to respond to certain 
+ModuleMessage commands.  It is a map of the command type to a single function 
+pointer.
+
+The "common" value is either True or False and determines whether the module 
+must be loaded on all servers to function.  If two servers to not share the 
+same set of common modules, they will refuse to link.
+
 
 THE COMMAND CLASS
 The Command class has three important methods.  Most Command implementations 

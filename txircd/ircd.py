@@ -1,24 +1,21 @@
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
-from twisted.internet.protocol import Factory
+from twisted.internet.protocol import ClientCreator, Factory
 from twisted.internet.task import LoopingCall
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
-from txircd.utils import CaseInsensitiveDictionary, now
+from txircd.server import ConnectUser, IntroduceServer, ServerProtocol, protocol_version
+from txircd.utils import CaseInsensitiveDictionary, epoch, now
 from txircd.user import IRCUser
 from txircd import __version__
-import uuid, socket, yaml, os, json, imp
+import socket, yaml, os, json, imp
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_LOCALUSERS = "265"
 irc.RPL_GLOBALUSERS = "266"
 irc.RPL_CREATIONTIME = "329"
 irc.RPL_TOPICWHOTIME = "333"
-irc.ERR_CHANNOTALLOWED = "926" # I had to make this one up, too.
-# Fix twisted being silly
-irc.RPL_ADMINLOC1 = "257"
-irc.RPL_ADMINLOC2 = "258"
 
 default_options = {
     # App details
@@ -29,15 +26,20 @@ default_options = {
     "app_log_dir": "logs",
     # Server details
     "server_name": socket.getfqdn(),
+    "server_description": "A txircd server",
     "server_network_name": "txircd",
     "server_motd": "Welcome to txircd",
     "server_motd_line_length": 80,
     "server_port_tcp": 6667,
     "server_port_ssl": 6697,
     "server_port_web": 8080,
+    "serverlink_port_tcp": None,
+    "serverlink_port_ssl": None,
     "server_stats_public": "ou",
     "server_modules": [],
     "server_password": None,
+    "serverlinks": {},
+    "serverlink_autoconnect": [],
     # Client details
     "client_vhosts": {"127.0.0.1":"localhost"},
     "client_max_data": 5000, # Bytes per 5 seconds
@@ -53,6 +55,7 @@ default_options = {
     "channel_default_mode": {"n": None, "t": None},
     "channel_default_status": "o",
     "channel_exempt_chanops": "", # list of modes from which channel operators are exempt
+    "channel_status_minimum_change": {},
     # Admin details
     "admin_info_server": "Host Corp: 123 Example Street, Seattle, WA, USA",
     "admin_info_organization": "Umbrella Corp: 123 Example Street, Seattle, WA, USA",
@@ -89,10 +92,22 @@ class IRCProtocol(irc.IRC):
             self.secure = ISSLTransport(self.transport, None) is not None
             self.data_checker.start(5)
             self.pinger.start(self.factory.servconfig["client_ping_interval"], now=False)
+            for server in self.factory.servers.itervalues():
+                if server.nearHop == self.factory.name:
+                    server.callRemote(ConnectUser, uuid=self.type.uuid, ip=self.type.ip, server=self.factory.name, secure=self.secure, signon=epoch(self.type.signon))
 
     def dataReceived(self, data):
         if self.dead:
             return
+        # Get and store the peer certificate if the client is using SSL and providing a client certificate
+        # I don't like handling this here, but twisted does not provide a hook to process it in a better place (e.g.
+        # when the SSL handshake is complete); see http://twistedmatrix.com/trac/ticket/6024
+        # This will be moved in the future when we can.
+        if self.secure:
+            certificate = self.transport.getPeerCertificate()
+            if certificate is not None:
+                self.type.setMetadata("server", "certfp", certificate.digest("md5").lower().replace(":", ""))
+        # Handle the received data
         for modfunc in self.factory.actions["recvdata"]:
             modfunc(self.type, data)
         self.data += len(data)
@@ -114,7 +129,7 @@ class IRCProtocol(irc.IRC):
         elif self.type.lastactivity > self.type.lastpong:
             self.type.lastpong = now()
         else:
-            self.sendMessage("PING",":{}".format(self.factory.servconfig["server_name"]))
+            self.sendMessage("PING",":{}".format(self.factory.name))
     
     def handleCommand(self, command, prefix, params):
         log.msg("handleCommand: {!r} {!r} {!r}".format(command, prefix, params))
@@ -150,10 +165,9 @@ class IRCD(Factory):
         self.config = config
         self.version = "txircd-{}".format(__version__)
         self.created = now()
-        self.token = uuid.uuid1()
         self.servers = CaseInsensitiveDictionary()
         self.users = CaseInsensitiveDictionary()
-        self.localusers = CaseInsensitiveDictionary()
+        self.userid = {}
         self.channels = CaseInsensitiveDictionary()
         self.peerConnections = {}
         self.ssl_cert = sslCert
@@ -175,7 +189,9 @@ class IRCD(Factory):
             "commandpermission": [],
             "metadataupdate": [],
             "recvdata": [],
-            "senddata": []
+            "senddata": [],
+            "netmerge": [],
+            "netsplit": []
         }
         self.commands = {}
         self.channel_modes = [{}, {}, {}, {}]
@@ -185,7 +201,11 @@ class IRCD(Factory):
         self.prefixes = {}
         self.prefix_symbols = {}
         self.prefix_order = []
+        self.server_commands = {}
         self.module_data_cache = {}
+        self.server_factory = None
+        self.common_modules = set()
+        log.msg("Loading module data...")
         try:
             with open("data.yaml", "r") as dataFile:
                 self.serialized_data = yaml.safe_load(dataFile)
@@ -197,10 +217,16 @@ class IRCD(Factory):
             "localmax": 0,
             "globalmax": 0
         }
+        log.msg("Loading configuration...")
         self.servconfig = {}
         if not options:
             options = {}
         self.load_options(options)
+        self.name = self.servconfig["server_name"]
+        log.msg("Loading modules...")
+        self.all_module_load()
+        self.autoconnect_servers = LoopingCall(self.server_autoconnect)
+        self.autoconnect_servers.start(60, now=False) # The server factory isn't added to here yet
         # Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
         self.isupport["CASEMAPPING"] = "rfc1459"
         self.isupport["CHANMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.channel_modes])
@@ -229,6 +255,7 @@ class IRCD(Factory):
                     "cmd_away", "cmd_ison", "cmd_userhost", "cmd_who", "cmd_whois", "cmd_whowas", # user info
                     "cmd_names", "cmd_list", # channel info
                     "cmd_kill", "cmd_eline", "cmd_gline", "cmd_kline", "cmd_qline", "cmd_zline", # user management
+                    "cmd_links", "cmd_connect", "cmd_squit", # linked servers
                     
                     # channel modes
                     "cmode_b", "cmode_i", "cmode_k", "cmode_l", "cmode_m", "cmode_n", "cmode_o", "cmode_p", "cmode_s", "cmode_t", "cmode_v",
@@ -274,11 +301,15 @@ class IRCD(Factory):
         for var, value in default_options.iteritems():
             if var not in self.servconfig:
                 self.servconfig[var] = value
-        self.all_module_load()
     
     def cleanup(self):
         # Track the disconnections so we know they get done
         deferreds = []
+        log.msg("Disconnecting servers...")
+        for server in self.servers.values():
+            if server.nearHop == self.name:
+                server.transport.loseConnection()
+                deferreds.append(server.disconnected)
         # Cleanly disconnect all clients
         log.msg("Disconnecting clients...")
         for u in self.users.values():
@@ -300,6 +331,27 @@ class IRCD(Factory):
         log.msg("Waiting on deferreds...")
         self.dead = True
         return DeferredList(deferreds)
+    
+    def server_autoconnect(self):
+        def sendServerHandshake(protocol, password):
+            protocol.callRemote(IntroduceServer, name=self.name, password=password, description=self.servconfig["server_description"], version=protocol_version, commonmodules=self.common_modules)
+            protocol.sentDataBurst = False
+        for server in self.servconfig["serverlink_autoconnect"]:
+            if server not in self.servers and server in self.servconfig["serverlinks"]:
+                log.msg("Initiating autoconnect to server {}".format(server))
+                servinfo = self.servconfig["serverlinks"][server]
+                if "ip" not in servinfo or "port" not in servinfo:
+                    continue
+                if "bindaddress" in servinfo and "bindport" in servinfo:
+                    bind = (servinfo["bindaddress"], servinfo["bindport"])
+                else:
+                    bind = None
+                creator = ClientCreator(reactor, ServerProtocol, self)
+                if "ssl" in servinfo and servinfo["ssl"]:
+                    d = creator.connectSSL(servinfo["ip"], servinfo["port"], self.ssl_cert, bindAddress=bind)
+                else:
+                    d = creator.connectTCP(servinfo["ip"], servinfo["port"], bindAddress=bind)
+                d.addCallback(sendServerHandshake, servinfo["outgoing_password"])
     
     def load_module(self, name):
         saved_data = {}
@@ -420,6 +472,13 @@ class IRCD(Factory):
                         self.actions[actiontype].append(func)
                 else:
                     self.actions[actiontype] = actionfuncs
+        if "server" in mod_contains:
+            for commandtype, commandfunc in mod_contains["server"].iteritems():
+                if commandtype not in self.server_commands:
+                    self.server_commands[commandtype] = []
+                self.server_commands[commandtype].append(commandfunc)
+        if "common" in mod_contains and mod_contains["common"]:
+            self.common_modules.add(name)
         if not saved_data and name in self.serialized_data:
             saved_data = self.serialized_data[name] # present serialized data on first load of session
         if saved_data:

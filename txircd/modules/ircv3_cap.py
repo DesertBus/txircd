@@ -1,5 +1,6 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
+from txircd.server import ModuleMessage
 
 irc.ERR_INVALIDCAPCMD = "410" # as defined in http://ircv3.atheme.org/specification/capability-negotiation-3.1
 
@@ -101,19 +102,44 @@ class CapCommand(Command):
             "subcmd": subcmd,
             "list": caplist.split(" ")
         }
+    
+    def sendCap(self, serverName):
+        servinfo = self.ircd.servers[serverName]
+        if servinfo.nearHop != self.ircd.name:
+            return # only send once, not from every server
+        for u in self.ircd.users.itervalues():
+            if "cap" in u.cache:
+                servinfo.callRemote(ModuleMessage, destserver=serverName, type="SyncCap", args=[u.uuid] + u.cache["cap"])
+    
+    def syncCap(self, command, args):
+        uuid = args[0]
+        capabilities = args[1:]
+        if uuid not in self.ircd.userid:
+            return
+        self.ircd.userid[uuid].cache["cap"] = capabilities
 
 class Spawner(object):
     def __init__(self, ircd):
         self.ircd = ircd
+        self.cap_cmd = None
     
     def spawn(self):
         if "cap" not in self.ircd.module_data_cache:
             self.ircd.module_data_cache["cap"] = {}
+        self.cap_cmd = CapCommand()
         return {
             "commands": {
-                "CAP": CapCommand()
+                "CAP": self.cap_cmd
+            },
+            "actions": {
+                "netmerge": [self.cap_cmd.sendCap]
+            },
+            "server": {
+                "SyncCap": self.cap_cmd.syncCap
             }
         }
     
     def cleanup(self):
         del self.ircd.commands["CAP"]
+        self.ircd.actions["netmerge"].remove(self.cap_cmd.sendCap)
+        self.ircd.server_commands["SyncCap"].remove(self.cap_cmd.syncCap)

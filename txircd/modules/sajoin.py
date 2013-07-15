@@ -1,9 +1,10 @@
 from twisted.words.protocols import irc
+from txircd.channel import IRCChannel
 from txircd.modbase import Command
 
 class SajoinCommand(Command):
     def onUse(self, user, data):
-        data["targetuser"].join(params[1])
+        data["targetuser"].join(data["targetchan"])
     
     def processParams(self, user, params):
         if user.registered > 0:
@@ -21,10 +22,14 @@ class SajoinCommand(Command):
         if params[1][0] != "#":
             user.sendMessage(irc.ERR_BADCHANMASK, chan["channel"], ":Bad Channel Mask")
             return {}
+        if params[1] in self.ircd.channels:
+            cdata = self.ircd.channels[params[1]]
+        else:
+            cdata = IRCChannel(self.ircd, params[1])
         return {
             "user": user,
             "targetuser": self.ircd.users[params[0]],
-            "channame": params[1]
+            "targetchan": cdata
         }
 
 class Spawner(object):

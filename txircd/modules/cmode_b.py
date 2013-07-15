@@ -65,7 +65,7 @@ class BanMode(Mode):
     def showParam(self, user, target):
         if "b" in target.mode:
             for entry in target.mode["b"]:
-                metadata = target.cache["bandata"][entry] if "bandata" in target.cache and entry in target.cache["bandata"] else [ self.ircd.servconfig["server_name"], epoch(now()) ]
+                metadata = target.cache["bandata"][entry] if "bandata" in target.cache and entry in target.cache["bandata"] else [ self.ircd.name, epoch(now()) ]
                 user.sendMessage(irc.RPL_BANLIST, target.name, entry, metadata[0], str(metadata[1]))
             if "bandata" in target.cache:
                 removeMask = []
@@ -90,7 +90,8 @@ class Spawner(object):
         return {
             "modes": {
                 "clb": self.ban_mode
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

@@ -9,7 +9,7 @@ class ModeratedMode(Mode):
         chanModList = data["chanmod"]
         removeChannels = []
         for channel in targetChannels:
-            if "m" in channel.mode and not user.hasAccess(channel.name, "v"):
+            if "m" in channel.mode and not user.hasAccess(channel, "v"):
                 removeChannels.append(channel)
                 user.sendMessage(irc.ERR_CANNOTSENDTOCHAN, channel.name, ":Cannot send to channel (+m)")
         for channel in removeChannels:
@@ -28,7 +28,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnm": ModeratedMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

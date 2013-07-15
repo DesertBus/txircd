@@ -34,15 +34,20 @@ class StripColor(Mode):
         if chr(2) in data["message"] or chr(3) in data["message"] or chr(15) in data["message"] or chr(22) in data["message"] or chr(29) in data["message"] or chr(31) in data["message"]:
             exempt_chanops = "S" in self.ircd.servconfig["channel_exempt_chanops"]
             okchans = []
+            okchanmod = []
             stripchans = []
-            for chan in data["targetchan"]:
-                if "S" in chan.mode and (not exempt_chanops or not user.hasAccess(chan.name, "o")):
+            stripchanmod = []
+            for index, chan in enumerate(data["targetchan"]):
+                if "S" in chan.mode and (not exempt_chanops or not user.hasAccess(chan, "o")):
                     stripchans.append(chan.name)
+                    stripchanmod.append(data["chanmod"][index])
                 else:
                     okchans.append(chan)
+                    okchanmod.append(data["chanmod"][index])
             data["targetchan"] = okchans
+            data["chanmod"] = okchanmod
             if stripchans:
-                user.handleCommand(cmd, None, [",".join(stripchans), self.strip_colors(data["message"])])
+                user.handleCommand(cmd, None, [",".join([stripchanmod[i] + stripchans[i] for i in range(len(stripchans))]), self.strip_colors(data["message"])])
         return data
 
 class Spawner(object):
@@ -53,7 +58,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnS": StripColor()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

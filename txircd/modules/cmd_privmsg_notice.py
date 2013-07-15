@@ -15,14 +15,12 @@ class MessageCommand(object):
         message = data["message"]
         for index, channel in enumerate(data["targetchan"]):
             if channelModifiers[index]:
-                prefixLevel = self.prefixes[self.prefix_symbols[channelModifiers[index]]][0]
-                for u in channels.users:
-                    if u != user and u.channels[channel.name]["status"] and self.prefixes[u.channels[channel.name]["status"][0]][0] >= prefixLevel:
+                prefixMode = self.ircd.prefix_symbols[channelModifiers[index]]
+                for u in channel.users.iterkeys():
+                    if u != user and u.hasAccess(channel, prefixMode):
                         u.sendMessage(cmd, ":{}".format(message), to="{}{}".format(channelModifiers[index], channel.name), prefix=user.prefix())
             else:
-                for u in channel.users:
-                    if u != user:
-                        u.sendMessage(cmd, ":{}".format(message), to=channel.name, prefix=user.prefix())
+                channel.sendChannelMessage(cmd, ":{}".format(message), prefix=user.prefix(), skip=[user])
         for udata in data["targetuser"]:
             udata.sendMessage(cmd, ":{}".format(message), prefix=user.prefix())
     

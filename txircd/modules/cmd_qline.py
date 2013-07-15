@@ -45,18 +45,32 @@ class QlineCommand(Command):
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "QLINE", ":Not enough parameters")
             return {}
         self.expire_qlines()
-        if len(params) < 3 or not params[2]:
-            if params[0] not in self.banList:
-                user.sendMessage("NOTICE", ":*** There is not a q:line set on {}; check /stats Q for a list of existing q:lines".format(params[0]))
+        banmask = params[0]
+        if banmask[0] == "-":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "QLINE", ":Not enough parameters")
+                return {}
+            if banmask not in self.banList:
+                user.sendMessage("NOTICE", ":*** There is not a q:line set on {}; check /stats Q for a list of existing q:lines".format(banmask))
                 return {}
             return {
                 "user": user,
-                "mask": params[0]
+                "mask": banmask
             }
-        if params[0] in self.banList:
-            user.sendMessage("NOTICE", ":*** Q:line already exists for {}; check /stats Q for a list of existing q:lines".format(params[0]))
+        if len(params) < 3 or not params[2]:
+            user.sendMessage(irc.ERR_NEEDMOREPARAMS, "QLINE", ":Not enough parameters")
             return {}
-        if not params[0].replace("*", ""):
+        if banmask[0] == "+":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "QLINE", ":Not enough parameters")
+                return {}
+        if banmask in self.banList:
+            user.sendMessage("NOTICE", ":*** Q:line already exists for {}!  Check /stats Q for a list of existing q:lines.".format(params[0]))
+            return {}
+        bancheck = banmask.replace("*", "")
+        if not bancheck or ("*" in banmask and bancheck == "?"):
             user.sendMessage("NOTICE", ":*** That q:line will match all nicks!  Please check your nick mask and try again.")
             return {}
         if not VALID_NICKNAME.match(params[0].replace("*", "").replace("?", "a")):
@@ -64,7 +78,7 @@ class QlineCommand(Command):
             return {}
         return {
             "user": user,
-            "mask": params[0],
+            "mask": banmask,
             "duration": parse_duration(params[1]),
             "reason": " ".join(params[2:])
         }

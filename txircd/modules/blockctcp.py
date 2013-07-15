@@ -20,10 +20,13 @@ class BlockCTCP(Mode):
         if self.has_CTCP(data["message"]):
             exempt_chanops = "C" in self.ircd.servconfig["channel_exempt_chanops"]
             okchans = []
-            for chan in data["targetchan"]:
-                if "C" not in chan.mode or (exempt_chanops and user.hasAccess(chan.name, "o")):
+            okchanmod = []
+            for index, chan in enumerate(data["targetchan"]):
+                if "C" not in chan.mode or (exempt_chanops and user.hasAccess(chan, "o")):
                     okchans.append(chan)
+                    okchanmod.append(data["chanmod"][index])
             data["targetchan"] = okchans
+            data["chanmod"] = okchanmod
         return data
 
 class Spawner(object):
@@ -34,7 +37,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnC": BlockCTCP()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

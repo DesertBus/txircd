@@ -8,7 +8,7 @@ class TopiclockMode(Mode):
         if "topic" not in data:
             return data
         targetChannel = data["targetchan"]
-        if "t" in targetChannel.mode and not user.hasAccess(targetChannel.name, self.ircd.servconfig["channel_minimum_level"]["TOPIC"]):
+        if "t" in targetChannel.mode and not user.hasAccess(targetChannel, self.ircd.servconfig["channel_minimum_level"]["TOPIC"]):
             user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, targetChannel.name, ":You do not have access to change the topic on this channel")
             return {}
         return data
@@ -25,7 +25,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cnt": TopiclockMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

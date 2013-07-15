@@ -10,8 +10,8 @@ class WhoCommand(Command):
                 if "i" in u.mode:
                     continue
                 common_channel = False
-                for c in user.channels.iterkeys():
-                    if c in u.channels:
+                for chan in self.ircd.channels.itervalues():
+                    if user in chan.users and u in chan.users:
                         common_channel = True
                         break
                 if not common_channel:
@@ -20,11 +20,11 @@ class WhoCommand(Command):
         else:
             if data["target"] in self.ircd.channels:
                 cdata = self.ircd.channels[data["target"]]
-                in_channel = cdata.name in user.channels # cache this value instead of searching self.channels every iteration
+                in_channel = user in cdata.users # cache this value instead of searching every iteration
                 if not in_channel and ("p" in cdata.mode or "s" in cdata.mode):
                     irc.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
                     return
-                for u in cdata.users:
+                for u in cdata.users.iterkeys():
                     self.sendWhoLine(user, u, cdata.name, cdata, data["filters"], data["fields"])
                 user.sendMessage(irc.RPL_ENDOFWHO, cdata.name, ":End of /WHO list.")
             else:
@@ -60,15 +60,12 @@ class WhoCommand(Command):
     def sendWhoLine(self, user, targetUser, destination, channel, filters, fields):
         displayChannel = destination
         if not channel:
-            for chan in targetUser.channels.iterkeys():
-                if chan in user.channels:
+            for chan in self.ircd.channels.itervalues():
+                if user in chan.users and targetUser in chan.users:
                     displayChannel = chan
                     break
             else:
-                if "i" in targetUser.mode or not targetUser.channels:
-                    displayChannel = "*"
-                else:
-                    displayChannel = targetUser.channels.keys()[0]
+                displayChannel = "*"
         udata = {
             "dest": destination,
             "nick": targetUser.nickname,
@@ -79,7 +76,7 @@ class WhoCommand(Command):
             "away": "away" in targetUser.metadata["ext"],
             "oper": "o" in targetUser.mode,
             "idle": epoch(now()) - epoch(targetUser.lastactivity),
-            "status": self.ircd.prefixes[targetUser.status(channel.name)[0]][0] if channel and targetUser.status(channel.name) else "",
+            "status": self.ircd.prefixes[channel.users[targetUser][0]][0] if channel and channel.users[targetUser] else "",
             "hopcount": 0,
             "gecos": targetUser.realname,
             "account": targetUser.metadata["ext"]["accountname"] if "accountname" in targetUser.metadata["ext"] else "0",

@@ -27,13 +27,13 @@ class InviteCommand(Command):
             return {}
         udata = self.ircd.users[params[0]]
         cdata = self.ircd.channels[params[1]]
-        if cdata.name in udata.channels:
+        if udata in cdata.users:
             user.sendMessage(irc.ERR_USERONCHANNEL, udata.nickname, cdata.name, ":is already on channel")
             return {}
-        if cdata.name not in user.channels:
+        if user not in cdata.users:
             user.sendMessage(irc.ERR_NOTONCHANNEL, cdata.name, ":You're not on that channel")
             return {}
-        if "i" in cdata.mode and not user.hasAccess(cdata.name, self.ircd.servconfig["channel_minimum_level"]["INVITE"]):
+        if "i" in cdata.mode and not user.hasAccess(cdata, self.ircd.servconfig["channel_minimum_level"]["INVITE"]):
             user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You're not a channel operator")
             return {}
         return {

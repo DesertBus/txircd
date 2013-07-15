@@ -19,10 +19,11 @@ class KlineCommand(Command):
             }
             user.sendMessage("NOTICE", ":*** K:Line added on {}, to expire in {} seconds".format(data["mask"], data["duration"]))
             now_banned = {}
-            for nick, u in self.ircd.localusers.iteritems():
-                result = self.match_kline(u)
-                if result:
-                    now_banned[nick] = result
+            for nick, u in self.ircd.users.iteritems():
+                if u.server == self.ircd.name:
+                    result = self.match_kline(u)
+                    if result:
+                        now_banned[nick] = result
             for uid, reason in now_banned.iteritems():
                 udata = self.ircd.users[uid]
                 udata.sendMessage("NOTICE", ":{}".format(self.ircd.servconfig["client_ban_msg"]))
@@ -47,7 +48,11 @@ class KlineCommand(Command):
         elif "@" not in banmask:
             banmask = "*@{}".format(banmask)
         self.expire_klines()
-        if len(params) < 3 or not params[2]:
+        if banmask[0] == "-":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KLINE", ":Not enough parameters")
+                return {}
             if banmask not in self.banList:
                 user.sendMessage("NOTICE", ":*** K:line for {} does not currently exist; check /stats K for a list of active k:lines".format(banmask))
                 return {}
@@ -55,16 +60,23 @@ class KlineCommand(Command):
                 "user": user,
                 "mask": banmask
             }
-        else:
-            if banmask in self.banList:
-                user.sendMessage("NOTICE", ":*** There's already a k:line set on {}!".format(banmask))
+        if len(params) < 3 or not params[2]:
+            user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KLINE", ":Not enough parameters")
+            return {}
+        if banmask[0] == "+":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KLINE", ":Not enough parameters")
                 return {}
-            return {
-                "user": user,
-                "mask": banmask,
-                "duration": parse_duration(params[1]),
-                "reason": " ".join(params[2:])
-            }
+        if banmask in self.banList:
+            user.sendMessage("NOTICE", ":*** There's already a k:line set on {}!  Check /stats K for a list of active k:lines.".format(banmask))
+            return {}
+        return {
+            "user": user,
+            "mask": banmask,
+            "duration": parse_duration(params[1]),
+            "reason": " ".join(params[2:])
+        }
     
     def statsList(self, cmd, data):
         if cmd != "STATS":
@@ -89,7 +101,7 @@ class KlineCommand(Command):
     def match_kline(self, user):
         if "o" in user.mode:
             return None # don't allow bans to affect opers
-        if user.server != self.ircd.servconfig["server_name"]:
+        if user.server != self.ircd.name:
             return None # only match users on this server
         if "except_line" not in user.cache:
             if "kline_match" in user.cache:

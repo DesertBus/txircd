@@ -6,8 +6,7 @@ class SatopicCommand(Command):
     def onUse(self, user, data):
         cdata = data["targetchan"]
         cdata.setTopic(data["topic"], user.nickname)
-        for u in cdata.users:
-            u.sendMessage("TOPIC", ":{}".format(cdata.topic), to=cdata.name, prefix=user.prefix())
+        cdata.sendChannelMessage("TOPIC", ":{}".format(cdata.topic), prefix=user.prefix())
     
     def processParams(self, user, params):
         if user.registered > 0:

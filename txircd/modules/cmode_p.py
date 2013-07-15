@@ -4,8 +4,10 @@ class PrivateMode(Mode):
     def listOutput(self, command, data):
         if command != "LIST":
             return data
+        if "cdata" not in data:
+            return data
         cdata = data["cdata"]
-        if "p" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
+        if "p" in cdata["channel"].mode and data["user"] not in cdata["channel"].users:
             cdata["name"] = "*"
             cdata["topic"] = ""
     # other +p stuff is in other modules
@@ -23,7 +25,8 @@ class Spawner(object):
             },
             "actions": {
                 "commandextra": [self.mode_p.listOutput]
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

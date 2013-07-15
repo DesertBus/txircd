@@ -3,10 +3,13 @@ from txircd.modbase import Mode
 
 class LimitMode(Mode):
     def checkSet(self, user, target, param):
-        intParam = int(param)
+        try:
+            intParam = int(param)
+        except ValueError:
+            return [False, param]
         if str(intParam) != param:
             return [False, param]
-        return [(intParam >= 0), param]
+        return [(intParam > 0), param]
     
     def checkPermission(self, user, cmd, data):
         if cmd != "JOIN":
@@ -35,7 +38,8 @@ class Spawner(object):
         return {
             "modes": {
                 "cpl": LimitMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

@@ -6,8 +6,9 @@ class PartCommand(Command):
         if "targetchan" not in data:
             return
         for channel in data["targetchan"]:
-            for u in channel.users:
-                u.sendMessage("PART", ":{}".format(data["reason"]), to=channel.name, prefix=user.prefix())
+            if user not in channel.users:
+                continue
+            channel.sendChannelMessage("PART", ":{}".format(data["reason"]), prefix=user.prefix())
             user.leave(channel)
     
     def processParams(self, user, params):
@@ -19,19 +20,16 @@ class PartCommand(Command):
             return {}
         channels = params[0].split(",")
         reason = params[1] if len(params) > 1 else user.nickname
-        delChan = []
+        chanInstList = []
         for chan in channels:
             if chan not in self.ircd.channels:
                 user.sendMessage(irc.ERR_NOSUCHCHANNEL, chan, ":No such channel")
-                delChan.append(chan)
-            elif chan not in user.channels:
+                continue
+            cdata = self.ircd.channels[chan]
+            if user not in cdata.users:
                 user.sendMessage(irc.ERR_NOTONCHANNEL, chan, ":You're not on that channel")
-                delChan.append(chan)
-        for chan in delChan:
-            channels.remove(chan)
-        chanInstList = []
-        for chan in channels:
-            chanInstList.append(self.ircd.channels[chan])
+            else:
+                chanInstList.append(cdata)
         return {
             "user": user,
             "targetchan": chanInstList,

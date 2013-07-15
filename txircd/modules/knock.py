@@ -10,10 +10,12 @@ irc.ERR_KNOCKONCHAN = "714"
 class KnockCommand(Command):
     def onUse(self, user, data):
         cdata = data["targetchan"]
+        if "knocks" not in user.cache:
+            user.cache["knocks"] = []
         user.cache["knocks"].append(cdata.name)
         reason = data["reason"]
-        for u in cdata.users.itervalues():
-            if u.hasAccess(cdata.name, self.ircd.servconfig["channel_minimum_level"]["INVITE"] if "channel_minimum_level" in self.ircd.servconfig and "INVITE" in self.ircd.servconfig["channel_minimum_level"] else "o"):
+        for u in cdata.users.iterkeys():
+            if u.hasAccess(cdata, self.ircd.servconfig["channel_minimum_level"]["INVITE"] if "channel_minimum_level" in self.ircd.servconfig and "INVITE" in self.ircd.servconfig["channel_minimum_level"] else "o"):
                 u.sendMessage(irc.RPL_KNOCK, cdata.name, user.prefix(), ":{}".format(reason))
         user.sendMessage(irc.RPL_KNOCKDLVR, cdata.name, ":Your KNOCK has been delivered")
     
@@ -28,13 +30,13 @@ class KnockCommand(Command):
             user.sendMessage(irc.ERR_NOSUCHCHANNEL, params[0], ":No such channel")
             return {}
         cdata = self.ircd.channels[params[0]]
-        if cdata.name in user.channels:
+        if user in cdata.users:
             user.sendMessage(irc.ERR_KNOCKONCHAN, cdata.name, ":You are already on that channel")
             return {}
         if "i" not in cdata.mode:
             user.sendMessage(irc.ERR_CHANOPEN, cdata.name, ":Channel is open")
             return {}
-        if cdata.name in user.cache["knocks"]:
+        if "knocks" in user.cache and cdata.name in user.cache["knocks"]:
             user.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Too many KNOCKs (user)")
             return {}
         return {
@@ -55,11 +57,13 @@ class KnockCommand(Command):
             return
         targetUser = data["targetuser"]
         targetChan = data["targetchan"]
-        if targetChan.name in targetUser.cache["knocks"]:
+        if "knocks" in targetUser.cache and targetChan.name in targetUser.cache["knocks"]:
             targetUser.cache["knocks"].remove(targetChan.name)
 
 class NoknockMode(Mode):
     def checkPermission(self, user, cmd, data):
+        if "targetchan" not in data:
+            return data
         cdata = data["targetchan"]
         if cmd == "KNOCK" and "K" in cdata.mode:
             user.sendMessage(irc.ERR_TOOMANYKNOCK, cdata.name, ":Channel is +K")
@@ -83,7 +87,8 @@ class Spawner(object):
             },
             "modes": {
                 "cnK": NoknockMode()
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):

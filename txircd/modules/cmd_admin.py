@@ -1,9 +1,12 @@
 from twisted.words.protocols import irc
 from txircd.modbase import Command
 
+irc.RPL_ADMINLOC1 = "257"
+irc.RPL_ADMINLOC2 = "258"
+
 class AdminCommand(Command):
     def onUse(self, user, data):
-        user.sendMessage(irc.RPL_ADMINME, self.ircd.servconfig["server_name"], ":Administrative info for {}".format(self.ircd.servconfig["server_name"]))
+        user.sendMessage(irc.RPL_ADMINME, self.ircd.name, ":Administrative info for {}".format(self.ircd.name))
         user.sendMessage(irc.RPL_ADMINLOC1, ":{}".format(self.ircd.servconfig["admin_info_server"]))
         user.sendMessage(irc.RPL_ADMINLOC2, ":{}".format(self.ircd.servconfig["admin_info_organization"]))
         user.sendMessage(irc.RPL_ADMINEMAIL, ":{}".format(self.ircd.servconfig["admin_info_person"]))

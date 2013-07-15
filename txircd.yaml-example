@@ -21,6 +21,10 @@
 # what you want.
 #server_name: irc.example.com
 
+# Server Description: A description of the server; can be any text of reasonable
+# length.
+#server_description: A txircd server
+
 # Network Name: The network name must be a single word (i.e. no spaces) which
 # serves as the name of the network.  The default value is 'txircd'.
 #server_network_name: txircd
@@ -47,6 +51,39 @@
 # web: This is a secure connection with a webclient over websockets with SSL.
 # The default value is 8080.
 #server_port_web: 8080
+
+# serverlink tcp: This is a normal unencrypted connection between two txircd
+# servers.  The default value is none, so if you want to link servers, you will
+# need to specify this or the encrypted SSL one (below).
+#serverlink_port_tcp: null
+
+# serverlink ssl: This is an SSL-encrypted connection between txircd servers.
+# The default value is none, so if you want to link servers, you will need to
+# specify this or the plain TCP one (above).
+#serverlink_port_ssl: null
+
+# serverlinks: This is where you specify data for servers that can link to this
+# one.  Servers not specified here will be denied linking.  The default value is
+# none; the value listed here is to illustrate the values used for linking
+# servers.
+# ip, port, incoming_password, and outgoing_password are all required values in
+# order for a server to link successfully.  ssl is required only if set to true
+# (i.e. an SSL connection is being established).  bindaddress and bindport only
+# work when specified together and are only needed if the connection must
+# originate from a specific one of multiple IP addresses assigned to a server.
+#serverlinks:
+#  servername.example.com:
+#    ip: 12.34.56.78
+#    port: 7000
+#    bindaddress: 98.76.54.32
+#    bindport: 7001
+#    ssl: false
+#    incoming_password: lolol
+#    outgoing_password: whateven
+
+# serverlink_autoconnect: This is a list of server names specified above to
+# automatically connect to.
+#serverlink_autoconnect: []
 
 # MOTD
 # 1. Maximum line length.  The default of 80 characters is recommended.
@@ -130,10 +167,28 @@
 # channel.  The default level is 'o' for everything.  You may add more commands
 # to this list provided in additional modules that you load (below).
 #channel_minimum_level:
+#  KICK: o
 #  INVITE: o
 #  METADATA: o
 #  MODE: o
 #  TOPIC: o
+
+# Minimum status set: The minimum status one must have in order to set or unset
+# a given prefix on a channel.  Defaults to the same level as the status.
+# Note that despite the presence of all modes, some levels may not be able to
+# change based on restrictions on channel commands in channel_minimum_level (see
+# above).  If you don't want someone at a mode level to be able to give or take
+# that level from others (e.g. halfops giving/removing halfops), set the value
+# to something higher than the level in the key.
+# The q, a, and h levels in this example will have no effect without the
+# chanowner, chanadmin, and halfop modules loaded (see module configuration
+# below) and are here as an example and/or to remind you to set them.
+#channel_status_minimum_change:
+#  q: q
+#  a: a
+#  o: o
+#  h: h
+#  v: v
 
 
 # CLIENT OPTIONS
@@ -300,6 +355,10 @@
 # knock: Enables the /knock command, which serves as a mechanism for users to
 # request an invite to a channel.
 #- knock
+#
+# blockcolor: Enables the +c channel mode, which blocks messages with color from
+# being sent to the channel.
+#- blockcolor
 # 
 # stripcolor: Enables the +S channel mode, which strips color codes from
 # messages sent to the channel.
@@ -353,9 +412,24 @@
 # 
 # conn_join: Forces clients to join one or more channels on connect.
 #- conn_join
+#
+# cloaking: Implements user mode +x, which allows users to apply a hostname
+# cloak.
+#- cloaking
 # 
 # db_services: Implements the Desert Bus services suite.
 #- db_services
+#
+# db_services_leaf: Serves as a leaf to the Desert Bus services suite.
+# Desert Bus services is designed to run on one server of the network;
+# db_services_leaf should be loaded on all others.  This module implements
+# command aliases for services and implements the command blocking functionality
+# for users not on the main services server.
+# Of the db_services config below, this module only requires
+# services_nickserv_nick, services_chanserv_nick, and services_bidserv_nick.
+# The three values MUST be set to the same as the services nicks for the server
+# with db_services loaded (or identical across the network).
+#- db_services_leaf
 
 
 # shun config
@@ -372,23 +446,25 @@
 
 
 # ircv3_sasl config
-# sasl_agent: The SASL agent for this server.  If left as an empty string, uses
-# an internal agent provided by another module (e.g. db_services).  The default
-# value is ''.
-#sasl_agent: ''
+# sasl_agent: The SASL agent for this network.  The SASL agent specified must be
+# another server connected to the network which operates as a SASL agent (either
+# through some module or a different software altogether connected to the
+# network).  If left as an empty string, uses an internal agent provided by
+# another module (e.g. db_services).  The default value is ''.
+#server_sasl_agent: ''
 
 
 # denychans config
 # denychans: Allows you to choose which channels cannot be joined by normal
 # users.  Opers will still be able to join these channels.  This is a list of
 # channels; the * and ? wildcards may be used.
-#server_denychans:
+#channel_denychans:
 #- '*'
 
 # allowchans: This serves as a whitelist; channels in this list will be
 # available even if they match a channel in denychans.  This list of channels
 # also supports the * and ? wildcards.
-#server_allowchans:
+#channel_allowchans:
 #- '#desertbus'
 #- '#help'
 
@@ -442,26 +518,50 @@
 #services_bidserv_gecos: Bidding Service
 
 # NickServ client: NickServ needs a nick, ident, host, and gecos.
-services_nickserv_nick: NickServ
-services_nickserv_ident: NickServ
-services_nickserv_host: services.desertbus.org
-services_nickserv_gecos: Nickname Service
+#services_nickserv_nick: NickServ
+#services_nickserv_ident: NickServ
+#services_nickserv_host: services.desertbus.org
+#services_nickserv_gecos: Nickname Service
 
 # ChanServ client: ChanServ needs a nick, ident, host, and gecos.
-services_chanserv_nick: ChanServ
-services_chanserv_ident: ChanServ
-services_chanserv_host: services.desertbus.org
-services_chanserv_gecos: Channel Service
+#services_chanserv_nick: ChanServ
+#services_chanserv_ident: ChanServ
+#services_chanserv_host: services.desertbus.org
+#services_chanserv_gecos: Channel Service
 
 # BidServ configuration
 # increment: The minimum increment between bids.  If not given, bids can be any
 # amount over the previous high bid.
 #services_bidserv_increment: 5.0
 
+# limit: The maximum amount allowed to be bid.  If not given, a maximum limit on
+# bids is not enforced.
+#services_bidserv_limit: 1000000.0
+
 # Madness levels: The madness levels to display when they are passed in bid
 # amount.
 #services_bidserv_madness_levels:
+#  300: MADNESS
+#  600: DOUBLE MADNESS
+#  900: TRIPLE MADNESS
 #  1000: Myth Busted
+#  1200: QUADRUPLE MADNESS
+#  1500: QUINTUPLE MADNESS
+#  1800: SEXTUPLE MADNESS
+#  2100: SEPTUPLE MADNESS
+#  2400: OCTUPLE MADNESS
+#  2700: NONUPLE MADNESS
+#  3000: DECUPLE MADNESS
+#  3300: UNDECUPLE MADNESS
+#  3600: WHARRGARBL MADNESS
+#  3900: TREDECUPLE MADNESS
+#  4200: QUATTUORDECUPLE MADNESS
+#  4500: QUINDECUPLE MADNESS
+#  4800: SEXDECUPLE MADNESS
+#  5100: SEPTENDECUPLE MADNESS
+#  5400: OCTODECUPLE MADNESS
+#  5700: NOVEMDECUPLE MADNESS
+#  6000: VIGUPLE MADNESS
 
 # Show all madness: Whether to show all madness levels passed by a bid (true) or
 # just the highest one (false).  The default value is false.

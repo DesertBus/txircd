@@ -45,7 +45,11 @@ class ZlineCommand(Command):
         if banmask in self.ircd.users:
             banmask = self.ircd.users[banmask].ip
         self.expire_zlines()
-        if len(params) < 3 or not params[2]:
+        if banmask[0] == "-":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "ZLINE", ":Not enough parameters")
+                return {}
             if banmask not in self.banList:
                 user.sendMessage("NOTICE", ":*** Z:line on {} not found!  Check /stats Z for a list of active z:lines.".format(banmask))
                 return {}
@@ -53,8 +57,16 @@ class ZlineCommand(Command):
                 "user": user,
                 "mask": banmask
             }
+        if len(params) < 3 or not params[2]:
+            user.sendMessage(irc.ERR_NEEDMOREPARAMS, "ZLINE", ":Not enough parameters")
+            return {}
+        if banmask[0] == "+":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "ZLINE", ":Not enough parameters")
+                return {}
         if banmask in self.banList:
-            user.sendMessage("NOTICE", ":*** There is already a z:line set on {}!".format(banmask))
+            user.sendMessage("NOTICE", ":*** There is already a z:line set on {}!  Check /stats Z for a list of active z:lines.".format(banmask))
             return {}
         return {
             "user": user,

@@ -7,7 +7,7 @@ class SecretMode(Mode):
             return data
         remove = []
         for chan in data["targetchan"]:
-            if "s" in chan.mode and chan.name not in user.channels:
+            if "s" in chan.mode and user not in chan.users:
                 user.sendMessage(irc.ERR_NOSUCHNICK, chan, ":No such nick/channel")
                 remove.append(chan)
         for chan in remove:
@@ -17,8 +17,10 @@ class SecretMode(Mode):
     def listOutput(self, command, data):
         if command != "LIST":
             return data
+        if "cdata" not in data:
+            return data
         cdata = data["cdata"]
-        if "s" in cdata["channel"].mode and cdata["channel"].name not in data["user"].channels:
+        if "s" in cdata["channel"].mode and data["user"] not in cdata["channel"].users:
             data["cdata"].clear()
     # other +s stuff is hiding in other modules.
 
@@ -35,7 +37,8 @@ class Spawner(object):
             },
             "actions": {
                 "commandextra": [self.mode_s.listOutput]
-            }
+            },
+            "common": True
         }
     
     def cleanup(self):
