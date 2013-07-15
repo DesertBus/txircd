@@ -48,7 +48,11 @@ class KlineCommand(Command):
         elif "@" not in banmask:
             banmask = "*@{}".format(banmask)
         self.expire_klines()
-        if len(params) < 3 or not params[2]:
+        if banmask[0] == "-":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KLINE", ":Not enough parameters")
+                return {}
             if banmask not in self.banList:
                 user.sendMessage("NOTICE", ":*** K:line for {} does not currently exist; check /stats K for a list of active k:lines".format(banmask))
                 return {}
@@ -56,16 +60,23 @@ class KlineCommand(Command):
                 "user": user,
                 "mask": banmask
             }
-        else:
-            if banmask in self.banList:
-                user.sendMessage("NOTICE", ":*** There's already a k:line set on {}!".format(banmask))
+        if len(params) < 3 or not params[2]:
+            user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KLINE", ":Not enough parameters")
+            return {}
+        if banmask[0] == "+":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KLINE", ":Not enough parameters")
                 return {}
-            return {
-                "user": user,
-                "mask": banmask,
-                "duration": parse_duration(params[1]),
-                "reason": " ".join(params[2:])
-            }
+        if banmask in self.banList:
+            user.sendMessage("NOTICE", ":*** There's already a k:line set on {}!  Check /stats K for a list of active k:lines.".format(banmask))
+            return {}
+        return {
+            "user": user,
+            "mask": banmask,
+            "duration": parse_duration(params[1]),
+            "reason": " ".join(params[2:])
+        }
     
     def statsList(self, cmd, data):
         if cmd != "STATS":

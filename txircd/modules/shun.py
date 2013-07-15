@@ -44,14 +44,26 @@ class ShunCommand(Command):
         elif "@" not in banmask:
             banmask = "*@{}".format(banmask)
         self.expire_shuns()
-        if len(params) < 3 or not params[2]:
+        if banmask[0] == "-":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "SHUN", ":Not enough parameters")
+                return {}
             if banmask not in self.shunList:
-                user.sendMessage("NOTICE", ":*** Shun {} already doesn't exist!  Check /stats S for a list of active shuns.".format(banmask))
+                user.sendMessage("NOTICE", ":*** Shun {} not found; check /stats S for a list of active shuns.".format(banmask))
                 return {}
             return {
                 "user": user,
                 "mask": banmask
             }
+        if len(params) < 3 or not params[2]:
+            user.sendMessage(irc.ERR_NEEDMOREPARAMS, "SHUN", ":Not enough parameters")
+            return {}
+        if banmask[0] == "+":
+            banmask = banmask[1:]
+            if not banmask:
+                user.sendMessage(irc.ERR_NEEDMOREPARAMS, "SHUN", ":Not enough parameters")
+                return {}
         if banmask in self.shunList:
             user.sendMessage("NOTICE", ":*** Shun {} is already set!  Check /stats S for a list of active shuns.".format(banmask))
             return {}
