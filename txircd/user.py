@@ -4,13 +4,16 @@ from twisted.words.protocols import irc
 from twisted.internet.defer import Deferred
 from txircd.channel import IRCChannel
 from txircd.server import ChangeNick, JoinChannel, LeaveChannel, RegisterUser, RemoveUser, SetHost, SetIdent, SetMetadata, SetMode, SetName
-from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message
+from txircd.utils import irc_lower, now, epoch, CaseInsensitiveDictionary, chunk_message, IPV4_MAPPED_ADDR
 import socket, uuid
 
 class IRCUser(object):
     def __init__(self, parent):
         # Mask the IP
         ip = parent.transport.getPeer().host
+        mapped = IPV4_MAPPED_ADDR.match(ip)
+        if mapped:
+            ip = mapped.group(1)
         try:
             hostname = socket.gethostbyaddr(ip)[0]
         except:

@@ -4,7 +4,7 @@ from twisted.internet.task import LoopingCall
 from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
 from twisted.words.protocols import irc
 from txircd.channel import IRCChannel
-from txircd.utils import CaseInsensitiveDictionary, epoch, irc_lower, now
+from txircd.utils import CaseInsensitiveDictionary, epoch, irc_lower, now, IPV4_MAPPED_ADDR
 from datetime import datetime
 
 protocol_version = 200 # Protocol version 0.2.0
@@ -659,6 +659,9 @@ class ServerProtocol(AMP):
             raise ServerAlreadyConnected ("The connecting server is already connected to this network.")
         linkData = self.ircd.servconfig["serverlinks"][name]
         ip = self.transport.getPeer().host
+        mapped = IPV4_MAPPED_ADDR.match(ip)
+        if mapped:
+            ip = mapped.group(1)
         if "ip" not in linkData or ip != linkData["ip"]:
             raise ServerMismatchedIP ("The IP address for this server does not match the one in the configuration.")
         if "incoming_password" not in linkData or password != linkData["incoming_password"]:

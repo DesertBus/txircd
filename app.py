@@ -64,60 +64,60 @@ if __name__ == "__main__":
         if isinstance(options["server_port_tcp"], collections.Sequence):
             for port in options["server_port_tcp"]:
                 try:
-                    reactor.listenTCP(int(port), ircd)
+                    reactor.listenTCP(int(port), ircd, interface="::")
                 except:
                     pass # Wasn't a number
         else:
             try:
-                reactor.listenTCP(int(options["server_port_tcp"]), ircd)
+                reactor.listenTCP(int(options["server_port_tcp"]), ircd, interface="::")
             except:
                 pass # Wasn't a number
     if options["server_port_ssl"]:
         if isinstance(options["server_port_ssl"], collections.Sequence):
             for port in options["server_port_ssl"]:
                 try:
-                    reactor.listenSSL(int(port), ircd, ssl_cert)
+                    reactor.listenSSL(int(port), ircd, ssl_cert, interface="::")
                 except:
                     pass # Wasn't a number
         else:
             try:
-                reactor.listenSSL(int(options["server_port_ssl"]), ircd, ssl_cert)
+                reactor.listenSSL(int(options["server_port_ssl"]), ircd, ssl_cert, interface="::")
             except:
                 pass # Wasn't a number
     if options["server_port_web"]:
         if isinstance(options["server_port_web"], collections.Sequence):
             for port in options["server_port_web"]:
                 try:
-                    reactor.listenSSL(int(port), SockJSFactory(ircd), ssl_cert)
+                    reactor.listenSSL(int(port), SockJSFactory(ircd), ssl_cert, interface="::")
                 except:
                     pass # Wasn't a number
         else:
             try:
-                reactor.listenSSL(int(options["server_port_web"]), SockJSFactory(ircd), ssl_cert)
+                reactor.listenSSL(int(options["server_port_web"]), SockJSFactory(ircd), ssl_cert, interface="::")
             except:
                 pass # Wasn't a number
     if options["serverlink_port_tcp"]:
         if isinstance(options["serverlink_port_tcp"], collections.Sequence):
             for port in options["serverlink_port_tcp"]:
                 try:
-                    reactor.listenTCP(int(port), serverlink_factory)
+                    reactor.listenTCP(int(port), serverlink_factory, interface="::")
                 except:
                     pass
         else:
             try:
-                reactor.listenTCP(int(options["serverlink_port_tcp"]), serverlink_factory)
+                reactor.listenTCP(int(options["serverlink_port_tcp"]), serverlink_factory, interface="::")
             except:
                 pass
     if options["serverlink_port_ssl"]:
         if isinstance(options["serverlink_port_ssl"], collections.Sequence):
             for port in options["serverlink_port_ssl"]:
                 try:
-                    reactor.listenSSL(int(port), serverlink_factory, ssl_cert)
+                    reactor.listenSSL(int(port), serverlink_factory, ssl_cert, interface="::")
                 except:
                     pass
         else:
             try:
-                reactor.listenSSL(int(options["serverlink_port_ssl"]), serverlink_factory, ssl_cert)
+                reactor.listenSSL(int(options["serverlink_port_ssl"]), serverlink_factory, ssl_cert, interface="::")
             except:
                 pass
     # Bind SIGHUP to rehash
