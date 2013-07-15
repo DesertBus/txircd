@@ -50,7 +50,6 @@ class CloakingMode(Mode):
             piecesGroup.reverse()
             wholePiece = "".join(piecesGroup)
             pieceHash = SHA256.new(wholePiece)
-            print wholePiece
             hashedParts.append(pieceHash.hexdigest()[:8])
         return ".".join(hashedParts)
 
