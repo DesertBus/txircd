@@ -175,6 +175,7 @@ class Spawner(object):
         self.ircd.actions["commandextra"].remove(self.shunCmd.statsList)
         self.ircd.actions["register"].remove(self.shunCmd.check_register)
         self.ircd.actions["commandpermission"].remove(self.shunCmd.check_command)
+        self.ircd.actions["xline_rematch"].remove(self.shunCmd.reassign_shun)
     
     def data_serialize(self):
         return [self.shunCmd.shunList._data, {}]
