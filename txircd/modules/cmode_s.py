@@ -14,14 +14,14 @@ class SecretMode(Mode):
             data["targetchan"].remove(chan)
         return data
     
-    def listOutput(self, command, data):
-        if command != "LIST":
-            return data
-        if "cdata" not in data:
-            return data
-        cdata = data["cdata"]
-        if "s" in cdata["channel"].mode and data["user"] not in cdata["channel"].users:
-            data["cdata"].clear()
+    def listOutput(self, user, chanlist):
+        remove = []
+        for cdata in chanlist:
+            if "s" in cdata["channel"].mode and user not in cdata["channel"].users:
+                remove.append(cdata)
+        for item in remove:
+            chanlist.remove(item)
+        return chanlist
     # other +s stuff is hiding in other modules.
 
 class Spawner(object):
@@ -36,11 +36,11 @@ class Spawner(object):
                 "cns": self.mode_s
             },
             "actions": {
-                "commandextra": [self.mode_s.listOutput]
+                "listdata": [self.mode_s.listOutput]
             },
             "common": True
         }
     
     def cleanup(self):
         self.ircd.removeMode("cns")
-        self.ircd.actions["commandextra"].remove(self.mode_s.listOutput)
+        self.ircd.actions["listdata"].remove(self.mode_s.listOutput)

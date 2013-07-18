@@ -5,27 +5,29 @@ from fnmatch import fnmatch
 
 class ListCommand(Command):
     def onUse(self, user, data):
-        for cichanname, channel in self.ircd.channels.iteritems():
+        chancache = []
+        for channame, channel in self.ircd.channels.iteritems():
             if data["chanfilter"] is not None:
                 filterMatch = False
                 for filterEntry in data["chanfilter"]:
-                    if fnmatch(cichanname, filterEntry):
+                    if fnmatch(channame, filterEntry):
                         filterMatch = True
                         break
                 if not filterMatch:
                     continue
-            cdata = {
+            chancache.append({
                 "channel": channel,
                 "name": channel.name,
                 "users": len(channel.users),
                 "topic": channel.topic if channel.topic else ""
-            }
-            extraData = { "user": user, "cdata": cdata }
-            user.commandExtraHook("LIST", extraData)
-            if "cdata" not in extraData or not extraData["cdata"]:
-                continue
-            else:
-                user.sendMessage(irc.RPL_LIST, cdata["name"], str(cdata["users"]), ":[{}] {}".format(cdata["channel"].modeString(user), cdata["topic"]))
+            })
+        if "listdata" in self.ircd.actions:
+            for action in self.ircd.actions["listdata"]:
+                chancache = action(user, chancache)
+                if not chancache:
+                    break
+        for cdata in chancache:
+            user.sendMessage(irc.RPL_LIST, cdata["name"], str(cdata["users"]), ":[{}] {}".format(cdata["channel"].modeString(user), cdata["topic"]))
         user.sendMessage(irc.RPL_LISTEND, ":End of channel list")
     
     def processParams(self, user, params):
