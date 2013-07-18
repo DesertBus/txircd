@@ -51,7 +51,6 @@ class RemoteUser(object):
             "private": {}
         }
         self.cache = {}
-        self.cmd_extra = False # used by the command handler to determine whether the extras hook was called during processing
     
     def callConnectHooks(self):
         tryagain = []
@@ -135,9 +134,8 @@ class RemoteUser(object):
         permData = self.commandPermission(command, data)
         if permData:
             cmd.onUse(self, permData)
-            if not self.cmd_extra:
-                self.commandExtraHook(command, permData)
-            self.cmd_extra = False
+            for action in self.ircd.actions["commandextra"]:
+                action(command, permData)
     
     def commandPermission(self, command, data):
         tryagain = set()
@@ -180,11 +178,6 @@ class RemoteUser(object):
             if not data:
                 return {}
         return data
-    
-    def commandExtraHook(self, command, data):
-        self.cmd_extra = True
-        for modfunc in self.ircd.actions["commandextra"]:
-            modfunc(command, data)
     
     def setMetadata(self, namespace, key, value, sourceServer = None):
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
