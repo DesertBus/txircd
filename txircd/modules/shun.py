@@ -74,10 +74,8 @@ class ShunCommand(Command):
             "reason": " ".join(params[2:])
         }
     
-    def statsList(self, cmd, data):
-        if cmd != "STATS":
-            return
-        if data["statstype"] != "S":
+    def statsList(self, user, statsType):
+        if statsType != "S":
             return
         self.expire_shuns()
         for mask, linedata in self.shunList.iteritems():
@@ -163,7 +161,7 @@ class Spawner(object):
                 "SHUN": self.shunCmd
             },
             "actions": {
-                "commandextra": [self.shunCmd.statsList],
+                "statsoutput": [self.shunCmd.statsList],
                 "register": [self.shunCmd.check_register],
                 "commandpermission": [self.shunCmd.check_command],
                 "xline_rematch": [self.shunCmd.reassign_shun]
@@ -172,7 +170,7 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["SHUN"]
-        self.ircd.actions["commandextra"].remove(self.shunCmd.statsList)
+        self.ircd.actions["statsoutput"].remove(self.shunCmd.statsList)
         self.ircd.actions["register"].remove(self.shunCmd.check_register)
         self.ircd.actions["commandpermission"].remove(self.shunCmd.check_command)
         self.ircd.actions["xline_rematch"].remove(self.shunCmd.reassign_shun)

@@ -14,7 +14,8 @@ class StatsCommand(Command):
             data["server"].callRemote(ModuleMessage, destserver=data["server"].name, type="StatsRequest", args=[user.uuid, data["statstype"]])
             data["statstype"] = "" # supress the commandextra hook response
         else:
-            user.commandExtraHook("STATS", data)
+            for action in self.ircd.actions["statsoutput"]:
+                action(user, data["statstype"])
             user.sendMessage(irc.RPL_ENDOFSTATS, data["statstype"], ":End of /STATS report")
     
     def processParams(self, user, params):
@@ -42,11 +43,7 @@ class StatsCommand(Command):
             "server": self.ircd.servers[params[1]]
         }
     
-    def statsChars(self, cmd, data):
-        if cmd != "STATS":
-            return
-        caller = data["user"]
-        statschar = data["statstype"]
+    def statsChars(self, user, statschar):
         if statschar == "o":
             for user in self.ircd.users.itervalues():
                 if "o" in user.mode:
@@ -99,7 +96,7 @@ class Spawner(object):
                 "STATS": self.statsCmd
             },
             "actions": {
-                "commandextra": [self.statsCmd.statsChars]
+                "statsoutput": [self.statsCmd.statsChars]
             },
             "server": {
                 "StatsRequest": self.statsCmd.servResponse
@@ -108,4 +105,4 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["STATS"]
-        self.ircd.actions["commandextra"].remove(self.statsCmd.statsChars)
+        self.ircd.actions["statsoutput"].remove(self.statsCmd.statsChars)

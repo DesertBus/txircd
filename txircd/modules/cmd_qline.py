@@ -83,15 +83,12 @@ class QlineCommand(Command):
             "reason": " ".join(params[2:])
         }
     
-    def statsList(self, cmd, data):
-        if cmd != "STATS":
+    def statsList(self, user, statsType):
+        if statsType != "Q":
             return
-        if data["statstype"] != "Q":
-            return
-        udata = data["user"]
         self.expire_qlines()
         for mask, linedata in self.banList.iteritems():
-            udata.sendMessage(irc.RPL_STATSQLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
+            user.sendMessage(irc.RPL_STATSQLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
     
     def check_register(self, user):
         self.expire_qlines()
@@ -143,7 +140,7 @@ class Spawner(object):
                 "QLINE": self.qlineCmd
             },
             "actions": {
-                "commandextra": [self.qlineCmd.statsList],
+                "statsoutput": [self.qlineCmd.statsList],
                 "register": [self.qlineCmd.check_register],
                 "commandpermission": [self.qlineCmd.blockNick]
             }
@@ -151,7 +148,7 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["QLINE"]
-        self.ircd.actions["commandextra"].remove(self.qlineCmd.statsList)
+        self.ircd.actions["statsoutput"].remove(self.qlineCmd.statsList)
         self.ircd.actions["register"].remove(self.qlineCmd.check_register)
         self.ircd.actions["commandpermission"].remove(self.qlineCmd.blockNick)
     

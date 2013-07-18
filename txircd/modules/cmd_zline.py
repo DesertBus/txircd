@@ -75,13 +75,10 @@ class ZlineCommand(Command):
             "reason": " ".join(params[2:])
         }
     
-    def stats_list(self, cmd, data):
-        if cmd != "STATS":
-            return
-        if data["statstype"] != "Z":
+    def stats_list(self, user, statsType):
+        if statsType != "Z":
             return
         self.expire_zlines()
-        user = data["user"]
         for mask, linedata in self.banList.iteritems():
             user.sendMessage(irc.RPL_STATSZLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
     
@@ -123,14 +120,14 @@ class Spawner(object):
                 "ZLINE": self.zlineCmd
             },
             "actions": {
-                "commandextra": [self.zlineCmd.stats_list],
+                "statsoutput": [self.zlineCmd.stats_list],
                 "connect": [self.zlineCmd.check_connect]
             }
         }
     
     def cleanup(self):
         del self.ircd.commands["ZLINE"]
-        self.ircd.actions["commandextra"].remove(self.zlineCmd.stats_list)
+        self.ircd.actions["statsoutput"].remove(self.zlineCmd.stats_list)
         self.ircd.actions["connect"].remove(self.zlineCmd.check_connect)
     
     def data_serialize(self):

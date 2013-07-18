@@ -84,13 +84,10 @@ class ElineCommand(Command):
             "reason": " ".join(params[2:])
         }
     
-    def statsList(self, cmd, data):
-        if cmd != "STATS":
-            return
-        if data["statstype"] != "E":
+    def statsList(self, user, statsType):
+        if statsType != "E":
             return
         self.expire_elines()
-        user = data["user"]
         for mask, linedata in self.exceptList.iteritems():
             user.sendMessage(irc.RPL_STATSELINES, "{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
     
@@ -135,14 +132,14 @@ class Spawner(object):
                 "ELINE": self.elineCmd
             },
             "actions": {
-                "commandextra": [self.elineCmd.statsList],
+                "statsoutput": [self.elineCmd.statsList],
                 "register": [self.elineCmd.check_register]
             }
         }
     
     def cleanup(self):
         del self.ircd.commands["ELINE"]
-        self.ircd.actions["commandextra"].remove(self.elineCmd.statsList)
+        self.ircd.actions["statsoutput"].remove(self.elineCmd.statsList)
         self.ircd.actions["register"].remove(self.elineCmd.check_register)
     
     def data_serialize(self):

@@ -78,13 +78,10 @@ class KlineCommand(Command):
             "reason": " ".join(params[2:])
         }
     
-    def statsList(self, cmd, data):
-        if cmd != "STATS":
-            return
-        if data["statstype"] != "K":
+    def statsList(self, user, statsType):
+        if statsType != "K":
             return
         self.expire_klines()
-        user = data["user"]
         for mask, linedata in self.banList.iteritems():
             user.sendMessage(irc.RPL_STATSKLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
     
@@ -156,7 +153,7 @@ class Spawner(object):
                 "KLINE": self.klineCmd
             },
             "actions": {
-                "commandextra": [self.klineCmd.statsList],
+                "statsoutput": [self.klineCmd.statsList],
                 "register": [self.klineCmd.register_check],
                 "xline_rematch": [self.klineCmd.match_kline]
             }
@@ -164,7 +161,7 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["KLINE"]
-        self.ircd.actions["commandextra"].remove(self.klineCmd.statsList)
+        self.ircd.actions["statsoutput"].remove(self.klineCmd.statsList)
         self.ircd.actions["register"].remove(self.klineCmd.register_check)
         self.ircd.actions["xline_rematch"].remove(self.klineCmd.match_kline)
     
