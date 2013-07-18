@@ -40,11 +40,7 @@ class AwayCommand(Command):
         if "away" in targetUser.metadata["ext"]:
             data["user"].sendMessage(irc.RPL_AWAY, targetUser.nickname, ":{}".format(targetUser.metadata["ext"]["away"]))
     
-    def whoisLine(self, command, data):
-        if command != "WHOIS":
-            return
-        user = data["user"]
-        target = data["targetuser"]
+    def whoisLine(self, user, target):
         if "away" in target.metadata["ext"]:
             user.sendMessage(irc.RPL_AWAY, target.username, ":{}".format(target.metadata["ext"]["away"]))
 
@@ -60,11 +56,13 @@ class Spawner(object):
                 "AWAY": self.awayCmd
             },
             "actions": {
-                "commandextra": [self.awayCmd.privmsgReply, self.awayCmd.inviteReply, self.awayCmd.whoisLine]
+                "commandextra": [self.awayCmd.privmsgReply, self.awayCmd.inviteReply],
+                "whoisdata": [self.awayCmd.whoisLine]
             }
         }
     
     def cleanup(self):
-        for extraFunc in [self.awayCmd.privmsgReply, self.awayCmd.inviteReply, self.awayCmd.whoisLine]:
+        for extraFunc in [self.awayCmd.privmsgReply, self.awayCmd.inviteReply]:
             self.ircd.actions["commandextra"].remove(extraFunc)
+        self.ircd.actions["whoisdata"].remove(self.awayCmd.whoisLine)
         del self.ircd.commands["AWAY"]

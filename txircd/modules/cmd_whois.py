@@ -37,7 +37,9 @@ class WhoisCommand(Command):
                     user.sendMessage(irc.RPL_WHOISCERTFP, u.nickname, ":has client certificate fingerprint {}".format(u.metadata["server"]["certfp"]))
             if "o" in u.mode:
                 user.sendMessage(irc.RPL_WHOISOPERATOR, u.nickname, ":is an IRC operator")
-            user.commandExtraHook("WHOIS", { "user": user, "targetuser": u })
+            if "whoisdata" in self.ircd.actions:
+                for action in self.ircd.actions["whoisdata"]:
+                    action(user, u)
             user.sendMessage(irc.RPL_WHOISIDLE, u.nickname, str(epoch(now()) - epoch(u.lastactivity)), str(epoch(u.signon)), ":seconds idle, signon time")
             user.sendMessage(irc.RPL_ENDOFWHOIS, u.nickname, ":End of /WHOIS list")
     
