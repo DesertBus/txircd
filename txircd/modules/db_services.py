@@ -1525,6 +1525,8 @@ class Spawner(object):
                     channel.setMode(None, "-{}".format(status), [user.nickname for i in range(len(status))], self.chanserv.prefix())
     
     def promote(self, user, channel, keepOldStatus=False):
+        if user in self.auth_timer:
+            return
         if channel.name in self.chanserv.cache["registered"]:
             flags = set()
             if "o" in user.mode and "~o" in self.chanserv.cache["registered"][channel.name]["access"]:
