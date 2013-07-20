@@ -209,6 +209,8 @@ class IRCD(Factory):
         try:
             with open("data.yaml", "r") as dataFile:
                 self.serialized_data = yaml.safe_load(dataFile)
+                if self.serialized_data is None:
+                    self.serialized_data = {}
         except IOError:
             self.serialized_data = {}
         self.serialize_timer = LoopingCall(self.save_serialized)
