@@ -1309,6 +1309,7 @@ class Spawner(object):
                     self.removeAuthTimer(user)
                 return # Already identified
             user.sendMessage("NOTICE", ":This is a registered nick. Please use \x02/msg {} login EMAIL PASSWORD\x0F to verify your identity.".format(self.nickserv.nickname), prefix=self.nickserv.prefix())
+            self.unregistered(user)
             if user in self.auth_timer:
                 self.removeAuthTimer(user)
             self.setAuthTimer(user)
