@@ -514,7 +514,7 @@ class CSAccessCommand(Command):
                 adding = True
             elif flag == "-":
                 adding = False
-            elif flag in self.ircd.prefix_order:
+            elif flag in self.ircd.prefix_order or flag == "A":
                 if adding and flag not in flagSet:
                     flagSet.append(flag)
                 elif not adding and flag in flagSet:
@@ -531,8 +531,18 @@ class CSAccessCommand(Command):
                 "user": user,
                 "targetchan": params[0]
             }
-        if ("accountid" not in user.metadata["ext"] or user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"]) and "o" not in user.mode:
-            user.sendMessage("NOTICE", ":You must own the channel to change its access permissions.", prefix=self.chanserv.prefix())
+        can_modify = False
+        if "o" in user.mode:
+            can_modify = True
+        elif "accountid" in user.metadata["ext"]:
+            if user.metadata["ext"]["accountid"] == self.chanserv.cache["registered"][params[0]]["founder"]:
+                can_modify = True
+            else:
+                for acct, flags in self.chanserv.cache["registered"][params[0]]["access"].iteritems():
+                    if (acct == "~r" or acct == user.metadata["ext"]["accountid"]) and "A" in flags:
+                        can_modify = True
+        if not can_modify:
+            user.sendMessage("NOTICE", ":You do not have access to change the permissions of that channel.", prefix=self.chanserv.prefix())
             return {}
         if params[1] in ["~o", "~r"]:
             return {
@@ -1544,6 +1554,10 @@ class Spawner(object):
                 if userStatus:
                     channel.setMode(None, "-{}".format(userStatus), [user.nickname for i in range(len(userStatus))], self.chanserv.prefix())
             
+            flagList = set(flags)
+            for flag in flagList:
+                if flag not in self.ircd.prefix_order:
+                    flags.discard(flag)
             if flags:
                 channel.setMode(None, "+{}".format("".join(flags)), [user.nickname for i in range(len(flags))], self.chanserv.prefix())
     
