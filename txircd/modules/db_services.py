@@ -514,7 +514,7 @@ class CSAccessCommand(Command):
                 adding = True
             elif flag == "-":
                 adding = False
-            elif flag in self.ircd.prefix_order:
+            elif flag in self.ircd.prefix_order or flag == "A":
                 if adding and flag not in flagSet:
                     flagSet.append(flag)
                 elif not adding and flag in flagSet:
@@ -531,8 +531,18 @@ class CSAccessCommand(Command):
                 "user": user,
                 "targetchan": params[0]
             }
-        if ("accountid" not in user.metadata["ext"] or user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"]) and "o" not in user.mode:
-            user.sendMessage("NOTICE", ":You must own the channel to change its access permissions.", prefix=self.chanserv.prefix())
+        can_modify = False
+        if "o" in user.mode:
+            can_modify = True
+        elif "accountid" in user.metadata["ext"]:
+            if user.metadata["ext"]["accountid"] == self.chanserv.cache["registered"][params[0]]["founder"]:
+                can_modify = True
+            else:
+                for acct, flags in self.chanserv.cache["registered"][params[0]]["access"].iteritems():
+                    if (acct == "~r" or acct == user.metadata["ext"]["accountid"]) and "A" in flags:
+                        can_modify = True
+        if not can_modify:
+            user.sendMessage("NOTICE", ":You do not have access to change the permissions of that channel.", prefix=self.chanserv.prefix())
             return {}
         if params[1] in ["~o", "~r"]:
             return {
@@ -952,7 +962,7 @@ class Spawner(object):
         
         self.helpText["chanserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
         self.helpText["chanserv"][1]["REGISTER"] = ["Registers a channel for your use", "Syntax: \x02REGISTER \x1Fchannel\x1F\x02\n\nRegisters a channel with you as a founder.  You must be a channel op or higher in the specified channel in order to register the channel.", False]
-        self.helpText["chanserv"][1]["ACCESS"] = ["Allows you to change the access level of another user in a channel you own", "Syntax: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]\x02\n\nLists or changes access information for a channel.  If an account is not specified, the channel's access list will be displayed.  If an account and flags are specified, the given flag changes will be applied to the given account in the channel.  Valid flags are any channel status mode level, and they are automatically applied to matching users on join or identify.  The group parameter can be any of the following:\n\t~o\tAll opered users\n\t~r\tAll registered and identified users", False]
+        self.helpText["chanserv"][1]["ACCESS"] = ["Allows you to change the access level of another user in a channel you own", "Syntax: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]\x02\n\nLists or changes access information for a channel.  If an account is not specified, the channel's access list will be displayed.  If an account and flags are specified, the given flag changes will be applied to the given account in the channel.  Valid flags are any channel status mode level, and they are automatically applied to matching users on join or identify.  You can also assign the +A flag, which grants the ability to modify the channel access list to other users.  The channel founder always has the ability to control the access list.  The group parameter can be any of the following:\n\t~o\tAll opered users\n\t~r\tAll registered and identified users", False]
         self.helpText["chanserv"][1]["CDROP"] = ["Allows you to drop channels you own", "Syntax: \x02CDROP \x1Fchannel\x1F\x02\n\nDrops the specified channel that you own.", False]
         
         self.helpText["bidserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
@@ -1547,6 +1557,10 @@ class Spawner(object):
                 if userStatus:
                     channel.setMode(None, "-{}".format(userStatus), [user.nickname for i in range(len(userStatus))], self.chanserv.prefix())
             
+            flagList = set(flags)
+            for flag in flagList:
+                if flag not in self.ircd.prefix_order:
+                    flags.discard(flag)
             if flags:
                 channel.setMode(None, "+{}".format("".join(flags)), [user.nickname for i in range(len(flags))], self.chanserv.prefix())
     
