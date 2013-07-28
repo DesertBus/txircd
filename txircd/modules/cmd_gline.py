@@ -77,12 +77,9 @@ class GlineCommand(Command):
             "reason": " ".join(params[2:])
         }
     
-    def statsList(self, cmd, data):
-        if cmd != "STATS":
+    def statsList(self, user, statsType):
+        if statsType != "G":
             return
-        if data["statstype"] != "G":
-            return
-        user = data["user"]
         self.expire_glines()
         for mask, linedata in self.banList.iteritems():
             user.sendMessage(irc.RPL_STATSGLINE, ":{} {} {} {} :{}".format(mask, linedata["created"], linedata["duration"], linedata["setter"], linedata["reason"]))
@@ -153,7 +150,7 @@ class Spawner(object):
                 "GLINE": self.glineCmd
             },
             "actions": {
-                "commandextra": [self.glineCmd.statsList],
+                "statsoutput": [self.glineCmd.statsList],
                 "register": [self.glineCmd.register_check],
                 "xline_rematch": [self.glineCmd.match_gline]
             }
@@ -161,7 +158,7 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["GLINE"]
-        self.ircd.actions["commandextra"].remove(self.glineCmd.statsList)
+        self.ircd.actions["statsoutput"].remove(self.glineCmd.statsList)
         self.ircd.actions["register"].remove(self.glineCmd.register_check)
         self.ircd.actions["xline_rematch"].remove(self.glineCmd.match_gline)
     

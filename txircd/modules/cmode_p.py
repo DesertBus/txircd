@@ -1,15 +1,12 @@
 from txircd.modbase import Mode
 
 class PrivateMode(Mode):
-    def listOutput(self, command, data):
-        if command != "LIST":
-            return data
-        if "cdata" not in data:
-            return data
-        cdata = data["cdata"]
-        if "p" in cdata["channel"].mode and data["user"] not in cdata["channel"].users:
-            cdata["name"] = "*"
-            cdata["topic"] = ""
+    def listOutput(self, user, chanlist):
+        for cdata in chanlist:
+            if "p" in cdata["channel"].mode and user not in cdata["channel"].users:
+                cdata["name"] = "*"
+                cdata["topic"] = ""
+        return chanlist
     # other +p stuff is in other modules
 
 class Spawner(object):
@@ -24,11 +21,11 @@ class Spawner(object):
                 "cnp": self.mode_p
             },
             "actions": {
-                "commandextra": [self.mode_p.listOutput]
+                "listdata": [self.mode_p.listOutput]
             },
             "common": True
         }
     
     def cleanup(self):
         self.ircd.removeMode("cnp")
-        self.ircd.actions["commandextra"].remove(self.mode_p.listOutput)
+        self.ircd.actions["listdata"].remove(self.mode_p.listOutput)

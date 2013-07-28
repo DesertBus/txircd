@@ -14,7 +14,8 @@ class StatsCommand(Command):
             data["server"].callRemote(ModuleMessage, destserver=data["server"].name, type="StatsRequest", args=[user.uuid, data["statstype"]])
             data["statstype"] = "" # supress the commandextra hook response
         else:
-            user.commandExtraHook("STATS", data)
+            for action in self.ircd.actions["statsoutput"]:
+                action(user, data["statstype"])
             user.sendMessage(irc.RPL_ENDOFSTATS, data["statstype"], ":End of /STATS report")
     
     def processParams(self, user, params):
@@ -42,44 +43,40 @@ class StatsCommand(Command):
             "server": self.ircd.servers[params[1]]
         }
     
-    def statsChars(self, cmd, data):
-        if cmd != "STATS":
-            return
-        caller = data["user"]
-        statschar = data["statstype"]
+    def statsChars(self, user, statschar):
         if statschar == "o":
             for user in self.ircd.users.itervalues():
                 if "o" in user.mode:
-                    caller.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
+                    user.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
         elif statschar == "p":
             if isinstance(self.ircd.servconfig["server_port_tcp"], collections.Sequence):
                 for port in self.ircd.servconfig["server_port_tcp"]:
-                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(port))
+                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(port))
             else:
-                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.servconfig["server_port_tcp"]))
+                user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.servconfig["server_port_tcp"]))
             if isinstance(self.ircd.servconfig["server_port_ssl"], collections.Sequence):
                 for port in self.ircd.servconfig["server_port_ssl"]:
-                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(port))
+                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(port))
             else:
-                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.servconfig["server_port_ssl"]))
+                user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.servconfig["server_port_ssl"]))
             if isinstance(self.ircd.servconfig["server_port_web"], collections.Sequence):
                 for port in self.ircd.servconfig["server_port_web"]:
-                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
+                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
             else:
-                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.servconfig["server_port_web"]))
+                user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.servconfig["server_port_web"]))
             if isinstance(self.ircd.servconfig["serverlink_port_tcp"], collections.Sequence):
                 for port in self.ircd.servconfig["serverlink_port_tcp"]:
-                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(port))
+                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(port))
             else:
-                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(self.ircd.servconfig["serverlink_port_tcp"]))
+                user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(self.ircd.servconfig["serverlink_port_tcp"]))
             if isinstance(self.ircd.servconfig["serverlink_port_ssl"], collections.Sequence):
                 for port in self.ircd.servconfig["serverlink_port_ssl"]:
-                    caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(port))
+                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(port))
             else:
-                caller.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(self.ircd.servconfig["serverlink_port_ssl"]))
+                user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(self.ircd.servconfig["serverlink_port_ssl"]))
         elif statschar == "u":
             uptime = now() - self.ircd.created
-            caller.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
+            user.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))
     
     def servResponse(self, command, args):
         if args[0] not in self.ircd.userid:
@@ -99,7 +96,7 @@ class Spawner(object):
                 "STATS": self.statsCmd
             },
             "actions": {
-                "commandextra": [self.statsCmd.statsChars]
+                "statsoutput": [self.statsCmd.statsChars]
             },
             "server": {
                 "StatsRequest": self.statsCmd.servResponse
@@ -108,4 +105,4 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.commands["STATS"]
-        self.ircd.actions["commandextra"].remove(self.statsCmd.statsChars)
+        self.ircd.actions["statsoutput"].remove(self.statsCmd.statsChars)

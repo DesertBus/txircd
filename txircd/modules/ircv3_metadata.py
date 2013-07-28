@@ -153,11 +153,7 @@ class MetadataCommand(Command):
     def capClear(self, user, capability):
         return True
     
-    def whoisSendMetadata(self, cmd, data):
-        if cmd != "WHOIS":
-            return
-        user = data["user"]
-        target = data["targetuser"]
+    def whoisSendMetadata(self, user, target):
         namespaceList = ["server", "client", "user", "ext"]
         if "o" in user.mode:
             namespaceList.append("private")
@@ -217,7 +213,7 @@ class Spawner(object):
             },
             "actions": {
                 "metadataupdate": [self.metadata_cmd.notify],
-                "commandextra": [self.metadata_cmd.whoisSendMetadata]
+                "whoisdata": [self.metadata_cmd.whoisSendMetadata]
             }
         }
     
@@ -226,4 +222,4 @@ class Spawner(object):
         del self.ircd.isupport["METADATA"]
         del self.ircd.module_data_cache["cap"]["metadata-notify"]
         self.ircd.actions["metadataupdate"].remove(self.metadata_cmd.notify)
-        self.ircd.actions["commandextra"].remove(self.metadata_cmd.whoisSendMetadata)
+        self.ircd.actions["whoisdata"].remove(self.metadata_cmd.whoisSendMetadata)
