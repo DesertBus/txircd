@@ -40,11 +40,9 @@ class AwayNotify(Module):
     
     def notifyOnJoin(self, user, channel):
         if "away" in user.metadata["ext"]:
-            skip = []
             for u in channel.users.iterkeys():
-                if "cap" not in u.cache or "away-notify" not in u.cache["cap"]:
-                    skip.append(u)
-            channel.sendChannelMessage("AWAY", user.metadata["ext"]["away"], to=None, prefix=user.prefix(), skip=skip)
+                if u != user and u.server == self.ircd.name and "cap" in u.cache and "away-notify" in u.cache["cap"]:
+                    u.sendMessage("AWAY", ":{}".format(user.metadata["ext"]["away"]), to=None, prefix=user.prefix())
 
 class Spawner(object):
     def __init__(self, ircd):
