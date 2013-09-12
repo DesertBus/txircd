@@ -35,49 +35,62 @@
 #server_password: null
 
 # Ports: The IRCd will listen to one or more ports of each type in order to
-# accept connections.  For each of these, you can specify a single value to
-# listen to one port or a list of values to listen to more than one.
+# accept connections.  Each is a list of descriptions of each port on which to
+# listen.  Ports specified under server_client_ports will be available for
+# clients to connect, and ports under server_link_ports will be available for
+# the other servers of your network to link.
+# Each port is specified with
+# [connection type]:[port number]:[optional parameters]
+# where the connection type is "tcp" for plaintext connections or "ssl" for
+# secure (SSL) connections.  Without optional parameters, the server will bind
+# all available IPv4 addresses on the given port.  You can bind all IPv4 and
+# IPv6 addresses by specifying all IPv6 addresses under interface (i.e.
+# interface={::}). Due to the colon already being the separator, you must wrap
+# the address in braces ('{address}') or escape each individual colon with a
+# backslash.  If you don't want to bind all available addresses, you may
+# specify individual IP addresses to bind in the interface.  For example, you
+# may specify tcp:6667:interface=127.0.0.1 to bind only to IPv4 loopback on port
+# 6667.
 # 
-# tcp: This is the normal plaintext connection.  Most servers listen for this
-# on port 6667, so it's recommended that it's included, if possible.  The
-# default value is 6667.
-#server_port_tcp: 6667
-
-# ssl: This is a secure connection with the client over SSL.  Many servers
-# listen for this on port 6697, although some servers choose to listen
-# elsewhere.  The default value is 6697.
-#server_port_ssl: 6697
-
-# web: This is a secure connection with a webclient over websockets with SSL.
-# The default value is 8080.
-#server_port_web: 8080
-
-# serverlink tcp: This is a normal unencrypted connection between two txircd
-# servers.  The default value is none, so if you want to link servers, you will
-# need to specify this or the encrypted SSL one (below).
-#serverlink_port_tcp: null
-
-# serverlink ssl: This is an SSL-encrypted connection between txircd servers.
-# The default value is none, so if you want to link servers, you will need to
-# specify this or the plain TCP one (above).
-#serverlink_port_ssl: null
+# For SSL connections, the optional parameters may include certKey and
+# privateKey, which respectively have the file names of the certificate and the
+# private key.  If the private key is not given, it is assumed to be server.pem.
+# If the certificate is not given, it is assumed to be in the same file as the
+# private key.
+# 
+# You may make a port into a websocket port by prefixing the whole string
+# with "sockjs:" and wrapping the rest in braces.
+#
+#server_client_ports:
+#- 'tcp:6667:interface={::}'
+#- 'ssl:6697:interface={::}:privateKey=test.key:certKey=test.pem'
+#- 'sockjs:{ssl:8080:interface={::}}'
+#
+#server_link_ports:
+#- 'tcp:7000:interface={::}'
+#- 'ssl:7001:interface={::}:privateKey=test.key:certKey=test.pem'
 
 # serverlinks: This is where you specify data for servers that can link to this
 # one.  Servers not specified here will be denied linking.  The default value is
 # none; the value listed here is to illustrate the values used for linking
 # servers.
-# ip, port, incoming_password, and outgoing_password are all required values in
-# order for a server to link successfully.  ssl is required only if set to true
-# (i.e. an SSL connection is being established).  bindaddress and bindport only
-# work when specified together and are only needed if the connection must
-# originate from a specific one of multiple IP addresses assigned to a server.
+# ip, incoming_password, and outgoing_password are all required values in
+# order for a server to link successfully.  The IP address of the incoming
+# and outgoing connections are checked to help verify that it's not some other
+# machine than the one expected.  The passwords further verify the incoming
+# connection.
+# connect is required only for servers to which this server will be connecting
+# (rather than the other server connecting to this one).  The format of this
+# line should be as follows:
+# [connection type]:[address]:[port]:[optional parameters]
+# As with the port descriptions above, IPv6 addresses must be wrapped in braces.
+# The optional parameters include the following:
+# - bindAddress, which is the address of the local IP address to which to bind
+#   the connection (if your machine has more than one).
 #serverlinks:
 #  servername.example.com:
 #    ip: 12.34.56.78
-#    port: 7000
-#    bindaddress: 98.76.54.32
-#    bindport: 7001
-#    ssl: false
+#    connect: 'ssl:12.34.56.78:7001:bindAddress=98.76.54.32'
 #    incoming_password: lolol
 #    outgoing_password: whateven
 
