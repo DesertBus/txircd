@@ -45,9 +45,6 @@ class Spawner(object):
         self.whox = WhoX().hook(self.ircd)
         return {
             "actions": {
-                "wholinedisplay": [self.whox.whox]
+                "wholinedisplay": self.whox.whox
             }
         }
-    
-    def cleanup(self):
-        self.ircd.actions["wholinedisplay"].remove(self.whox.whox)

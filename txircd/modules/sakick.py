@@ -51,6 +51,3 @@ class Spawner(object):
                 "SAKICK": SakickCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["SAKICK"]

@@ -1116,14 +1116,14 @@ class Spawner(object):
                 "CURRENTAUCTION": BSCurrentAuctionCommand(self, self.bidserv)
             },
             "actions": {
-                "register": [self.onRegister],
-                "join": [self.promote],
-                "quit": [self.onQuit],
-                "nick": [self.onNickChange],
-                "topic": [self.onTopicChange],
-                "chancreate": [self.onChanCreate],
-                "netmerge": [self.onNetmerge],
-                "commandpermission": [self.commandPermission]
+                "register": self.onRegister,
+                "join": self.promote,
+                "quit": self.onQuit,
+                "nick": self.onNickChange,
+                "topic": self.onTopicChange,
+                "chancreate": self.onChanCreate,
+                "netmerge": self.onNetmerge,
+                "commandpermission": self.commandPermission
             }
         }
     
@@ -1140,46 +1140,6 @@ class Spawner(object):
         del self.ircd.userid[self.nickserv.uuid]
         del self.ircd.userid[self.chanserv.uuid]
         del self.ircd.userid[self.bidserv.uuid]
-        
-        del self.ircd.commands["NICKSERV"]
-        del self.ircd.commands["NS"]
-        del self.ircd.commands["CHANSERV"]
-        del self.ircd.commands["CS"]
-        del self.ircd.commands["BIDSERV"]
-        del self.ircd.commands["BS"]
-        
-        del self.ircd.commands["IDENTIFY"]
-        del self.ircd.commands["ID"]
-        del self.ircd.commands["GHOST"]
-        del self.ircd.commands["LOGIN"]
-        del self.ircd.commands["LOGOUT"]
-        del self.ircd.commands["DROP"]
-        del self.ircd.commands["NICKLIST"]
-        del self.ircd.commands["ACCOUNT"]
-        del self.ircd.commands["CERT"]
-        
-        del self.ircd.commands["REGISTER"]
-        del self.ircd.commands["ACCESS"]
-        del self.ircd.commands["CDROP"]
-        
-        del self.ircd.commands["START"]
-        del self.ircd.commands["STOP"]
-        del self.ircd.commands["BID"]
-        del self.ircd.commands["REVERT"]
-        del self.ircd.commands["ONCE"]
-        del self.ircd.commands["TWICE"]
-        del self.ircd.commands["SOLD"]
-        del self.ircd.commands["HIGHBIDDER"]
-        del self.ircd.commands["CURRENTAUCTION"]
-        
-        self.ircd.actions["register"].remove(self.onRegister)
-        self.ircd.actions["join"].remove(self.promote)
-        self.ircd.actions["quit"].remove(self.onQuit)
-        self.ircd.actions["nick"].remove(self.onNickChange)
-        self.ircd.actions["topic"].remove(self.onTopicChange)
-        self.ircd.actions["chancreate"].remove(self.onChanCreate)
-        self.ircd.actions["netmerge"].remove(self.onNetmerge)
-        self.ircd.actions["commandpermission"].remove(self.commandPermission)
     
     def data_serialize(self):
         outputDict = {}

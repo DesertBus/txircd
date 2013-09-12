@@ -56,6 +56,3 @@ class Spawner(object):
                 "KICK": KickCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["KICK"]

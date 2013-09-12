@@ -24,6 +24,3 @@ class Spawner(object):
                 "MOTD": MOTDCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["MOTD"]

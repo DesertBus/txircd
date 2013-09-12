@@ -41,12 +41,10 @@ class Spawner(object):
         self.ircd.module_data_cache["cap"]["multi-prefix"] = self.multi_prefix
         return {
             "actions": {
-                "nameslistentry": [self.multi_prefix.namesListEntry],
-                "wholinemodify": [self.multi_prefix.whoStatus]
+                "nameslistentry": self.multi_prefix.namesListEntry,
+                "wholinemodify": self.multi_prefix.whoStatus
             }
         }
     
     def cleanup(self):
-        self.ircd.actions["nameslistentry"].remove(self.multi_prefix.namesListEntry)
-        self.ircd.actions["wholinemodify"].remove(self.multi_prefix.whoStatus)
         del self.ircd.module_data_cache["cap"]["multi-prefix"]

@@ -23,6 +23,3 @@ class Spawner(object):
                 "TIME": TimeCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["TIME"]

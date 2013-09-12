@@ -32,11 +32,7 @@ class Spawner(object):
                 "uni": self.invisible_mode
             },
             "actions": {
-                "wholinemodify": [self.invisible_mode.checkWhoVisible]
+                "wholinemodify": self.invisible_mode.checkWhoVisible
             },
             "common": True
         }
-    
-    def cleanup(self):
-        self.ircd.removeMode("uni")
-        self.ircd.actions["wholinemodify"].remove(self.invisible_mode.checkWhoVisible)

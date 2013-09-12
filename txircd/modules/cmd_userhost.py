@@ -32,6 +32,3 @@ class Spawner(object):
                 "USERHOST": UserhostCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["USERHOST"]

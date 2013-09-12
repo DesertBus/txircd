@@ -18,6 +18,3 @@ class Spawner(object):
                 "PONG": PongCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["PONG"]

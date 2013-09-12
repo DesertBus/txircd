@@ -36,6 +36,3 @@ class Spawner(object):
                 "OPER": OperCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["OPER"]

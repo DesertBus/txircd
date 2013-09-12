@@ -96,14 +96,9 @@ class Spawner(object):
                 "STATS": self.statsCmd
             },
             "actions": {
-                "statsoutput": [self.statsCmd.statsChars]
+                "statsoutput": self.statsCmd.statsChars
             },
             "server": {
                 "StatsRequest": self.statsCmd.servResponse
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["STATS"]
-        self.ircd.actions["statsoutput"].remove(self.statsCmd.statsChars)
-        self.ircd.server_commands["StatsRequest"].remove(self.statsCmd.servResponse)

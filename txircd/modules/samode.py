@@ -51,6 +51,3 @@ class Spawner(object):
                 "SAMODE": SamodeCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["SAMODE"]

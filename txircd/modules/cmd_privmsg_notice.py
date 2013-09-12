@@ -88,7 +88,3 @@ class Spawner(object):
                 "NOTICE": NoticeCommand(messageHandler)
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["PRIVMSG"]
-        del self.ircd.commands["NOTICE"]

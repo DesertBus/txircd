@@ -18,6 +18,3 @@ class Spawner(object):
                 "LINKS": LinksCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["LINKS"]

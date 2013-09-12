@@ -47,7 +47,3 @@ class Spawner(object):
                 "ServerQuit": self.squit_cmd.remoteQuit
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["SQUIT"]
-        self.ircd.server_commands["ServerQuit"].remove(self.squit_cmd.remoteQuit)

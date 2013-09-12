@@ -9,7 +9,7 @@ from txircd.server import ConnectUser, IntroduceServer, ServerProtocol, protocol
 from txircd.utils import CaseInsensitiveDictionary, epoch, now
 from txircd.user import IRCUser
 from txircd import __version__
-import socket, yaml, os, json, imp
+import imp, json, os, socket, yaml
 
 # Add additional numerics to complement the ones in the RFC
 irc.RPL_LOCALUSERS = "265"
@@ -172,6 +172,7 @@ class IRCD(Factory):
         self.peerConnections = {}
         self.ssl_cert = sslCert
         self.modules = {}
+        self.module_abilities = {}
         self.actions = {
             "connect": [],
             "register": [],
@@ -320,7 +321,10 @@ class IRCD(Factory):
             deferreds.append(u.disconnected)
         log.msg("Unloading modules...")
         for name, spawner in self.modules.iteritems():
-            spawner.cleanup()
+            try:
+                spawner.cleanup()
+            except AttributeError:
+                pass
             try:
                 data_to_save, free_data = self.modules[name].data_serialize()
                 if data_to_save:
@@ -360,21 +364,13 @@ class IRCD(Factory):
         if name in self.modules:
             try:
                 data_to_save, free_data = self.modules[name].data_serialize()
-                if data_to_save:
-                    self.serialized_data[name] = data_to_save
-                elif name in self.serialized_data:
-                    del self.serialized_data[name]
                 for key, value in free_data.iteritems():
                     saved_data[key] = value
                 for key, value in data_to_save.iteritems():
                     saved_data[key] = value
             except AttributeError:
                 pass
-            try:
-                self.modules[name].cleanup()
-            except:
-                log.msg("Cleanup failed for module {}: some pieces may still be remaining!".format(name))
-            del self.modules[name]
+            self.unload_module_data(name)
         try:
             mod_find = imp.find_module("txircd/modules/{}".format(name))
         except ImportError as e:
@@ -398,6 +394,7 @@ class IRCD(Factory):
             log.msg("Module is not a valid txircd module: {} ({})".format(name, e))
             return False
         self.modules[name] = mod_spawner
+        self.module_abilities[name] = mod_contains
         if "commands" in mod_contains:
             for command, implementation in mod_contains["commands"].iteritems():
                 if command in self.commands:
@@ -468,12 +465,10 @@ class IRCD(Factory):
                     self.user_modes[modetype][mode[2]] = implementation.hook(self)
                     self.user_mode_type[mode[2]] = modetype
         if "actions" in mod_contains:
-            for actiontype, actionfuncs in mod_contains["actions"].iteritems():
-                if actiontype in self.actions:
-                    for func in actionfuncs:
-                        self.actions[actiontype].append(func)
-                else:
-                    self.actions[actiontype] = actionfuncs
+            for actiontype, actionfunc in mod_contains["actions"].iteritems():
+                if actiontype not in self.actions:
+                    self.actions[actiontype] = []
+                self.actions[actiontype].append(actionfunc)
         if "server" in mod_contains:
             for commandtype, commandfunc in mod_contains["server"].iteritems():
                 if commandtype not in self.server_commands:
@@ -490,37 +485,63 @@ class IRCD(Factory):
                 pass
         return True
     
-    def removeMode(self, modedesc):
-        # This function is heavily if'd in case we get passed invalid data.
-        if modedesc[1] == "l":
-            modetype = 0
-        elif modedesc[1] == "u":
-            modetype = 1
-        elif modedesc[1] == "p":
-            modetype = 2
-        elif modedesc[1] == "n":
-            modetype = 3
-        elif modedesc[1] == "s":
-            modetype = -1
-        else:
-            return
-        
-        if modedesc[0] == "c":
-            if modetype != -1 and modedesc[2] in self.channel_modes[modetype]:
-                del self.channel_modes[modetype][modedesc[2]]
-            if modedesc[2] in self.channel_mode_type:
-                del self.channel_mode_type[modedesc[2]]
-            if modetype == -1 and modedesc[2] in self.prefixes:
-                del self.prefix_symbols[self.prefixes[modedesc[2]][0]]
-                if modedesc[2] in self.prefixes:
-                    del self.prefixes[modedesc[2]]
-                if modedesc[2] in self.prefix_order:
-                    self.prefix_order.remove(modedesc[2])
-        else:
-            if modedesc[2] in self.user_modes[modetype]:
-                del self.user_modes[modetype][modedesc[2]]
-            if modedesc[2] in self.user_mode_type:
-                del self.user_mode_type[modedesc[2]]
+    def unload_module_data(self, name):
+        try:
+            data_to_save = self.modules[name].data_serialize()[0]
+            if data_to_save:
+                self.serialized_data[name] = data_to_save
+            elif name in self.serialized_data:
+                del self.serialized_data[name]
+        except AttributeError:
+            pass
+        try:
+            self.modules[name].cleanup()
+        except AttributeError:
+            pass
+        abilities = self.module_abilities[name]
+        del self.module_abilities[name]
+        del self.modules[name]
+        if "commands" in abilities:
+            for command, implementation in abilities["commands"].iteritems():
+                if self.commands[command] == implementation:
+                    del self.commands[command]
+        if "modes" in abilities:
+            for mode, implementation in abilities["modes"].iteritems():
+                if mode[1] == "l":
+                    modetype = 0
+                elif mode[1] == "u":
+                    modetype = 1
+                elif mode[1] == "p":
+                    modetype = 2
+                elif mode[1] == "n":
+                    modetype = 3
+                elif mode[1] == "s":
+                    modetype = -1
+                
+                if mode[0] == "c":
+                    if modetype == -1:
+                        if mode[2] in self.prefixes:
+                            del self.prefix_symbols[self.prefixes[mode[2]][0]]
+                            del self.prefixes[mode[2]]
+                            self.prefix_order.remove(mode[2])
+                    else:
+                        if mode[2] in self.channel_mode_type:
+                            del self.channel_mode_type[mode[2]]
+                    if mode[2] in self.channel_modes[modetype]:
+                        del self.channel_modes[modetype][mode[2]]
+                else:
+                    if mode[2] in self.user_modes[modetype]:
+                        del self.user_modes[modetype][mode[2]]
+                    if mode[2] in self.user_mode_type:
+                        del self.user_mode_type[mode[2]]
+        if "actions" in abilities:
+            for type, function in abilities["actions"].iteritems():
+                if type in self.actions and function in self.actions[type]:
+                    self.actions[type].remove(function)
+        if "server" in abilities:
+            for command, function in abilities["server"].iteritems():
+                if command in self.server_commands and function in self.server_commands[command]:
+                    self.server_commands[command].remove(function)
     
     def save_serialized(self):
         with open("data.yaml", "w") as dataFile:

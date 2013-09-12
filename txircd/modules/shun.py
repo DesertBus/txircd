@@ -161,19 +161,12 @@ class Spawner(object):
                 "SHUN": self.shunCmd
             },
             "actions": {
-                "statsoutput": [self.shunCmd.statsList],
-                "register": [self.shunCmd.check_register],
-                "commandpermission": [self.shunCmd.check_command],
-                "xline_rematch": [self.shunCmd.reassign_shun]
+                "statsoutput": self.shunCmd.statsList,
+                "register": self.shunCmd.check_register,
+                "commandpermission": self.shunCmd.check_command,
+                "xline_rematch": self.shunCmd.reassign_shun
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["SHUN"]
-        self.ircd.actions["statsoutput"].remove(self.shunCmd.statsList)
-        self.ircd.actions["register"].remove(self.shunCmd.check_register)
-        self.ircd.actions["commandpermission"].remove(self.shunCmd.check_command)
-        self.ircd.actions["xline_rematch"].remove(self.shunCmd.reassign_shun)
     
     def data_serialize(self):
         return [self.shunCmd.shunList._data, {}]

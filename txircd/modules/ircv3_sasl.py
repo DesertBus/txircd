@@ -140,7 +140,7 @@ class Spawner(object):
                 "AUTHENTICATE": self.sasl
             },
             "actions": {
-                "register": [self.sasl.checkInProgress]
+                "register": self.sasl.checkInProgress
             },
             "server": {
                 "SASL": self.sasl.saslMessage
@@ -148,7 +148,4 @@ class Spawner(object):
         }
     
     def cleanup(self):
-        del self.ircd.commands["AUTHENTICATE"]
         del self.ircd.module_data_cache["cap"]["sasl"]
-        self.ircd.actions["register"].remove(self.sasl.checkInProgress)
-        self.ircd.server_commands["SASL"].remove(self.sasl.saslMessage)

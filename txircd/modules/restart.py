@@ -31,6 +31,3 @@ class Spawner(object):
                 "RESTART": RestartCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["RESTART"]

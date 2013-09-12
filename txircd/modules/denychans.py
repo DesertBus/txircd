@@ -46,9 +46,6 @@ class Spawner(object):
         self.denychans = DenychansModule().hook(self.ircd)
         return {
             "actions": {
-                "commandpermission": [self.denychans.denyChannels]
+                "commandpermission": self.denychans.denyChannels
             }
         }
-    
-    def cleanup(self):
-        self.ircd.actions["commandpermission"].remove(self.denychans.denyChannels)

@@ -43,10 +43,9 @@ class Spawner(object):
         self.ircd.module_data_cache["cap"]["extended-join"] = self.extended_join
         return {
             "actions": {
-                "joinmessage": [self.extended_join.modifyJoinMessage]
+                "joinmessage": self.extended_join.modifyJoinMessage
             }
         }
     
     def cleanup(self):
         del self.ircd.module_data_cache["cap"]["extended-join"]
-        self.ircd.actions["joinmessage"].remove(self.extended_join.modifyJoinMessage)

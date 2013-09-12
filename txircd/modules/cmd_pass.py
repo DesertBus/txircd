@@ -41,16 +41,10 @@ class Spawner(object):
         self.passcmd = PassCommand()
         return {
             "actions": {
-                "connect": [self.passcmd.onConnect],
-                "register": [self.passcmd.onRegister]
+                "connect": self.passcmd.onConnect,
+                "register": self.passcmd.onRegister
             },
             "commands": {
                 "PASS": self.passcmd
             }
         }
-    
-    def cleanup(self):
-        self.ircd.actions["connect"].remove(self.passcmd.onConnect)
-        self.ircd.actions["register"].remove(self.passcmd.onRegister)
-        del self.ircd.commands["PASS"]
-        del self.passcmd

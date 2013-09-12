@@ -21,6 +21,3 @@ class Spawner(object):
                 "PING": PingCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["PING"]

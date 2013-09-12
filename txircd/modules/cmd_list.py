@@ -53,6 +53,3 @@ class Spawner(object):
                 "LIST": ListCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["LIST"]

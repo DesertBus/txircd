@@ -34,6 +34,3 @@ class Spawner(object):
                 "GLOBOPS": GlobopsCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["GLOBOPS"]

@@ -50,7 +50,3 @@ class Spawner(object):
                 "Rehash": self.rehash_cmd.remoteRehash
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["REHASH"]
-        self.ircd.server_commands["Rehash"].remove(self.rehash_cmd.remoteRehash)

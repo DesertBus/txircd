@@ -81,7 +81,3 @@ class Spawner(object):
                 "ServerConnect": self.connect_cmd.remoteConnect
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["CONNECT"]
-        self.ircd.server_commands["ServerConnect"].remove(self.connect_cmd.remoteConnect)

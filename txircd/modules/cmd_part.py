@@ -46,6 +46,3 @@ class Spawner(object):
                 "PART": PartCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["PART"]

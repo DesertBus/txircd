@@ -38,6 +38,3 @@ class Spawner(object):
                 "NAMES": NamesCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["NAMES"]

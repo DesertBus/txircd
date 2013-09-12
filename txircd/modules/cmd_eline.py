@@ -132,15 +132,10 @@ class Spawner(object):
                 "ELINE": self.elineCmd
             },
             "actions": {
-                "statsoutput": [self.elineCmd.statsList],
-                "register": [self.elineCmd.check_register]
+                "statsoutput": self.elineCmd.statsList,
+                "register": self.elineCmd.check_register
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["ELINE"]
-        self.ircd.actions["statsoutput"].remove(self.elineCmd.statsList)
-        self.ircd.actions["register"].remove(self.elineCmd.check_register)
     
     def data_serialize(self):
         return [self.elineCmd.exceptList._data, {}]
