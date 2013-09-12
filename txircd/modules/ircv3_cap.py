@@ -132,7 +132,7 @@ class Spawner(object):
                 "CAP": self.cap_cmd
             },
             "actions": {
-                "netmerge": [self.cap_cmd.sendCap]
+                "netmerge": self.cap_cmd.sendCap
             },
             "server": {
                 "SyncCap": self.cap_cmd.syncCap

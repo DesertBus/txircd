@@ -21,7 +21,7 @@ class Spawner(object):
                 "cnp": self.mode_p
             },
             "actions": {
-                "listdata": [self.mode_p.listOutput]
+                "listdata": self.mode_p.listOutput
             },
             "common": True
         }

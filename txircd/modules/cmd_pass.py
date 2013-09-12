@@ -41,8 +41,8 @@ class Spawner(object):
         self.passcmd = PassCommand()
         return {
             "actions": {
-                "connect": [self.passcmd.onConnect],
-                "register": [self.passcmd.onRegister]
+                "connect": self.passcmd.onConnect,
+                "register": self.passcmd.onRegister
             },
             "commands": {
                 "PASS": self.passcmd

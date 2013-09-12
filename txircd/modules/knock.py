@@ -82,8 +82,8 @@ class Spawner(object):
                 "KNOCK": self.knockCmd
             },
             "actions": {
-                "chandestroy": [self.knockCmd.removeChanKnocks],
-                "commandextra": [self.knockCmd.removeKnockOnInvite]
+                "chandestroy": self.knockCmd.removeChanKnocks,
+                "commandextra": self.knockCmd.removeKnockOnInvite
             },
             "modes": {
                 "cnK": NoknockMode()

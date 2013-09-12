@@ -36,7 +36,7 @@ class Spawner(object):
                 "cns": self.mode_s
             },
             "actions": {
-                "listdata": [self.mode_s.listOutput]
+                "listdata": self.mode_s.listOutput
             },
             "common": True
         }

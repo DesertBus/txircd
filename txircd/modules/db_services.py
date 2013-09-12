@@ -1116,14 +1116,14 @@ class Spawner(object):
                 "CURRENTAUCTION": BSCurrentAuctionCommand(self, self.bidserv)
             },
             "actions": {
-                "register": [self.onRegister],
-                "join": [self.promote],
-                "quit": [self.onQuit],
-                "nick": [self.onNickChange],
-                "topic": [self.onTopicChange],
-                "chancreate": [self.onChanCreate],
-                "netmerge": [self.onNetmerge],
-                "commandpermission": [self.commandPermission]
+                "register": self.onRegister,
+                "join": self.promote,
+                "quit": self.onQuit,
+                "nick": self.onNickChange,
+                "topic": self.onTopicChange,
+                "chancreate": self.onChanCreate,
+                "netmerge": self.onNetmerge,
+                "commandpermission": self.commandPermission
             }
         }
     

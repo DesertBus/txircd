@@ -69,7 +69,7 @@ class Spawner(object):
                 "WHOWAS": self.whowasCmd
             },
             "actions": {
-                "quit": [self.whowasCmd.addToWhowas]
+                "quit": self.whowasCmd.addToWhowas
             }
         }
     

@@ -140,7 +140,7 @@ class Spawner(object):
                 "AUTHENTICATE": self.sasl
             },
             "actions": {
-                "register": [self.sasl.checkInProgress]
+                "register": self.sasl.checkInProgress
             },
             "server": {
                 "SASL": self.sasl.saslMessage

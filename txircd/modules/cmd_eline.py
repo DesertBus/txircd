@@ -132,8 +132,8 @@ class Spawner(object):
                 "ELINE": self.elineCmd
             },
             "actions": {
-                "statsoutput": [self.elineCmd.statsList],
-                "register": [self.elineCmd.check_register]
+                "statsoutput": self.elineCmd.statsList,
+                "register": self.elineCmd.check_register
             }
         }
     

@@ -195,8 +195,8 @@ class Spawner(object):
                 "CURRENTAUCTION": BSCurrentAuctionCommand()
             },
             "actions": {
-                "commandpermission": [self.commandPermission],
-                "netsplit": [self.onNetsplit]
+                "commandpermission": self.commandPermission,
+                "netsplit": self.onNetsplit
             },
             "server": {
                 "ServiceServer": self.noteServer,

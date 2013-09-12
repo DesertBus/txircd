@@ -45,7 +45,7 @@ class Spawner(object):
         self.ircd.module_data_cache["cap"]["account-notify"] = self.account_notify
         return {
             "actions": {
-                "metadataupdate": [self.account_notify.notifyUsers]
+                "metadataupdate": self.account_notify.notifyUsers
             }
         }
     

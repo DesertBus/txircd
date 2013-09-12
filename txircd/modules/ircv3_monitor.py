@@ -163,9 +163,9 @@ class Spawner(object):
                 "MONITOR": self.monitor_cmd
             },
             "actions": {
-                "register": [self.monitor_cmd.notifyConnect],
-                "quit": [self.monitor_cmd.notifyQuit],
-                "nick": [self.monitor_cmd.notifyNick]
+                "register": self.monitor_cmd.notifyConnect,
+                "quit": self.monitor_cmd.notifyQuit,
+                "nick": self.monitor_cmd.notifyNick
             }
         }
     

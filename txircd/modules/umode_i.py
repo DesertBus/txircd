@@ -32,7 +32,7 @@ class Spawner(object):
                 "uni": self.invisible_mode
             },
             "actions": {
-                "wholinemodify": [self.invisible_mode.checkWhoVisible]
+                "wholinemodify": self.invisible_mode.checkWhoVisible
             },
             "common": True
         }

@@ -150,9 +150,9 @@ class Spawner(object):
                 "GLINE": self.glineCmd
             },
             "actions": {
-                "statsoutput": [self.glineCmd.statsList],
-                "register": [self.glineCmd.register_check],
-                "xline_rematch": [self.glineCmd.match_gline]
+                "statsoutput": self.glineCmd.statsList,
+                "register": self.glineCmd.register_check,
+                "xline_rematch": self.glineCmd.match_gline
             }
         }
     

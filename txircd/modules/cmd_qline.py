@@ -140,9 +140,9 @@ class Spawner(object):
                 "QLINE": self.qlineCmd
             },
             "actions": {
-                "statsoutput": [self.qlineCmd.statsList],
-                "register": [self.qlineCmd.check_register],
-                "commandpermission": [self.qlineCmd.blockNick]
+                "statsoutput": self.qlineCmd.statsList,
+                "register": self.qlineCmd.check_register,
+                "commandpermission": self.qlineCmd.blockNick
             }
         }
     

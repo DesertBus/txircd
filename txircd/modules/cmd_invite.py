@@ -63,7 +63,7 @@ class Spawner(object):
                 "INVITE": self.inviteCmd
             },
             "actions": {
-                "chandestroy": [self.inviteCmd.removeChanInvites]
+                "chandestroy": self.inviteCmd.removeChanInvites
             }
         }
     

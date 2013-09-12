@@ -41,8 +41,8 @@ class Spawner(object):
         self.ircd.module_data_cache["cap"]["multi-prefix"] = self.multi_prefix
         return {
             "actions": {
-                "nameslistentry": [self.multi_prefix.namesListEntry],
-                "wholinemodify": [self.multi_prefix.whoStatus]
+                "nameslistentry": self.multi_prefix.namesListEntry,
+                "wholinemodify": self.multi_prefix.whoStatus
             }
         }
     

@@ -56,8 +56,8 @@ class Spawner(object):
         self.ircd.module_data_cache["cap"]["away-notify"] = self.away_notify
         return {
             "actions": {
-                "join": [self.away_notify.notifyOnJoin],
-                "metadataupdate": [self.away_notify.notifyUsers]
+                "join": self.away_notify.notifyOnJoin,
+                "metadataupdate": self.away_notify.notifyUsers
             }
         }
     

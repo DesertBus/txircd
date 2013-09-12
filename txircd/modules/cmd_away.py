@@ -21,24 +21,19 @@ class AwayCommand(Command):
             "reason": params[0]
         }
     
-    def privmsgReply(self, command, data):
-        if command != "PRIVMSG":
+    def reply(self, command, data):
+        if command not in ["PRIVMSG", "INVITE"]:
             return
         if "targetuser" not in data:
             return
         sourceUser = data["user"]
-        for user in data["targetuser"]:
-            if "away" in user.metadata["ext"]:
-                sourceUser.sendMessage(irc.RPL_AWAY, user.nickname, ":{}".format(user.metadata["ext"]["away"]))
-    
-    def inviteReply(self, command, data):
-        if command != "INVITE":
-            return
-        if "targetuser" not in data:
-            return
-        targetUser = data["targetuser"]
-        if "away" in targetUser.metadata["ext"]:
-            data["user"].sendMessage(irc.RPL_AWAY, targetUser.nickname, ":{}".format(targetUser.metadata["ext"]["away"]))
+        if command == "PRIVMSG":
+            for user in data["targetuser"]:
+                if "away" in user.metadata["ext"]:
+                    sourceUser.sendMessage(irc.RPL_AWAY, user.nickname, ":{}".format(user.metadata["ext"]["away"]))
+        elif command == "INVITE":
+            if "away" in targetUser.metadata["ext"]:
+                data["user"].sendMessage(irc.RPL_AWAY, targetUser.nickname, ":{}".format(targetUser.metadata["ext"]["away"]))
     
     def whoisLine(self, user, target):
         if "away" in target.metadata["ext"]:
@@ -56,13 +51,12 @@ class Spawner(object):
                 "AWAY": self.awayCmd
             },
             "actions": {
-                "commandextra": [self.awayCmd.privmsgReply, self.awayCmd.inviteReply],
-                "whoisdata": [self.awayCmd.whoisLine]
+                "commandextra": self.awayCmd.reply,
+                "whoisdata": self.awayCmd.whoisLine
             }
         }
     
     def cleanup(self):
-        for extraFunc in [self.awayCmd.privmsgReply, self.awayCmd.inviteReply]:
-            self.ircd.actions["commandextra"].remove(extraFunc)
+        self.ircd.actions["commandextra"].remove(self.awayCmd.reply)
         self.ircd.actions["whoisdata"].remove(self.awayCmd.whoisLine)
         del self.ircd.commands["AWAY"]

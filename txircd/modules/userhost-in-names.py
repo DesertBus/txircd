@@ -33,7 +33,7 @@ class Spawner(object):
         self.ircd.module_data_cache["cap"]["userhost-in-names"] = self.userhost_in_names
         return {
             "actions": {
-                "nameslistentry": [self.userhost_in_names.namesListEntry]
+                "nameslistentry": self.userhost_in_names.namesListEntry
             }
         }
     

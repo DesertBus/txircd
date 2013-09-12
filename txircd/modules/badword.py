@@ -75,7 +75,7 @@ class Spawner(object):
                 "BADWORD": self.badwordCmd,
             },
             "actions": {
-                "commandpermission": [self.badwordCmd.censor]
+                "commandpermission": self.badwordCmd.censor
             }
         }
     

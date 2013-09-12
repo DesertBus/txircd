@@ -212,8 +212,8 @@ class Spawner(object):
                 "METADATA": self.metadata_cmd
             },
             "actions": {
-                "metadataupdate": [self.metadata_cmd.notify],
-                "whoisdata": [self.metadata_cmd.whoisSendMetadata]
+                "metadataupdate": self.metadata_cmd.notify,
+                "whoisdata": self.metadata_cmd.whoisSendMetadata
             }
         }
     

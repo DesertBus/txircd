@@ -120,8 +120,8 @@ class Spawner(object):
                 "ZLINE": self.zlineCmd
             },
             "actions": {
-                "statsoutput": [self.zlineCmd.stats_list],
-                "connect": [self.zlineCmd.check_connect]
+                "statsoutput": self.zlineCmd.stats_list,
+                "connect": self.zlineCmd.check_connect
             }
         }
     

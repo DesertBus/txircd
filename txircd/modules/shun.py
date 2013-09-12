@@ -161,10 +161,10 @@ class Spawner(object):
                 "SHUN": self.shunCmd
             },
             "actions": {
-                "statsoutput": [self.shunCmd.statsList],
-                "register": [self.shunCmd.check_register],
-                "commandpermission": [self.shunCmd.check_command],
-                "xline_rematch": [self.shunCmd.reassign_shun]
+                "statsoutput": self.shunCmd.statsList,
+                "register": self.shunCmd.check_register,
+                "commandpermission": self.shunCmd.check_command,
+                "xline_rematch": self.shunCmd.reassign_shun
             }
         }
     

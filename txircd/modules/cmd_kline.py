@@ -153,9 +153,9 @@ class Spawner(object):
                 "KLINE": self.klineCmd
             },
             "actions": {
-                "statsoutput": [self.klineCmd.statsList],
-                "register": [self.klineCmd.register_check],
-                "xline_rematch": [self.klineCmd.match_kline]
+                "statsoutput": self.klineCmd.statsList,
+                "register": self.klineCmd.register_check,
+                "xline_rematch": self.klineCmd.match_kline
             }
         }
     

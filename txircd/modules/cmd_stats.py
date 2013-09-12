@@ -96,7 +96,7 @@ class Spawner(object):
                 "STATS": self.statsCmd
             },
             "actions": {
-                "statsoutput": [self.statsCmd.statsChars]
+                "statsoutput": self.statsCmd.statsChars
             },
             "server": {
                 "StatsRequest": self.statsCmd.servResponse

@@ -46,7 +46,7 @@ class Spawner(object):
         self.denychans = DenychansModule().hook(self.ircd)
         return {
             "actions": {
-                "commandpermission": [self.denychans.denyChannels]
+                "commandpermission": self.denychans.denyChannels
             }
         }
     
