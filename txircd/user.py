@@ -371,6 +371,8 @@ class IRCUser(object):
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
                     server.callRemote(SetMode, target=self.uuid, targetts=epoch(self.signon), source=lineSource, modestring="".join(modestring), params=showParams)
+            for action in self.ircd.actions["mode"]:
+                action(self, lineSource, modeLine, modeDisplay)
             return modeLine
         return ""
     

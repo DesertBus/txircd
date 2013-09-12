@@ -182,6 +182,7 @@ class IRCD(Factory):
             "nick": [],
             "quit": [],
             "topic": [],
+            "mode": [],
             "nameslistentry": [],
             "chancreate": [],
             "chandestroy": [],
