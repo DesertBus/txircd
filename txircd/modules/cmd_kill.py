@@ -41,6 +41,3 @@ class Spawner(object):
                 "KILL": KillCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["KILL"]

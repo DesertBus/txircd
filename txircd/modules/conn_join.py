@@ -20,6 +20,3 @@ class Spawner(object):
                 "welcome": self.conn_join.joinOnConnect
             }
         }
-    
-    def cleanup(self):
-        self.ircd.actions["welcome"].remove(self.conn_join.joinOnConnect)

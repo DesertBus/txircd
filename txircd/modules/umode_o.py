@@ -25,7 +25,3 @@ class Spawner(object):
             },
             "common": True
         }
-    
-    def cleanup(self):
-        self.ircd.removeMode("uno")
-        self.ircd.actions["wholinemodify"].remove(self.oper_mode.checkWhoFilter)

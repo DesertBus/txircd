@@ -37,6 +37,3 @@ class Spawner(object):
                 "SATOPIC": SatopicCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["SATOPIC"]

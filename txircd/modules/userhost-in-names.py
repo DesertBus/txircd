@@ -38,5 +38,4 @@ class Spawner(object):
         }
     
     def cleanup(self):
-        self.ircd.actions["nameslistentry"].remove(self.userhost_in_names.namesListEntry)
         del self.ircd.module_data_cache["cap"]["userhost-in-names"]

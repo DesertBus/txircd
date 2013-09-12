@@ -75,6 +75,3 @@ class Spawner(object):
                 "WHOIS": WhoisCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["WHOIS"]

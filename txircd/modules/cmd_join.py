@@ -57,6 +57,3 @@ class Spawner(object):
                 "JOIN": JoinCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["JOIN"]

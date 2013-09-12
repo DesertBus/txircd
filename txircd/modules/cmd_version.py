@@ -16,6 +16,3 @@ class Spawner(object):
                 "VERSION": VersionCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["VERSION"]

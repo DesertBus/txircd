@@ -50,6 +50,3 @@ class Spawner(object):
                 "TOPIC": TopicCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["TOPIC"]

@@ -29,6 +29,3 @@ class Spawner(object):
                 "MODULES": ModulesCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["MODULES"]

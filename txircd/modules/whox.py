@@ -48,6 +48,3 @@ class Spawner(object):
                 "wholinedisplay": self.whox.whox
             }
         }
-    
-    def cleanup(self):
-        self.ircd.actions["wholinedisplay"].remove(self.whox.whox)

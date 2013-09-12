@@ -57,5 +57,4 @@ class Spawner(object):
         }
     
     def cleanup(self):
-        del self.ircd.commands["STARTTLS"]
         del self.ircd.module_data_cache["cap"]["tls"]

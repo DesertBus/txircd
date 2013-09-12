@@ -40,7 +40,3 @@ class Spawner(object):
             },
             "common": True
         }
-    
-    def cleanup(self):
-        self.ircd.removeMode("cns")
-        self.ircd.actions["listdata"].remove(self.mode_s.listOutput)

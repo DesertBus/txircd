@@ -63,5 +63,3 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.module_data_cache["cap"]["away-notify"]
-        self.ircd.actions["join"].remove(self.away_notify.notifyOnJoin)
-        self.ircd.actions["metadataupdate"].remove(self.away_notify.notifyUsers)

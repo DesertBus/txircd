@@ -42,6 +42,3 @@ class Spawner(object):
                 "SAJOIN": SajoinCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["SAJOIN"]

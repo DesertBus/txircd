@@ -49,6 +49,3 @@ class Spawner(object):
                 "commandpermission": self.denychans.denyChannels
             }
         }
-    
-    def cleanup(self):
-        self.ircd.actions["commandpermission"].remove(self.denychans.denyChannels)

@@ -14,6 +14,3 @@ class Spawner(object):
             },
             "common": True
         }
-    
-    def cleanup(self):
-        self.ircd.removeMode("csq")

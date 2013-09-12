@@ -25,7 +25,3 @@ class Spawner(object):
             },
             "common": True
         }
-    
-    def cleanup(self):
-        self.ircd.removeMode("cnp")
-        self.ircd.actions["listdata"].remove(self.mode_p.listOutput)

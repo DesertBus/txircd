@@ -218,8 +218,5 @@ class Spawner(object):
         }
     
     def cleanup(self):
-        del self.ircd.commands["METADATA"]
         del self.ircd.isupport["METADATA"]
         del self.ircd.module_data_cache["cap"]["metadata-notify"]
-        self.ircd.actions["metadataupdate"].remove(self.metadata_cmd.notify)
-        self.ircd.actions["whoisdata"].remove(self.metadata_cmd.whoisSendMetadata)

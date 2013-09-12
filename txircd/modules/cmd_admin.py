@@ -29,6 +29,3 @@ class Spawner(object):
                 "ADMIN": AdminCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["ADMIN"]

@@ -55,8 +55,3 @@ class Spawner(object):
                 "whoisdata": self.awayCmd.whoisLine
             }
         }
-    
-    def cleanup(self):
-        self.ircd.actions["commandextra"].remove(self.awayCmd.reply)
-        self.ircd.actions["whoisdata"].remove(self.awayCmd.whoisLine)
-        del self.ircd.commands["AWAY"]

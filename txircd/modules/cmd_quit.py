@@ -23,6 +23,3 @@ class Spawner(object):
                 "QUIT": QuitCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["QUIT"]

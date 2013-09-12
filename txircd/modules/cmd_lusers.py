@@ -24,6 +24,3 @@ class Spawner(object):
                 "LUSERS": self.lusersCmd
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["LUSERS"]

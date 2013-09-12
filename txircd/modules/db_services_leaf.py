@@ -205,45 +205,6 @@ class Spawner(object):
             }
         }
     
-    def cleanup(self):
-        del self.ircd.commands["NICKSERV"]
-        del self.ircd.commands["NS"]
-        del self.ircd.commands["CHANSERV"]
-        del self.ircd.commands["CS"]
-        del self.ircd.commands["BIDSERV"]
-        del self.ircd.commands["BS"]
-        
-        del self.ircd.commands["IDENTIFY"]
-        del self.ircd.commands["ID"]
-        del self.ircd.commands["GHOST"]
-        del self.ircd.commands["LOGIN"]
-        del self.ircd.commands["LOGOUT"]
-        del self.ircd.commands["DROP"]
-        del self.ircd.commands["NICKLIST"]
-        del self.ircd.commands["ACCOUNT"]
-        del self.ircd.commands["CERT"]
-        
-        del self.ircd.commands["REGISTER"]
-        del self.ircd.commands["ACCESS"]
-        del self.ircd.commands["CDROP"]
-        
-        del self.ircd.commands["START"]
-        del self.ircd.commands["STOP"]
-        del self.ircd.commands["BID"]
-        del self.ircd.commands["REVERT"]
-        del self.ircd.commands["ONCE"]
-        del self.ircd.commands["TWICE"]
-        del self.ircd.commands["SOLD"]
-        del self.ircd.commands["HIGHBIDDER"]
-        del self.ircd.commands["CURRENTAUCTION"]
-        
-        self.ircd.actions["commandpermission"].remove(self.commandPermission)
-        self.ircd.actions["netsplit"].remove(self.onNetsplit)
-        
-        self.ircd.server_commands["ServiceServer"].remove(self.noteServer)
-        self.ircd.server_commands["ServiceBlockUser"].remove(self.addBlock)
-        self.ircd.server_commands["ServiceUnblockUser"].remove(self.removeBlock)
-    
     def commandPermission(self, user, cmd, data):
         if cmd == "NICK" and data["nick"] in [ self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_bidserv_nick"] ]:
             user.sendMessage(irc.ERR_ERRONEUSNICKNAME, data["nick"], ":Invalid nickname: Reserved for Services")

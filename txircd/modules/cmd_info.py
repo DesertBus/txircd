@@ -28,6 +28,3 @@ class Spawner(object):
                 "INFO": InfoCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["INFO"]

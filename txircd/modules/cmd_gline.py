@@ -156,12 +156,6 @@ class Spawner(object):
             }
         }
     
-    def cleanup(self):
-        del self.ircd.commands["GLINE"]
-        self.ircd.actions["statsoutput"].remove(self.glineCmd.statsList)
-        self.ircd.actions["register"].remove(self.glineCmd.register_check)
-        self.ircd.actions["xline_rematch"].remove(self.glineCmd.match_gline)
-    
     def data_serialize(self):
         return [self.glineCmd.banList._data, {}]
     

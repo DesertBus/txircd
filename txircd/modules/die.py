@@ -27,6 +27,3 @@ class Spawner(object):
                 "DIE": DieCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["DIE"]

@@ -90,9 +90,3 @@ class Spawner(object):
             },
             "common": True
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["KNOCK"]
-        self.ircd.actions["chandestroy"].remove(self.knockCmd.removeChanKnocks)
-        self.ircd.actions["commandextra"].remove(self.knockCmd.removeKnockOnInvite)
-        self.ircd.removeMode("cnK")

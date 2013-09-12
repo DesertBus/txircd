@@ -32,6 +32,3 @@ class Spawner(object):
                 "ISON": IsonCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["ISON"]

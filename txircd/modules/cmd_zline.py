@@ -125,11 +125,6 @@ class Spawner(object):
             }
         }
     
-    def cleanup(self):
-        del self.ircd.commands["ZLINE"]
-        self.ircd.actions["statsoutput"].remove(self.zlineCmd.stats_list)
-        self.ircd.actions["connect"].remove(self.zlineCmd.check_connect)
-    
     def data_serialize(self):
         return [self.zlineCmd.banList._data, {}]
     

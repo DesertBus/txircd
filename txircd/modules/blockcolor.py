@@ -27,6 +27,3 @@ class Spawner(object):
                 "cnc": BlockColor()
             }
         }
-    
-    def cleanup(self):
-        self.ircd.removeMode("cnc")

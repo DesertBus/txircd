@@ -80,6 +80,3 @@ class Spawner(object):
                 "MODE": ModeCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["MODE"]

@@ -112,6 +112,3 @@ class Spawner(object):
                 "WHO": WhoCommand()
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["WHO"]

@@ -51,4 +51,3 @@ class Spawner(object):
     
     def cleanup(self):
         del self.ircd.module_data_cache["cap"]["account-notify"]
-        self.ircd.actions["metadataupdate"].remove(self.account_notify.notifyUsers)

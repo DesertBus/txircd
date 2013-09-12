@@ -138,8 +138,3 @@ class Spawner(object):
                 "SyncCap": self.cap_cmd.syncCap
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["CAP"]
-        self.ircd.actions["netmerge"].remove(self.cap_cmd.sendCap)
-        self.ircd.server_commands["SyncCap"].remove(self.cap_cmd.syncCap)

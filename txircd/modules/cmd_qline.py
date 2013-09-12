@@ -146,12 +146,6 @@ class Spawner(object):
             }
         }
     
-    def cleanup(self):
-        del self.ircd.commands["QLINE"]
-        self.ircd.actions["statsoutput"].remove(self.qlineCmd.statsList)
-        self.ircd.actions["register"].remove(self.qlineCmd.check_register)
-        self.ircd.actions["commandpermission"].remove(self.qlineCmd.blockNick)
-    
     def data_serialize(self):
         return [self.qlineCmd.banList._data, {}]
     

@@ -66,7 +66,3 @@ class Spawner(object):
                 "chandestroy": self.inviteCmd.removeChanInvites
             }
         }
-    
-    def cleanup(self):
-        del self.ircd.commands["INVITE"]
-        self.ircd.actions["chandestroy"].remove(self.inviteCmd.removeChanInvites)
