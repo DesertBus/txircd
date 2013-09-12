@@ -526,10 +526,10 @@ class IRCD(Factory):
                             del self.prefixes[mode[2]]
                             self.prefix_order.remove(mode[2])
                     else:
-                        if mode[2] in self.channel_mode_type:
-                            del self.channel_mode_type[mode[2]]
-                    if mode[2] in self.channel_modes[modetype]:
-                        del self.channel_modes[modetype][mode[2]]
+                        if mode[2] in self.channel_modes[modetype]:
+                            del self.channel_modes[modetype][mode[2]]
+                    if mode[2] in self.channel_mode_type:
+                        del self.channel_mode_type[mode[2]]
                 else:
                     if mode[2] in self.user_modes[modetype]:
                         del self.user_modes[modetype][mode[2]]
