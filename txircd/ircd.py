@@ -465,12 +465,10 @@ class IRCD(Factory):
                     self.user_modes[modetype][mode[2]] = implementation.hook(self)
                     self.user_mode_type[mode[2]] = modetype
         if "actions" in mod_contains:
-            for actiontype, actionfuncs in mod_contains["actions"].iteritems():
-                if actiontype in self.actions:
-                    for func in actionfuncs:
-                        self.actions[actiontype].append(func)
-                else:
-                    self.actions[actiontype] = actionfuncs
+            for actiontype, actionfunc in mod_contains["actions"].iteritems():
+                if actiontype not in self.actions:
+                    self.actions[actiontype] = []
+                self.actions[actiontype].append(actionfunc)
         if "server" in mod_contains:
             for commandtype, commandfunc in mod_contains["server"].iteritems():
                 if commandtype not in self.server_commands:
