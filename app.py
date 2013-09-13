@@ -38,13 +38,8 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="txircd.yaml")
-    parser.add_argument("--irc-port", dest="ircport", type=int)
-    parser.add_argument("--ssl-port", dest="sslport", type=int)
-    parser.add_argument("--name")
-    parser.add_argument("--motd")
     parser.add_argument("-v", "--verbose", dest="verbose", action="store_true")
     parser.add_argument("-l", "--log-file", dest="log_file", type=argparse.FileType('a'), default=sys.stdout)
-    parser.add_argument("--client-timeout", dest="client_timeout", type=int)
     args = parser.parse_args()
     # Load config file
     try:
@@ -52,18 +47,6 @@ if __name__ == "__main__":
             options.update(yaml.safe_load(f))
     except:
         pass # Oh well
-    # Update options with command line values
-    if args.ircport:
-        options["server_port_tcp"] = args.ircport
-    if args.sslport:
-        options["server_port_ssl"] = args.sslport
-    if args.name:
-        options["network_name"] = args.name
-    if args.motd:
-        options["server_motd"] = args.motd
-    if args.client_timeout:
-        options["client_timeout"] = args.client_timeout
-    # Finally launch the app with the options
     if options["app_verbose"] or args.verbose:
         log.startLogging(args.log_file)
     ssl_cert = ChainedOpenSSLContextFactory(options["app_ssl_key"],options["app_ssl_pem"])
