@@ -168,6 +168,8 @@ class IRCD(Factory):
         self.channels = CaseInsensitiveDictionary()
         self.peerConnections = {}
         self.ssl_cert = sslCert
+        self.client_ports = {}
+        self.server_ports = {}
         self.modules = {}
         self.module_abilities = {}
         self.actions = {
@@ -544,6 +546,16 @@ class IRCD(Factory):
     def save_serialized(self):
         with open("data.yaml", "w") as dataFile:
             yaml.dump(self.serialized_data, dataFile, default_flow_style=False)
+    
+    def saveClientPort(self, desc, port):
+        if desc in self.client_ports:
+            return
+        self.client_ports[desc] = port
+    
+    def saveServerPort(self, desc, port):
+        if desc in self.server_ports:
+            return
+        self.server_ports[desc] = port
     
     def buildProtocol(self, addr):
         if self.dead:
