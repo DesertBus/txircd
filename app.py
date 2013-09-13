@@ -1,7 +1,9 @@
 from twisted.internet import reactor, ssl
+from twisted.internet.endpoints import serverFromString
 from twisted.python import log
 from txircd.ircd import IRCD, default_options
 from txircd.server import ServerFactory
+from txircd.utils import resolveEndpointDescription
 from OpenSSL import SSL
 import yaml, collections, sys, signal
 
@@ -19,6 +21,15 @@ class ChainedOpenSSLContextFactory(ssl.DefaultOpenSSLContextFactory):
 
 def createHangupHandler(ircd):
     return lambda signal, stack: ircd.rehash()
+
+def addClientPortToIRCd(port, ircd, desc):
+    ircd.saveClientPort(desc, port)
+
+def addServerPortToIRCd(port, ircd, desc):
+    ircd.saveServerPort(desc, port)
+
+def logPortNotBound(error):
+    log.msg("An error occurred: {}".format(error))
 
 if __name__ == "__main__":
     # Copy the defaults
@@ -59,66 +70,24 @@ if __name__ == "__main__":
     ssl_cert.getContext().set_verify(SSL.VERIFY_PEER, lambda connection, x509, errnum, errdepth, ok: True) # We can ignore the validity of certs to get what we need
     ircd = IRCD(args.config, options, ssl_cert)
     serverlink_factory = ServerFactory(ircd)
-    if options["server_port_tcp"]:
-        if isinstance(options["server_port_tcp"], collections.Sequence):
-            for port in options["server_port_tcp"]:
-                try:
-                    reactor.listenTCP(int(port), ircd, interface="::")
-                except:
-                    pass # Wasn't a number
-        else:
-            try:
-                reactor.listenTCP(int(options["server_port_tcp"]), ircd, interface="::")
-            except:
-                pass # Wasn't a number
-    if options["server_port_ssl"]:
-        if isinstance(options["server_port_ssl"], collections.Sequence):
-            for port in options["server_port_ssl"]:
-                try:
-                    reactor.listenSSL(int(port), ircd, ssl_cert, interface="::")
-                except:
-                    pass # Wasn't a number
-        else:
-            try:
-                reactor.listenSSL(int(options["server_port_ssl"]), ircd, ssl_cert, interface="::")
-            except:
-                pass # Wasn't a number
-    if options["server_port_web"]:
-        if isinstance(options["server_port_web"], collections.Sequence):
-            for port in options["server_port_web"]:
-                try:
-                    reactor.listenSSL(int(port), SockJSFactory(ircd), ssl_cert, interface="::")
-                except:
-                    pass # Wasn't a number
-        else:
-            try:
-                reactor.listenSSL(int(options["server_port_web"]), SockJSFactory(ircd), ssl_cert, interface="::")
-            except:
-                pass # Wasn't a number
-    if options["serverlink_port_tcp"]:
-        if isinstance(options["serverlink_port_tcp"], collections.Sequence):
-            for port in options["serverlink_port_tcp"]:
-                try:
-                    reactor.listenTCP(int(port), serverlink_factory, interface="::")
-                except:
-                    pass
-        else:
-            try:
-                reactor.listenTCP(int(options["serverlink_port_tcp"]), serverlink_factory, interface="::")
-            except:
-                pass
-    if options["serverlink_port_ssl"]:
-        if isinstance(options["serverlink_port_ssl"], collections.Sequence):
-            for port in options["serverlink_port_ssl"]:
-                try:
-                    reactor.listenSSL(int(port), serverlink_factory, ssl_cert, interface="::")
-                except:
-                    pass
-        else:
-            try:
-                reactor.listenSSL(int(options["serverlink_port_ssl"]), serverlink_factory, ssl_cert, interface="::")
-            except:
-                pass
+    for portstring in options["server_client_ports"]:
+        try:
+            endpoint = serverFromString(reactor, resolveEndpointDescription(portstring))
+        except ValueError:
+            log.msg("Could not bind {}: not a valid description".format(portstring))
+            continue
+        listenDeferred = endpoint.listen(ircd)
+        listenDeferred.addCallback(addClientPortToIRCd, ircd, portstring)
+        listenDeferred.addErrback(logPortNotBound)
+    for portstring in options["server_link_ports"]:
+        try:
+            endpoint = serverFromString(reactor, resolveEndpointDescription(portstring))
+        except ValueError:
+            log.msg("Could not bind {}: not a valid description".format(portstring))
+            continue
+        listenDeferred = endpoint.listen(serverlink_factory)
+        listenDeferred.addCallback(addServerPortToIRCd, ircd, portstring)
+        listenDeferred.addErrback(logPortNotBound)
     # Bind SIGHUP to rehash
     signal.signal(signal.SIGHUP, createHangupHandler(ircd))
     # And start up the reactor
