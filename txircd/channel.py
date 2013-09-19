@@ -201,6 +201,8 @@ class IRCChannel(object):
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
                     server.callRemote(SetMode, target=self.name, targetts=epoch(self.created), source=lineSource, modestring="".join(modestring), params=showParams)
+            for action in self.ircd.actions["mode"]:
+                action(self, lineSource, modeLine, modeDisplay)
             return modeLine
         return ""
     

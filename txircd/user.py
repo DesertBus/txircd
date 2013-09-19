@@ -110,6 +110,8 @@ class IRCUser(object):
     def disconnect(self, reason, sourceServer = None):
         if self.registered == 0 and self.uuid in self.ircd.userid:
             del self.ircd.userid[self.uuid]
+            for modfunc in self.ircd.actions["quit"]:
+                modfunc(self, reason)
             if self.nickname:
                 quitdest = set()
                 exitChannels = []
@@ -129,8 +131,6 @@ class IRCUser(object):
                     del self.ircd.users[self.nickname]
                 for user in quitdest:
                     user.sendMessage("QUIT", ":{}".format(reason), to=None, prefix=self.prefix())
-            for modfunc in self.ircd.actions["quit"]:
-                modfunc(self, reason)
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name and server.name != sourceServer:
                     server.callRemote(RemoveUser, user=self.uuid, reason=reason)
@@ -371,6 +371,8 @@ class IRCUser(object):
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name:
                     server.callRemote(SetMode, target=self.uuid, targetts=epoch(self.signon), source=lineSource, modestring="".join(modestring), params=showParams)
+            for action in self.ircd.actions["mode"]:
+                action(self, lineSource, modeLine, modeDisplay)
             return modeLine
         return ""
     
