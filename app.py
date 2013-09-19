@@ -2,7 +2,6 @@ from twisted.internet import reactor, ssl
 from twisted.python import log
 from txircd.ircd import IRCD, default_options
 from txircd.server import ServerFactory
-from txsockjs.factory import SockJSFactory
 from OpenSSL import SSL
 import yaml, collections, sys, signal
 
