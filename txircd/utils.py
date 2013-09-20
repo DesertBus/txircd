@@ -79,7 +79,10 @@ def resolveEndpointDescription(desc):
     desc = iter(desc)
     for letter in desc:
         if letter == "\\":
-            nextchar = desc.next()
+            try:
+                nextchar = desc.next()
+            except StopIteration:
+                raise ValueError ("Malformed endpoint description; escaped end of string")
             if nextchar in "{}":
                 current.append(nextchar)
             else:
