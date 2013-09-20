@@ -49,31 +49,10 @@ class StatsCommand(Command):
                 if "o" in user.mode:
                     user.sendMessage(irc.RPL_STATSOPERS, ":{} ({}@{}) Idle: {} secs".format(user.nickname, user.username, user.hostname, epoch(now()) - epoch(user.lastactivity)))
         elif statschar == "p":
-            if isinstance(self.ircd.servconfig["server_port_tcp"], collections.Sequence):
-                for port in self.ircd.servconfig["server_port_tcp"]:
-                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(port))
-            else:
-                user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, plaintext)".format(self.ircd.servconfig["server_port_tcp"]))
-            if isinstance(self.ircd.servconfig["server_port_ssl"], collections.Sequence):
-                for port in self.ircd.servconfig["server_port_ssl"]:
-                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(port))
-            else:
-                user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, ssl)".format(self.ircd.servconfig["server_port_ssl"]))
-            if isinstance(self.ircd.servconfig["server_port_web"], collections.Sequence):
-                for port in self.ircd.servconfig["server_port_web"]:
-                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(port))
-            else:
-                user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients, web)".format(self.ircd.servconfig["server_port_web"]))
-            if isinstance(self.ircd.servconfig["serverlink_port_tcp"], collections.Sequence):
-                for port in self.ircd.servconfig["serverlink_port_tcp"]:
-                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(port))
-            else:
-                user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, plaintext)".format(self.ircd.servconfig["serverlink_port_tcp"]))
-            if isinstance(self.ircd.servconfig["serverlink_port_ssl"], collections.Sequence):
-                for port in self.ircd.servconfig["serverlink_port_ssl"]:
-                    user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(port))
-            else:
-                user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers, ssl)".format(self.ircd.servconfig["serverlink_port_ssl"]))
+            for port in self.ircd.client_ports.iterkeys():
+                user.sendMessage(irc.RPL_STATSPORTS, ":{} (clients)".format(port))
+            for port in self.ircd.server_ports.iterkeys():
+                user.sendMessage(irc.RPL_STATSPORTS, ":{} (servers)".format(port))
         elif statschar == "u":
             uptime = now() - self.ircd.created
             user.sendMessage(irc.RPL_STATSUPTIME, ":Server up {}".format(uptime if uptime.days > 0 else "0 days, {}".format(uptime)))

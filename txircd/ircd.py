@@ -1,12 +1,13 @@
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
-from twisted.internet.protocol import ClientCreator, Factory
+from twisted.internet.endpoints import clientFromString
+from twisted.internet.protocol import Factory
 from twisted.internet.task import LoopingCall
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
 from txircd.server import ConnectUser, IntroduceServer, ServerProtocol, protocol_version
-from txircd.utils import CaseInsensitiveDictionary, epoch, now
+from txircd.utils import CaseInsensitiveDictionary, epoch, now, resolveEndpointDescription
 from txircd.user import IRCUser
 from txircd import __version__
 import imp, json, os, socket, yaml
@@ -30,11 +31,8 @@ default_options = {
     "server_network_name": "txircd",
     "server_motd": "Welcome to txircd",
     "server_motd_line_length": 80,
-    "server_port_tcp": 6667,
-    "server_port_ssl": 6697,
-    "server_port_web": 8080,
-    "serverlink_port_tcp": None,
-    "serverlink_port_ssl": None,
+    "server_client_ports": [ "tcp;6667;interface=::", "ssl;6697;interface=::", "sockjs;ssl;8080;interface=::" ],
+    "server_link_ports": [ "tcp;7000;interface=::", "ssl;7001;interface=::" ],
     "server_stats_public": "ou",
     "server_modules": [],
     "server_password": None,
@@ -171,6 +169,8 @@ class IRCD(Factory):
         self.channels = CaseInsensitiveDictionary()
         self.peerConnections = {}
         self.ssl_cert = sslCert
+        self.client_ports = {}
+        self.server_ports = {}
         self.modules = {}
         self.module_abilities = {}
         self.actions = {
@@ -339,26 +339,37 @@ class IRCD(Factory):
         self.dead = True
         return DeferredList(deferreds)
     
-    def server_autoconnect(self):
+    def connect_server(self, servername):
         def sendServerHandshake(protocol, password):
             protocol.callRemote(IntroduceServer, name=self.name, password=password, description=self.servconfig["server_description"], version=protocol_version, commonmodules=self.common_modules)
             protocol.sentDataBurst = False
+        if servername in self.servers:
+            raise RuntimeError ("Server {} is already connected".format(servername))
+        if servername not in self.servconfig["serverlinks"]:
+            raise RuntimeError ("Server {} is not configured".format(servername))
+        servinfo = self.servconfig["serverlinks"][servername]
+        if "ip" not in servinfo:
+            raise RuntimeError ("Server {} is not properly configured: IP address must be specified".format(servername))
+        if "connect" not in servinfo:
+            raise RuntimeError ("Server {} is not properly configured: Connection description not provided".format(servername))
+        if "incoming_password" not in servinfo or "outgoing_password" not in servinfo:
+            raise RuntimeError ("Server {} is not properly configured: Passwords not specified".format(servername))
+        try:
+            endpoint = clientFromString(reactor, resolveEndpointDescription(servinfo["connect"]))
+        except ValueError:
+            raise RuntimeError ("Server {} is not properly configured: Connection description is not valid".format(servername))
+        connectDeferred = endpoint.connect(self.server_factory)
+        connectDeferred.addCallback(sendServerHandshake, servinfo["outgoing_password"])
+        reactor.callLater(30, connectDeferred.cancel) # Time out the connection after 30 seconds
+    
+    def server_autoconnect(self):
         for server in self.servconfig["serverlink_autoconnect"]:
             if server not in self.servers and server in self.servconfig["serverlinks"]:
                 log.msg("Initiating autoconnect to server {}".format(server))
-                servinfo = self.servconfig["serverlinks"][server]
-                if "ip" not in servinfo or "port" not in servinfo:
-                    continue
-                if "bindaddress" in servinfo and "bindport" in servinfo:
-                    bind = (servinfo["bindaddress"], servinfo["bindport"])
-                else:
-                    bind = None
-                creator = ClientCreator(reactor, ServerProtocol, self)
-                if "ssl" in servinfo and servinfo["ssl"]:
-                    d = creator.connectSSL(servinfo["ip"], servinfo["port"], self.ssl_cert, bindAddress=bind)
-                else:
-                    d = creator.connectTCP(servinfo["ip"], servinfo["port"], bindAddress=bind)
-                d.addCallback(sendServerHandshake, servinfo["outgoing_password"])
+                try:
+                    self.connect_server(server)
+                except RuntimeError as ex:
+                    log.msg("Connection to server failed: {}".format(ex))
     
     def load_module(self, name):
         saved_data = {}
@@ -547,6 +558,16 @@ class IRCD(Factory):
     def save_serialized(self):
         with open("data.yaml", "w") as dataFile:
             yaml.dump(self.serialized_data, dataFile, default_flow_style=False)
+    
+    def saveClientPort(self, desc, port):
+        if desc in self.client_ports:
+            return
+        self.client_ports[desc] = port
+    
+    def saveServerPort(self, desc, port):
+        if desc in self.server_ports:
+            return
+        self.server_ports[desc] = port
     
     def buildProtocol(self, addr):
         if self.dead:

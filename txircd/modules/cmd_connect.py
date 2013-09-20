@@ -1,5 +1,3 @@
-from twisted.internet import reactor
-from twisted.internet.protocol import ClientCreator
 from twisted.words.protocols import irc
 from txircd.modbase import Command
 from txircd.server import IntroduceServer, ModuleMessage, ServerProtocol, protocol_version
@@ -7,7 +5,11 @@ from txircd.server import IntroduceServer, ModuleMessage, ServerProtocol, protoc
 class ConnectCommand(Command):
     def onUse(self, user, data):
         if "sourceserver" not in data or "sourceserver" == self.ircd.name:
-            self.connect(user, data["destserver"])
+            try:
+                self.ircd.connect_server(data["destserver"])
+                user.sendMessage("NOTICE", ":*** Connecting to {}".format(data["destserver"]))
+            except RuntimeError as ex:
+                user.sendMessage("NOTICE", ":*** Connection to {} failed: {}".format(data["destserver"], ex))
         else:
             server = self.ircd.servers[data["sourceserver"]]
             server.callRemote(ModuleMessage, destserver=server.name, type="ServerConnect", args=[user.uuid, data["destserver"]])
@@ -42,29 +44,11 @@ class ConnectCommand(Command):
     
     def remoteConnect(self, command, args):
         user = self.ircd.userid[args[0]] if args[0] in self.ircd.userid else None
-        self.connect(user, args[1])
-    
-    def connect(self, user, targetserver):
-        if targetserver not in self.ircd.servconfig["serverlinks"]:
-            if user:
-                user.sendMessage(irc.ERR_NOSUCHSERVER, targetserver, ":No link block exists")
-            return
-        def sendServerHandshake(protocol, password):
-            protocol.callRemote(IntroduceServer, name=self.ircd.name, password=password, description=self.ircd.servconfig["server_description"], version=protocol_version, commonmodules=self.ircd.common_modules)
-            protocol.sentDataBurst = False
-        servinfo = self.ircd.servconfig["serverlinks"][targetserver]
-        if "ip" not in servinfo or "port" not in servinfo:
-            return
-        if "bindaddress" in servinfo and "bindport"in servinfo:
-            bind = (servinfo["bindaddress"], servinfo["bindport"])
-        else:
-            bind = None
-        creator = ClientCreator(reactor, ServerProtocol, self.ircd)
-        if "ssl" in servinfo and servinfo["ssl"]:
-            d = creator.connectSSL(servinfo["ip"], servinfo["port"], self.ircd.ssl_cert, bindAddress=bind)
-        else:
-            d = creator.connectTCP(servinfo["ip"], servinfo["port"], bindAddress=bind)
-        d.addCallback(sendServerHandshake, servinfo["outgoing_password"])
+        try:
+            self.ircd.connect_server(args[1])
+            user.sendMessage("NOTICE", ":*** Connecting to {}".format(args[1]))
+        except RuntimeError as ex:
+            user.sendMessage("NOTICE", ":*** Connection to {} failed: {}".format(args[1], ex))
 
 class Spawner(object):
     def __init__(self, ircd):

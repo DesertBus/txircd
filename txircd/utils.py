@@ -68,7 +68,43 @@ def chunk_message(msg, chunk_size):
         chunks.append(msg[:index])
         msg = msg[index+1:] if msg[index] in " \n" else msg[index:]
     return chunks
-    
+
+def escapeEndpoint(desc):
+    return desc.replace("\\", "\\\\").replace(":", "\\:").replace("=", "\\=")
+
+def resolveEndpointDescription(desc):
+    result = []
+    current = []
+    depth = 0
+    desc = iter(desc)
+    for letter in desc:
+        if letter == "\\":
+            nextchar = desc.next()
+            if nextchar in "{}":
+                current.append(nextchar)
+            else:
+                current.extend((letter, nextchar))
+        elif letter == "{":
+            if depth == 0:
+                result.append("".join(current))
+                current = []
+            else:
+                current.append(letter)
+            depth += 1
+        elif letter == "}":
+            depth -= 1
+            if depth == 0:
+                result.append(escapeEndpoint(resolveEndpointDescription("".join(current))))
+                current = []
+            else:
+                current.append(letter)
+        else:
+            current.append(letter)
+    if depth != 0:
+        raise ValueError ("Malformed endpoint description; braces do not match")
+    result.append("".join(current))
+    return "".join(result)
+
 class CaseInsensitiveDictionary(MutableMapping):
     def __init__(self):
         self._data = {}
