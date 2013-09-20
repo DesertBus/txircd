@@ -354,8 +354,8 @@ class IRCD(Factory):
             raise RuntimeError ("Server {} is not properly configured: Passwords not specified".format(servername))
         try:
             endpoint = clientFromString(reactor, resolveEndpointDescription(servinfo["connect"]))
-        except ValueError:
-            raise RuntimeError ("Server {} is not properly configured: Connection description is not valid".format(servername))
+        except ValueError as e:
+            raise RuntimeError ("Server {} is not properly configured: Connection description is not valid ({})".format(servername, e))
         connectDeferred = endpoint.connect(self.server_factory)
         connectDeferred.addCallback(sendServerHandshake, servinfo["outgoing_password"])
         reactor.callLater(30, connectDeferred.cancel) # Time out the connection after 30 seconds
