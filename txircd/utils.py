@@ -1,6 +1,9 @@
 from base64 import b64encode, b64decode
 from collections import MutableMapping
-from Crypto.Hash import MD5, SHA, SHA224, SHA256, SHA384, SHA512
+try:
+    from Crypto.Hash import MD5 as md5, SHA as sha1, SHA224 as sha224, SHA256 as sha256, SHA384 as sha384, SHA512 as sha512
+except ImportError:
+    from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 from pbkdf2 import PBKDF2
 from struct import pack
 from random import randint
@@ -163,12 +166,12 @@ def crypt(word, salt=None, iterations=1000, algorithm="sha256", bytes=24):
     
     # Reserve algorithms
     algos = {
-        "md5": MD5,
-        "sha1": SHA,
-        "sha224": SHA224,
-        "sha256": SHA256,
-        "sha384": SHA384,
-        "sha512": SHA512
+        "md5": md5,
+        "sha1": sha1,
+        "sha224": sha224,
+        "sha256": sha256,
+        "sha384": sha384,
+        "sha512": sha512
     }
     
     # Generate a (pseudo-)random salt if the user hasn't provided one.
