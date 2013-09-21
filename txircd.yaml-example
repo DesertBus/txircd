@@ -435,6 +435,7 @@
 #- channellog
 # 
 # db_services: Implements the Desert Bus services suite.
+# This module requires PyCrypto to be installed (pip install pycrypto).
 #- db_services
 #
 # db_services_leaf: Serves as a leaf to the Desert Bus services suite.
