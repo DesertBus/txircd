@@ -21,8 +21,6 @@ irc.RPL_TOPICWHOTIME = "333"
 default_options = {
     # App details
     "app_verbose": False,
-    "app_ssl_key": "test.key",
-    "app_ssl_pem": "test.pem",
     "app_irc_spec": "rfc1459",
     "app_log_dir": "logs",
     # Server details
@@ -31,8 +29,8 @@ default_options = {
     "server_network_name": "txircd",
     "server_motd": "Welcome to txircd",
     "server_motd_line_length": 80,
-    "server_client_ports": [ "tcp;6667;interface=::", "ssl;6697;interface=::", "sockjs;ssl;8080;interface=::" ],
-    "server_link_ports": [ "tcp;7000;interface=::", "ssl;7001;interface=::" ],
+    "server_client_ports": [ "tcp:6667:interface={::}", "ssl:6697:interface={::}", "sockjs:{ssl:8080:interface={::}}" ],
+    "server_link_ports": [ "tcp:7000:interface={::}", "ssl:7001:interface={::}" ],
     "server_stats_public": "ou",
     "server_modules": [],
     "server_password": None,
@@ -356,8 +354,8 @@ class IRCD(Factory):
             raise RuntimeError ("Server {} is not properly configured: Passwords not specified".format(servername))
         try:
             endpoint = clientFromString(reactor, resolveEndpointDescription(servinfo["connect"]))
-        except ValueError:
-            raise RuntimeError ("Server {} is not properly configured: Connection description is not valid".format(servername))
+        except ValueError as e:
+            raise RuntimeError ("Server {} is not properly configured: Connection description is not valid ({})".format(servername, e))
         connectDeferred = endpoint.connect(self.server_factory)
         connectDeferred.addCallback(sendServerHandshake, servinfo["outgoing_password"])
         reactor.callLater(30, connectDeferred.cancel) # Time out the connection after 30 seconds

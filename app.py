@@ -56,8 +56,8 @@ if __name__ == "__main__":
     for portstring in options["server_client_ports"]:
         try:
             endpoint = serverFromString(reactor, resolveEndpointDescription(portstring))
-        except ValueError:
-            log.msg("Could not bind {}: not a valid description".format(portstring))
+        except ValueError as e:
+            log.msg("Could not bind {}: not a valid description ({})".format(portstring, e))
             continue
         listenDeferred = endpoint.listen(ircd)
         listenDeferred.addCallback(addClientPortToIRCd, ircd, portstring)
@@ -65,8 +65,8 @@ if __name__ == "__main__":
     for portstring in options["server_link_ports"]:
         try:
             endpoint = serverFromString(reactor, resolveEndpointDescription(portstring))
-        except ValueError:
-            log.msg("Could not bind {}: not a valid description".format(portstring))
+        except ValueError as e:
+            log.msg("Could not bind {}: not a valid description ({})".format(portstring, e))
             continue
         listenDeferred = endpoint.listen(serverlink_factory)
         listenDeferred.addCallback(addServerPortToIRCd, ircd, portstring)
