@@ -21,6 +21,8 @@ irc.RPL_TOPICWHOTIME = "333"
 default_options = {
     # App details
     "app_verbose": False,
+    "app_ssl_key": "test.key",
+    "app_ssl_pem": "test.pem",
     "app_irc_spec": "rfc1459",
     "app_log_dir": "logs",
     # Server details
