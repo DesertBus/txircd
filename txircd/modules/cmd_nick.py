@@ -9,7 +9,7 @@ class NickCommand(Command):
         else:
             if not user.nickname:
                 user.registered -= 1
-            user.nickname = data["nick"]
+            user.nickname = str(data["nick"])
             if user.registered == 0:
                 user.register()
     
