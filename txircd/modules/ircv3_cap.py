@@ -48,7 +48,7 @@ class CapCommand(Command):
             ack = []
             nak = []
             for capability in data["list"]:
-                if capability[0] == "-":
+                if capability and capability[0] == "-":
                     capabilityName = capability[1:]
                     if capabilityName in self.ircd.module_data_cache["cap"] and self.ircd.module_data_cache["cap"][capabilityName].capAcknowledgeRemove(user, capability):
                         if "cap" in user.cache and capabilityName in user.cache["cap"]:
@@ -100,7 +100,7 @@ class CapCommand(Command):
             return {}
         return {
             "subcmd": subcmd,
-            "list": caplist.split(" ")
+            "list": caplist.split(" ") if caplist else []
         }
     
     def sendCap(self, serverName):
