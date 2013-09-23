@@ -3,6 +3,8 @@ from txircd.modbase import Command
 from txircd.utils import epoch, irc_lower, now
 from fnmatch import fnmatch
 
+from twisted.python import log
+
 class WhoCommand(Command):
     def onUse(self, user, data):
         if "target" not in data:
@@ -100,6 +102,9 @@ class WhoCommand(Command):
                 handled = action(user, targetUser, filters, fields, channel, udata)
                 if handled:
                     return
+        flags = "{}{}{}".format("G" if udata["away"] else "H", "*" if udata["oper"] else "", udata["status"])
+        hopgecos = ":{} {}".format(udata["hopcount"], udata["gecos"])
+        log.msg("DEBUG: Sending WHO reply: {} ({}), {} ({}), {} ({}), {} ({}), {} ({}), {} ({}), {} ({})".format(udata["dest"], type(udata["dest"]), udata["ident"], type(udata["ident"]), udata["host"], type(udata["host"]), udata["server"], type(udata["server"]), udata["nick"], type(udata["nick"]), flags, type(flags), hopgecos, type(hopgecos)))
         user.sendMessage(irc.RPL_WHOREPLY, udata["dest"], udata["ident"], udata["host"], udata["server"], udata["nick"], "{}{}{}".format("G" if udata["away"] else "H", "*" if udata["oper"] else "", udata["status"]), ":{} {}".format(udata["hopcount"], udata["gecos"]))
 
 class Spawner(object):
