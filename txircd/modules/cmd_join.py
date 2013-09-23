@@ -13,7 +13,7 @@ class JoinCommand(Command):
         if user.registered > 0:
             user.sendMessage(irc.ERR_NOTREGISTERED, "JOIN", ":You have not registered")
             return {}
-        if not params or not params[0]:
+        if not params:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "JOIN", ":Not enough parameters")
             return {}
         channels = params[0].split(",")
@@ -21,6 +21,9 @@ class JoinCommand(Command):
         joining = []
         for i in range(0, len(channels)):
             channame = channels[i][:64]
+            if not channame:
+                user.sendMessage(irc.ERR_BADCHANMASK, "*", ":Bad Channel Mask")
+                continue
             if channame[0] != "#":
                 user.sendMessage(irc.ERR_BADCHANMASK, channame, ":Bad Channel Mask")
                 continue
