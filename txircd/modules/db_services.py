@@ -519,7 +519,13 @@ class CSAccessCommand(Command):
                     flagSet.append(flag)
                 elif not adding and flag in flagSet:
                     flagSet.remove(flag)
-        self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID] = "".join(flagSet)
+        if flagSet:
+            self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID] = "".join(flagSet)
+        else:
+            try:
+                del self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID]
+            except KeyError:
+                pass # If it was already not specified somehow, go ahead and remove it
         user.sendMessage("NOTICE", ":The flags for the {} {} have been changed to +{}".format("group" if group else "account", accessID, "".join(flagSet)), prefix=self.chanserv.prefix())
     
     def processParams(self, user, params):
