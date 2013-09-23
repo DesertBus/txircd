@@ -32,6 +32,7 @@ class Spawner(object):
                 "uni": self.invisible_mode
             },
             "actions": {
+                "nameslistentry": self.invisible_mode.namesListEntry,
                 "wholinemodify": self.invisible_mode.checkWhoVisible
             },
             "common": True

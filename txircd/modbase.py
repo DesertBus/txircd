@@ -22,8 +22,6 @@ class Mode(object):
         return param
     def checkPermission(self, user, cmd, data):
         return data
-    def namesListEntry(self, recipient, channel, user, representation):
-        return representation
 
 class Command(object):
     def hook(self, base):
