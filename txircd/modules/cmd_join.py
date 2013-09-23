@@ -13,7 +13,7 @@ class JoinCommand(Command):
         if user.registered > 0:
             user.sendMessage(irc.ERR_NOTREGISTERED, "JOIN", ":You have not registered")
             return {}
-        if not params:
+        if not params or not params[0]:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "JOIN", ":Not enough parameters")
             return {}
         channels = params[0].split(",")
