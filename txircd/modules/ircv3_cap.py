@@ -48,25 +48,26 @@ class CapCommand(Command):
             ack = []
             nak = []
             for capability in data["list"]:
-                if capability[0] == "-":
-                    capabilityName = capability[1:]
-                    if capabilityName in self.ircd.module_data_cache["cap"] and self.ircd.module_data_cache["cap"][capabilityName].capAcknowledgeRemove(user, capability):
-                        if "cap" in user.cache and capabilityName in user.cache["cap"]:
-                            user.cache["cap"].remove(capabilityName)
-                        ack.append(capability)
-                    else:
-                        nak.append(capability)
-                elif capability in self.ircd.module_data_cache["cap"]:
-                    if self.ircd.module_data_cache["cap"][capability].capAcknowledge(user, capability):
-                        if "cap" in user.cache:
-                            user.cache["cap"].append(capability)
+                if capability:
+                    if capability[0] == "-":
+                        capabilityName = capability[1:]
+                        if capabilityName in self.ircd.module_data_cache["cap"] and self.ircd.module_data_cache["cap"][capabilityName].capAcknowledgeRemove(user, capability):
+                            if "cap" in user.cache and capabilityName in user.cache["cap"]:
+                                user.cache["cap"].remove(capabilityName)
+                            ack.append(capability)
                         else:
-                            user.cache["cap"] = [capability]
-                        ack.append(capability)
+                            nak.append(capability)
+                    elif capability in self.ircd.module_data_cache["cap"]:
+                        if self.ircd.module_data_cache["cap"][capability].capAcknowledge(user, capability):
+                            if "cap" in user.cache:
+                                user.cache["cap"].append(capability)
+                            else:
+                                user.cache["cap"] = [capability]
+                            ack.append(capability)
+                        else:
+                            nak.append(capability)
                     else:
                         nak.append(capability)
-                else:
-                    nak.append(capability)
             if ack:
                 user.sendMessage("CAP", "ACK", ":{}".format(" ".join(ack)))
             if nak:
@@ -100,7 +101,7 @@ class CapCommand(Command):
             return {}
         return {
             "subcmd": subcmd,
-            "list": caplist.split(" ")
+            "list": caplist.split(" ") if caplist else []
         }
     
     def sendCap(self, serverName):

@@ -160,14 +160,6 @@ class Service(object):
         pass
     
     def listname(self, channel, listingUser, representation):
-        for mode in channel.mode.iterkeys():
-            representation = self.ircd.channel_modes[self.ircd.channel_mode_type[mode]][mode].namesListEntry(self, channel, listingUser, representation)
-            if not representation:
-                return representation
-        for mode in listingUser.mode.iterkeys():
-            representation = self.ircd.user_modes[self.ircd.user_mode_type[mode]][mode].namesListEntry(self, channel, listingUser, representation)
-            if not representation:
-                return representation
         for modfunc in self.ircd.actions["nameslistentry"]:
             representation = modfunc(self, channel, listingUser, representation)
             if not representation:
