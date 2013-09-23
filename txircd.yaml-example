@@ -426,6 +426,9 @@
 # which channels are denied or allowed below.
 #- denychans
 # 
+# dccblock: Blocks DCC requests sent between clients.
+#-dccblock
+#
 # conn_join: Forces clients to join one or more channels on connect.
 #- conn_join
 #
