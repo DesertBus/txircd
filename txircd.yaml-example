@@ -61,6 +61,9 @@
 # You may make a port into a websocket port by prefixing the whole string
 # with "sockjs:" and wrapping the rest in braces.
 #
+# The server BINDS NO PORTS BY DEFAULT, so make sure you specify some of these
+# if you want to connect!
+#
 #server_client_ports:
 #- 'tcp:6667:interface={::}'
 #- 'ssl:6697:interface={::}:privateKey=test.key:certKey=test.pem'
