@@ -563,15 +563,16 @@ class CSAccessCommand(Command):
                 "flags": params[2]
             }
         try:
-            return {
-                "user": user,
-                "targetchan": params[0],
-                "targetaccount": int(params[1]),
-                "flags": params[2]
-            }
+            int(params[1])
         except ValueError:
             user.sendMessage("NOTICE", ":The account, nick, or group identifier that you provided is not valid.", prefix=self.chanserv.prefix())
             return {}
+        return {
+            "user": user,
+            "targetchan": params[0],
+            "targetaccount": params[1],
+            "flags": params[2]
+        }
 
 class CSCdropCommand(Command):
     def __init__(self, module, service):
