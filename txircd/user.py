@@ -259,21 +259,21 @@ class IRCUser(object):
         return self.ircd.prefixes[status[0]][1] >= self.ircd.prefixes[level][1]
     
     def setUsername(self, newUsername, sourceServer = None):
-        self.username = newUsername
+        self.username = str(newUsername)
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name and server.name != sourceServer:
                     server.callRemote(SetIdent, user=self.uuid, ident=newUsername)
     
     def setHostname(self, newHostname, sourceServer = None):
-        self.hostname = newHostname
+        self.hostname = str(newHostname)
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name and server.name != sourceServer:
                     server.callRemote(SetHost, user=self.uuid, host=newHostname)
     
     def setRealname(self, newRealname, sourceServer = None):
-        self.realname = newRealname
+        self.realname = str(newRealname)
         if self.registered == 0:
             for server in self.ircd.servers.itervalues():
                 if server.nearHop == self.ircd.name and server.name != sourceServer:
@@ -504,6 +504,7 @@ class IRCUser(object):
                 server.callRemote(LeaveChannel, channel=channel.name, user=self.uuid)
     
     def nick(self, newNick):
+        newNick = str(newNick)
         if newNick in self.ircd.users:
             return
         del self.ircd.users[self.nickname]
