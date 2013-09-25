@@ -225,16 +225,16 @@ class NSGhostCommand(Command):
     
     def onUse(self, user, data):
         targetUser = data["targetuser"]
-        if "accountid" in targetUser.metadata["ext"] and targetUser.metadata["ext"]["accountid"] == user.metadata["ext"]["accountid"]:
+        if "accountid" in targetUser.cache and targetUser.cache["accountid"] == user.cache["accountid"]:
             targetUser.disconnect("Killed (GHOST command issued by {})".format(user.nickname))
             user.sendMessage("NOTICE", ":{} has been disconnected.".format(targetUser.nickname), prefix=self.nickserv.prefix())
         else:
-            d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0} AND nick = {0}", user.metadata["ext"]["accountid"], irc_lower(targetUser.nickname))
+            d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0} AND nick = {0}", user.cache["accountid"], irc_lower(targetUser.nickname))
             d.addCallback(self.ghostSuccess, user, targetUser)
             d.addErrback(self.module.exclaimServerError, user, self.nickserv)
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to do that.", prefix=self.nickserv.prefix())
             return {}
         if not params:
@@ -283,14 +283,14 @@ class NSLogoutCommand(Command):
         self.nickserv = service
     
     def onUse(self, user, data):
-        user.delMetadata("ext", "accountid")
+        del user.cache["accountid"]
         user.delMetadata("ext", "accountname")
         self.module.checkNick(user)
         self.module.unregistered(user)
         user.sendMessage("NOTICE", ":You are now logged out.", prefix=self.nickserv.prefix())
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You're already logged out.", prefix=self.nickserv.prefix())
             return {}
         return {
@@ -303,12 +303,12 @@ class NSDropCommand(Command):
         self.nickserv = service
     
     def onUse(self, user, data):
-        d = self.module.db.runInteraction(self.dropNicknameTransaction, user.metadata["ext"]["accountid"], data["nick"], self.ircd.servconfig["servdb_marker"])
+        d = self.module.db.runInteraction(self.dropNicknameTransaction, user.cache["accountid"], data["nick"], self.ircd.servconfig["servdb_marker"])
         d.addCallback(self.confirmDropped, user, data["nick"])
         d.addErrback(self.module.exclaimServerError, user, self.nickserv)
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to use the DROP command.", prefix=self.nickserv.prefix())
             return {}
         if not params:
@@ -336,12 +336,12 @@ class NSNicklistCommand(Command):
         self.nickserv = service
     
     def onUse(self, user, data):
-        d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
+        d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.cache["accountid"])
         d.addCallback(self.showNicks, user)
         d.addErrback(self.module.exclaimServerError, user, self.nickserv)
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to see your nicknames.", prefix=self.nickserv.prefix())
             return {}
         return {
@@ -363,8 +363,8 @@ class NSAccountCommand(Command):
             d.addErrback(self.module.exclaimServerError, user, self.nickserv)
         else:
             targetUser = data["targetuser"]
-            if "accountid" in targetUser.metadata["ext"]:
-                user.sendMessage("NOTICE", ":ID: {}".format(targetUser.metadata["ext"]["accountid"]), prefix=self.nickserv.prefix())
+            if "accountid" in targetUser.cache:
+                user.sendMessage("NOTICE", ":ID: {}".format(targetUser.cache["accountid"]), prefix=self.nickserv.prefix())
             else:
                 user.sendMessage("NOTICE", ":Not identified", prefix=self.nickserv.prefix())
     
@@ -398,7 +398,7 @@ class NSCertCommand(Command):
         self.nickserv = service
     
     def onUse(self, user, data):
-        accountid = user.metadata["ext"]["accountid"]
+        accountid = user.cache["accountid"]
         if data["subcmd"] == "LIST":
             user.sendMessage("NOTICE", ":Certificate list:", prefix=self.nickserv.prefix())
             if accountid in self.nickserv.cache["certfp"]:
@@ -419,7 +419,7 @@ class NSCertCommand(Command):
                 user.sendMessage("NOTICE", ":Certificate fingerprint {} was not associated with your account.".format(certfp), prefix=self.nickserv.prefix())
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to use that command.", prefix=self.nickserv.prefix())
             return {}
         if not params:
@@ -451,11 +451,11 @@ class CSRegisterCommand(Command):
     
     def onUse(self, user, data):
         channel = data["targetchan"]
-        self.chanserv.cache["registered"][channel.name] = {"founder": user.metadata["ext"]["accountid"], "access": {}, "registertime": now()}
+        self.chanserv.cache["registered"][channel.name] = {"founder": user.cache["accountid"], "access": {}, "registertime": now()}
         user.sendMessage("NOTICE", ":The channel {} has been registered under your account.".format(channel.name), prefix=self.chanserv.prefix())
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to register a channel.", prefix=self.chanserv.prefix())
             return {}
         if not params:
@@ -538,12 +538,12 @@ class CSAccessCommand(Command):
         can_modify = False
         if "o" in user.mode:
             can_modify = True
-        elif "accountid" in user.metadata["ext"]:
-            if user.metadata["ext"]["accountid"] == self.chanserv.cache["registered"][params[0]]["founder"]:
+        elif "accountid" in user.cache:
+            if user.cache["accountid"] == self.chanserv.cache["registered"][params[0]]["founder"]:
                 can_modify = True
             else:
                 for acct, flags in self.chanserv.cache["registered"][params[0]]["access"].iteritems():
-                    if (acct == "~r" or acct == user.metadata["ext"]["accountid"]) and "A" in flags:
+                    if (acct == "~r" or acct == user.cache["accountid"]) and "A" in flags:
                         can_modify = True
         if not can_modify:
             user.sendMessage("NOTICE", ":You do not have access to change the permissions of that channel.", prefix=self.chanserv.prefix())
@@ -557,13 +557,13 @@ class CSAccessCommand(Command):
             }
         if params[1] in self.ircd.users:
             udata = self.ircd.users[params[1]]
-            if "accountid" not in udata.metadata["ext"]:
+            if "accountid" not in udata.cache:
                 user.sendMessage("NOTICE", ":The target user is not identified to any account.", prefix=self.chanserv.prefix())
                 return {}
             return {
                 "user": user,
                 "targetchan": params[0],
-                "targetaccount": udata.metadata["ext"]["accountid"],
+                "targetaccount": udata.cache["accountid"],
                 "flags": params[2]
             }
         try:
@@ -599,7 +599,7 @@ class CSCdropCommand(Command):
         user.sendMessage("NOTICE", ":The channel \x02{}\x02 has been dropped.".format(data["channel"]), prefix=self.chanserv.prefix())
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to drop a channel.", prefix=self.chanserv.prefix())
             return {}
         if not params:
@@ -608,7 +608,7 @@ class CSCdropCommand(Command):
         if params[0] not in self.chanserv.cache["registered"]:
             user.sendMessage("NOTICE", ":The channel \x02{}\x02 isn't registered.".format(params[0]), prefix=self.chanserv.prefix())
             return {}
-        if user.metadata["ext"]["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"] and "o" not in user.mode:
+        if user.cache["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"] and "o" not in user.mode:
             user.sendMessage("NOTICE", ":You must be the channel founder in order to drop it.", prefix=self.chanserv.prefix())
             return {}
         return {
@@ -732,24 +732,24 @@ class BSBidCommand(Command):
                     madness += "{}! ".format(name)
                 else:
                     madness = "{}! ".format(name)
-        if self.bidserv.cache["auction"]["highbidderid"] == user.metadata["ext"]["accountid"] and "services_bidserv_space_bid" in self.ircd.servconfig:
+        if self.bidserv.cache["auction"]["highbidderid"] == user.cache["accountid"] and "services_bidserv_space_bid" in self.ircd.servconfig:
             madness += "{}! ".format(self.ircd.servconfig["services_bidserv_space_bid"])
         
         bidMsg = ":\x02\x034{}{} has the high bid of ${:,.2f}! \x0312{}".format(madness, user.nickname, bid, data["smacktalk"])
         self.bidserv.cache["auction"]["called"] = 0
         self.bidserv.cache["auction"]["bids"].append({
             "bid": bid,
-            "bidder": user.metadata["ext"]["accountid"],
+            "bidder": user.cache["accountid"],
             "nick": user.nickname
         })
         self.bidserv.cache["auction"]["highbid"] = bid
         self.bidserv.cache["auction"]["highbidder"] = user.nickname
-        self.bidserv.cache["auction"]["highbidderid"] = user.metadata["ext"]["accountid"]
+        self.bidserv.cache["auction"]["highbidderid"] = user.cache["accountid"]
         for channel in self.ircd.channels.itervalues():
             channel.sendChannelMessage("PRIVMSG", bidMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "accountid" not in user.metadata["ext"]:
+        if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to bid.", prefix=self.bidserv.prefix())
             return {}
         if "auction" not in self.bidserv.cache:
@@ -885,7 +885,7 @@ class BSSoldCommand(Command):
             channel.sendChannelMessage("PRIVMSG", soldMsg, prefix=self.bidserv.prefix())
         if self.bidserv.cache["auction"]["highbidder"] in self.ircd.users:
             udata = self.ircd.users[self.bidserv.cache["auction"]["highbidder"]]
-            if "accountid" in udata.metadata["ext"] and udata.metadata["ext"]["accountid"] == self.bidserv.cache["auction"]["highbidderid"]:
+            if "accountid" in udata.cache and udata.cache["accountid"] == self.bidserv.cache["auction"]["highbidderid"]:
                 udata.sendMessage("NOTICE", ":Congratulations!  You won \"{}\"!  Please log into your donor account and visit https://desertbus.org/donate?type=auction&prize={!s} to pay for your prize.".format(self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["item"]), prefix=self.bidserv.prefix())
         d = self.module.query("UPDATE prizes SET donor_id = {0}, sold_amount = {0}, sold = 1 WHERE id = {0}", self.bidserv.cache["auction"]["highbidderid"], self.bidserv.cache["auction"]["highbid"], self.bidserv.cache["auction"]["item"])
         d.addErrback(self.reportError, user, self.bidserv.cache["auction"])
@@ -1265,7 +1265,7 @@ class Spawner(object):
             failValidation()
     
     def loginUser(self, result, user):
-        user.setMetadata("ext", "accountid", str(result[0][0]))
+        user.cache["accountid"] = str(result[0][0])
         if result[0][1]:
             user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
         else:
@@ -1293,7 +1293,7 @@ class Spawner(object):
     def beginVerify(self, result, user):
         if result:
             id = str(result[0][0])
-            if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
+            if "accountid" in user.cache and user.cache["accountid"] == id:
                 if user in self.auth_timer: # Clear the timer
                     self.removeAuthTimer(user)
                 return # Already identified
@@ -1302,9 +1302,9 @@ class Spawner(object):
             if user in self.auth_timer:
                 self.removeAuthTimer(user)
             self.setAuthTimer(user)
-        elif "accountid" in user.metadata["ext"]:
+        elif "accountid" in user.cache:
             # Try to register the nick
-            d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.metadata["ext"]["accountid"])
+            d = self.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", user.cache["accountid"])
             d.addCallback(self.registerNick, user, user.nickname)
             d.addErrback(self.failedRegisterNick, user, user.nickname)
     
@@ -1331,7 +1331,7 @@ class Spawner(object):
             del self.auth_timer[user]
             if user.server != self.ircd.name:
                 self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceUnblockUser", args=[user.uuid])
-        if "accountid" in user.metadata["ext"] and user.metadata["ext"]["accountid"] == id:
+        if "accountid" in user.cache and user.cache["accountid"] == id:
             return # Somehow we auth'd and didn't clear the timer?
         if irc_lower(user.nickname) != irc_lower(nickname):
             return # Changed nick before the timeout. Whatever
@@ -1344,7 +1344,7 @@ class Spawner(object):
             message = ":Warning: You already have {!s} registered nicks, so {} will not be protected. Please switch to {} to prevent impersonation!".format(self.ircd.servconfig["services_nickserv_nick_limit"], nickname, nicklist)
             user.sendMessage("NOTICE", message, prefix=self.nickserv.prefix())
         else:
-            d = self.query("INSERT INTO ircnicks(donor_id, nick) VALUES({0},{0})", user.metadata["ext"]["accountid"], irc_lower(nickname))
+            d = self.query("INSERT INTO ircnicks(donor_id, nick) VALUES({0},{0})", user.cache["accountid"], irc_lower(nickname))
             d.addCallback(self.successRegisterNick, user, nickname)
             d.addErrback(self.failedRegisterNick, user, nickname)
     
@@ -1521,12 +1521,12 @@ class Spawner(object):
             if "o" in user.mode and "~o" in self.chanserv.cache["registered"][channel.name]["access"]:
                 for flag in self.chanserv.cache["registered"][channel.name]["access"]["~o"]:
                     flags.add(flag)
-            if "accountid" in user.metadata["ext"]:
+            if "accountid" in user.cache:
                 if "~r" in self.chanserv.cache["registered"][channel.name]["access"]:
                     for flag in self.chanserv.cache["registered"][channel.name]["access"]["~r"]:
                         flags.add(flag)
-                if user.metadata["ext"]["accountid"] in self.chanserv.cache["registered"][channel.name]["access"]:
-                    for flag in self.chanserv.cache["registered"][channel.name]["access"][user.metadata["ext"]["accountid"]]:
+                if user.cache["accountid"] in self.chanserv.cache["registered"][channel.name]["access"]:
+                    for flag in self.chanserv.cache["registered"][channel.name]["access"][user.cache["accountid"]]:
                         flags.add(flag)
             if keepOldStatus:
                 for flag in channel.users[user]:
@@ -1544,7 +1544,7 @@ class Spawner(object):
                 channel.setMode(None, "+{}".format("".join(flags)), [user.nickname for i in range(len(flags))], self.chanserv.prefix())
     
     def addCert(self, user, certfp):
-        accountid = user.metadata["ext"]["accountid"]
+        accountid = user.cache["accountid"]
         if accountid not in self.nickserv.cache["certfp"]:
             self.nickserv.cache["certfp"][accountid] = []
         if certfp not in self.nickserv.cache["certfp"][accountid]:
