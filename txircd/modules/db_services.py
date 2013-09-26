@@ -1249,7 +1249,10 @@ class Spawner(object):
     
     def loginUser(self, result, user):
         user.setMetadata("ext", "accountid", str(result[0][0]))
-        user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
+        if result[0][1]:
+            user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
+        else:
+            user.setMetadata("ext", "accountname", "Anonymous") # The account name can't be blank, so fill in a default one
         if user in self.auth_timer:
             self.removeAuthTimer(user)
         if user in self.saslUsers:
