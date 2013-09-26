@@ -492,9 +492,15 @@ class CSAccessCommand(Command):
             user.sendMessage("NOTICE", ":{} is not registered.".format(data["targetchan"]), prefix=self.chanserv.prefix())
             return
         else:
-            for id, flags in self.chanserv.cache["registered"][data["targetchan"]]["access"].iteritems():
-                user.sendMessage("NOTICE", ":  {}: +{}".format(id, flags), prefix=self.chanserv.prefix())
-            user.sendMessage("NOTICE", ":End of ACCESS list", prefix=self.chanserv.prefix())
+            accessList = self.chanserv.cache["registered"][data["targetchan"]]["access"]
+            if not accessList:
+                user.sendMessage("NOTICE", ":The access list is empty.", prefix=self.chanserv.prefix())
+            else:
+                convertEntries = [u for u in accessList.iterkeys() if u.isdigit()]
+                # For this list, we assume the lowest ID number in the ircnicks table is for the main nick of the account
+                d = self.module.query("SELECT n1.donor_id, n1.nick FROM ircnicks n1 JOIN (SELECT MIN(id) minID, donor_id FROM ircnicks GROUP BY donor_id) n2 ON n1.id = n2.minID WHERE {}".format(" OR ".join(["n1.donor_id = {0}" for i in convertEntries])), *convertEntries)
+                d.addCallback(self.listAccess, user, accessList)
+                d.addErrback(self.module.exclaimServerError, user, self.chanserv)
             return
         try:
             flagSet = list(self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID])
@@ -571,6 +577,17 @@ class CSAccessCommand(Command):
             "targetaccount": params[1],
             "flags": params[2]
         }
+    
+    def listAccess(self, results, user, access):
+        accessList = access.copy() # Ensure the original access list is not modified as we delete out of this one
+        for result in results:
+            id = str(result[0])
+            if id in accessList:
+                user.sendMessage("NOTICE", ":  {}: +{}".format(result[1], accessList[id]), prefix=self.chanserv.prefix())
+            del accessList[id]
+        for id, flags in accessList.iteritems(): # Everything not shown from the results of the SQL query
+            user.sendMessage("NOTICE", ":  {}: +{}".format(id, flags), prefix=self.chanserv.prefix())
+        user.sendMessage("NOTICE", ":End of ACCESS list", prefix=self.chanserv.prefix())
 
 class CSCdropCommand(Command):
     def __init__(self, module, service):
