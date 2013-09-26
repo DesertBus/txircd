@@ -482,14 +482,14 @@ class CSAccessCommand(Command):
         self.chanserv = service
     
     def onUse(self, user, data):
-        group = False
         if "targetgroup" in data:
             accessID = data["targetgroup"]
-            group = True
         elif "targetaccount" in data:
             accessID = data["targetaccount"]
-        elif data["targetchan"] not in self.chanserv.cache["registered"]:
-            user.sendMessage("NOTICE", ":{} is not registered.".format(data["targetchan"]), prefix=self.chanserv.prefix())
+        elif "targetnick" in data:
+            d = self.module.query("SELECT donor_id FROM ircnicks WHERE nick = {0} LIMIT 1", data["targetnick"])
+            d.addCallback(self.changeAccess, data["targetnick"], user, data["targetchan"], data["flags"])
+            d.addErrback(self.module.exclaimServerError, user, self.chanserv)
             return
         else:
             accessList = self.chanserv.cache["registered"][data["targetchan"]]["access"]
@@ -502,33 +502,14 @@ class CSAccessCommand(Command):
                 d.addCallback(self.listAccess, user, accessList)
                 d.addErrback(self.module.exclaimServerError, user, self.chanserv)
             return
-        try:
-            flagSet = list(self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID])
-        except KeyError:
-            flagSet = []
-        adding = True
-        for flag in data["flags"]:
-            if flag == "+":
-                adding = True
-            elif flag == "-":
-                adding = False
-            elif flag in self.ircd.prefix_order or flag == "A":
-                if adding and flag not in flagSet:
-                    flagSet.append(flag)
-                elif not adding and flag in flagSet:
-                    flagSet.remove(flag)
-        if flagSet:
-            self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID] = "".join(flagSet)
-        else:
-            try:
-                del self.chanserv.cache["registered"][data["targetchan"]]["access"][accessID]
-            except KeyError:
-                pass # If it was already not specified somehow, go ahead and remove it
-        user.sendMessage("NOTICE", ":The flags for the {} {} have been changed to +{}".format("group" if group else "account", accessID, "".join(flagSet)), prefix=self.chanserv.prefix())
+        self.changeAccess([[accessID]], accessID, user, data["targetchan"], data["flags"])
     
     def processParams(self, user, params):
         if not params:
             user.sendMessage("NOTICE", ":Usage: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]", prefix=self.chanserv.prefix())
+            return {}
+        if params[0] not in self.chanserv.cache["registered"]:
+            user.sendMessage("NOTICE", ":{} is not registered.".format(data["targetchan"]), prefix=self.chanserv.prefix())
             return {}
         if len(params) < 3:
             return {
@@ -566,15 +547,17 @@ class CSAccessCommand(Command):
                 "targetaccount": udata.metadata["ext"]["accountid"],
                 "flags": params[2]
             }
-        try:
-            int(params[1])
-        except ValueError:
-            user.sendMessage("NOTICE", ":The account, nick, or group identifier that you provided is not valid.", prefix=self.chanserv.prefix())
-            return {}
+        if params[1].isdigit():
+            return {
+                "user": user,
+                "targetchan": params[0],
+                "targetaccount": params[1],
+                "flags": params[2]
+            }
         return {
             "user": user,
             "targetchan": params[0],
-            "targetaccount": params[1],
+            "targetnick": params[1],
             "flags": params[2]
         }
     
@@ -588,6 +571,35 @@ class CSAccessCommand(Command):
         for id, flags in accessList.iteritems(): # Everything not shown from the results of the SQL query
             user.sendMessage("NOTICE", ":  {}: +{}".format(id, flags), prefix=self.chanserv.prefix())
         user.sendMessage("NOTICE", ":End of ACCESS list", prefix=self.chanserv.prefix())
+    
+    def changeAccess(self, result, display, user, channel, flags):
+        if not result:
+            user.sendMessage("NOTICE", ":The given nickname is not registered.", prefix=self.chanserv.prefix())
+            return
+        accessID = str(result[0][0])
+        try:
+            flagSet = list(self.chanserv.cache["registered"][channel]["access"][accessID])
+        except KeyError:
+            flagSet = []
+        adding = True
+        for flag in flags:
+            if flag == "+":
+                adding = True
+            elif flag == "-":
+                adding = False
+            elif flag in self.ircd.prefix_order or flag == "A":
+                if adding and flag not in flagSet:
+                    flagSet.append(flag)
+                elif not adding and flag in flagSet:
+                    flagSet.remove(flag)
+        if flagSet:
+            self.chanserv.cache["registered"][channel]["access"][accessID] = "".join(flagSet)
+        else:
+            try:
+                del self.chanserv.cache["registered"][channel]["access"][accessID]
+            except KeyError:
+                pass # If it was already not specified somehow, go ahead and remove it
+        user.sendMessage("NOTICE", ":The flags for {} have been changed to +{}".format(display, "".join(flagSet)), prefix=self.chanserv.prefix())
 
 class CSCdropCommand(Command):
     def __init__(self, module, service):
@@ -978,7 +990,7 @@ class Spawner(object):
         
         self.helpText["chanserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
         self.helpText["chanserv"][1]["REGISTER"] = ["Registers a channel for your use", "Syntax: \x02REGISTER \x1Fchannel\x1F\x02\n\nRegisters a channel with you as a founder.  You must be a channel op or higher in the specified channel in order to register the channel.", False]
-        self.helpText["chanserv"][1]["ACCESS"] = ["Allows you to change the access level of another user in a channel you own", "Syntax: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]\x02\n\nLists or changes access information for a channel.  If an account is not specified, the channel's access list will be displayed.  If an account and flags are specified, the given flag changes will be applied to the given account in the channel.  Valid flags are any channel status mode level, and they are automatically applied to matching users on join or identify.  You can also assign the +A flag, which grants the ability to modify the channel access list to other users.  The channel founder always has the ability to control the access list.  The group parameter can be any of the following:\n\t~o\tAll opered users\n\t~r\tAll registered and identified users", False]
+        self.helpText["chanserv"][1]["ACCESS"] = ["Allows you to change the access level of another user in a channel you own", "Syntax: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]\x02\n\nLists or changes access information for a channel.  If an account is not specified, the channel's access list will be displayed.  If a nick is given for the account, it will first match a user with that nick; if one is not connected to the network, it then checks for an account to which that nick is registered.  If an account and flags are specified, the given flag changes will be applied to the given account in the channel.  Valid flags are any channel status mode level, and they are automatically applied to matching users on join or identify.  You can also assign the +A flag, which grants the ability to modify the channel access list to other users.  The channel founder always has the ability to control the access list.  The group parameter can be any of the following:\n\t~o\tAll opered users\n\t~r\tAll registered and identified users", False]
         self.helpText["chanserv"][1]["CDROP"] = ["Allows you to drop channels you own", "Syntax: \x02CDROP \x1Fchannel\x1F\x02\n\nDrops the specified channel that you own.", False]
         
         self.helpText["bidserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
