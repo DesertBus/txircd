@@ -31,6 +31,9 @@ class KickCommand(Command):
         if udata not in cdata.users:
             user.sendMessage(irc.ERR_USERNOTINCHANNEL, udata.nickname, cdata.name, ":They are not on that channel")
             return {}
+        if cdata.users[udata] and not user.hasAccess(cdata, cdata.users[udata][0]):
+            user.sendMessage(irc.ERR_CHANOPRIVSNEEDED, cdata.name, ":You must have higher operator access than the user to kick")
+            return {}
         if len(params) < 3 or not params[2]:
             reason = user.nickname
         else:
@@ -38,7 +41,7 @@ class KickCommand(Command):
         return {
             "user": user,
             "targetchan": cdata,
-            "targetuser": self.ircd.users[params[1]],
+            "targetuser": udata,
             "reason": reason
         }
 
