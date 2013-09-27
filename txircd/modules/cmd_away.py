@@ -27,8 +27,9 @@ class AwayCommand(Command):
         if "targetuser" not in data:
             return
         sourceUser = data["user"]
+        targetUser = data["targetuser"]
         if command == "PRIVMSG":
-            for user in data["targetuser"]:
+            for user in targetUser:
                 if "away" in user.metadata["ext"]:
                     sourceUser.sendMessage(irc.RPL_AWAY, user.nickname, ":{}".format(user.metadata["ext"]["away"]))
         elif command == "INVITE":
