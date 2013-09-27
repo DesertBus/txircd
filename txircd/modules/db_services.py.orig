@@ -351,6 +351,47 @@ class NSNicklistCommand(Command):
     def showNicks(self, results, user):
         user.sendMessage("NOTICE", ":Registered Nicknames: {}".format(", ".join([n[0] for n in results])), prefix=self.nickserv.prefix())
 
+class NSAccountCommand(Command):
+    def __init__(self, module, service):
+        self.module = module
+        self.nickserv = service
+    
+    def onUse(self, user, data):
+        if "targetaccount" in data:
+            d = self.module.query("SELECT nick FROM ircnicks WHERE donor_id = {0}", data["targetaccount"])
+            d.addCallback(self.shownicks, user, data["targetaccount"])
+            d.addErrback(self.module.exclaimServerError, user, self.nickserv)
+        else:
+            targetUser = data["targetuser"]
+            if "accountid" in targetUser.cache:
+                user.sendMessage("NOTICE", ":ID: {}".format(targetUser.cache["accountid"]), prefix=self.nickserv.prefix())
+            else:
+                user.sendMessage("NOTICE", ":Not identified", prefix=self.nickserv.prefix())
+    
+    def processParams(self, user, params):
+        if not params:
+            user.sendMessage("NOTICE", ":Usage: \x02ACCOUNT \x1Fnick|id", prefix=self.nickserv.prefix())
+            return {}
+        if params[0] in self.ircd.users:
+            return {
+                "user": user,
+                "targetuser": self.ircd.users[params[0]]
+            }
+        try:
+            return {
+                "user": user,
+                "targetaccount": int(params[0])
+            }
+        except ValueError:
+            user.sendMessage("NOTICE", ":The nick/ID you provided is not valid.", prefix=self.nickserv.prefix())
+            return {}
+    
+    def shownicks(self, results, user, accountID):
+        if results:
+            user.sendMessage("NOTICE", ":Nicks for account {}: {}".format(accountID, ", ".join([n[0] for n in results])), prefix=self.nickserv.prefix())
+        else:
+            user.sendMessage("NOTICE", ":No such account", prefix=self.nickserv.prefix())
+
 class NSCertCommand(Command):
     def __init__(self, module, service):
         self.module = module
@@ -932,6 +973,7 @@ class Spawner(object):
         self.helpText["nickserv"][1]["GHOST"] = ["Disconnects a user with the given nick", "Syntax: \x02GHOST \x1Fnickname\x1F\x02\n\nIf the given nickname is linked with your account, the user with the given nick is disconnected.", False]
         self.helpText["nickserv"][1]["DROP"] = ["Unregisters a givennickname from your account", "Syntax: \x02DROP \x1Fnickname\x1F\x02\n\nUnregisters the given nickname from your account, allowing other people to use it and giving you more space to register other nicknames.", False]
         self.helpText["nickserv"][1]["NICKLIST"] = ["Lists all the nicknames registered to your account", "Syntax: \x02NICKLIST\x02\n\nLists all the nicknames registered to your account.", False]
+        self.helpText["nickserv"][1]["ACCOUNT"] = ["Gives the account ID or nick provided the other", "Syntax: \x02ACCOUNT \x1Fnick|id\x1F\x02\n\nGives the account ID for the provided nick or the nicks associated with the provided account ID.  This is really only useful for use with ChanServ's access lists.", False]
         self.helpText["nickserv"][1]["CERT"] = ["Allows you to manage SSL certificate fingerprints for SASL EXTERNAL authentication", "Syntax: \x02CERT \x1F{LIST|ADD|DEL}\x1F \x1F[certificate fingerprint]\x1F\x02\n\nProvides a mechanism to manage SSL certificate fingerprints for SASL EXTERNAL authentication.  SSL certificate fingerprints available on your account when you log in normally are automatically added to this list for later use.  Use the \x02LIST\x02 subcommand to view all certificate fingerprints associated with your account.  If you supply a certificate fingerprint for the \x02ADD\x02 or \x02DEL\x02 subcommands, you can modify the list.  If you are currently connected via SSL with a certificate, you can view your current certificate fingerprint using /WHOIS.", False]
         
         self.helpText["chanserv"][1]["HELP"] = ["Shows command help", "Syntax: \x02HELP \x1F[command]\x1F\x02\n\nDisplays command help.  With the optional command parameter, displays help for the given command.", False]
@@ -1223,11 +1265,16 @@ class Spawner(object):
             failValidation()
     
     def loginUser(self, result, user):
-        user.cache["accountid"] = str(result[0][0])
+<<<<<<< HEAD
+        user.setMetadata("ext", "accountid", str(result[0][0]))
         if result[0][1]:
             user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
         else:
             user.setMetadata("ext", "accountname", "Anonymous") # The account name can't be blank, so fill in a default one
+=======
+        user.cache["accountid"] = str(result[0][0])
+        user.setMetadata("ext", "accountname", result[0][1].replace(" ", "_"))
+>>>>>>> Move accountid to the cache
         if user in self.auth_timer:
             self.removeAuthTimer(user)
         if user in self.saslUsers:
