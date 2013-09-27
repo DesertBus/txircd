@@ -7,7 +7,7 @@ class UserCommand(Command):
         if not user.username:
             user.registered -= 1
         user.setUsername(data["ident"])
-        user.realname = data["gecos"]
+        user.setRealname(data["gecos"])
         if user.registered == 0:
             user.register()
     
