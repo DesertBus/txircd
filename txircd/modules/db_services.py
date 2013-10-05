@@ -1081,12 +1081,15 @@ class Spawner(object):
         self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
         self.ircd.users[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
         self.ircd.users[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
+        self.ircd.users[self.ircd.servconfig["services_operserv_nick"]] = self.operserv
         self.ircd.userid[self.nickserv.uuid] = self.nickserv
         self.ircd.userid[self.chanserv.uuid] = self.chanserv
         self.ircd.userid[self.bidserv.uuid] = self.bidserv
+        self.ircd.userid[self.operserv.uuid] = self.operserv
         self.nickserv.addToServers()
         self.chanserv.addToServers()
         self.bidserv.addToServers()
+        self.operserv.addToServers()
         
         self.ircd.module_data_cache["sasl_agent"] = self
         
@@ -1141,12 +1144,15 @@ class Spawner(object):
         self.nickserv.removeFromServers()
         self.chanserv.removeFromServers()
         self.bidserv.removeFromServers()
+        self.operserv.removeFromServers()
         del self.ircd.users[self.nickserv.nickname]
         del self.ircd.users[self.chanserv.nickname]
         del self.ircd.users[self.bidserv.nickname]
+        del self.ircd.users[self.operserv.nickname]
         del self.ircd.userid[self.nickserv.uuid]
         del self.ircd.userid[self.chanserv.uuid]
         del self.ircd.userid[self.bidserv.uuid]
+        del self.ircd.userid[self.operserv.uuid]
     
     def data_serialize(self):
         outputDict = {}
