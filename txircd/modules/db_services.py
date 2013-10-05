@@ -427,7 +427,7 @@ class CSRegisterCommand(Command):
             user.sendMessage("NOTICE", ":That channel is already registered.", prefix=self.chanserv.prefix())
             return {}
         cdata = self.ircd.channels[params[0]]
-        if not user.hasAccess(cdata, "o"):
+        if not user.hasAccess(cdata, "o") and "o" not in user.mode:
             user.sendMessage("NOTICE", ":You must be a channel operator to register that channel.", prefix=self.chanserv.prefix())
             return {}
         return {
