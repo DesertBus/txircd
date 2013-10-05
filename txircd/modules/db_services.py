@@ -924,6 +924,114 @@ class BSCurrentAuctionCommand(Command):
         }
 
 
+class OSServAdminCommand(Command):
+    def __init__(self, module, service):
+        self.module = module
+        self.operserv = service
+    
+    def onUse(self, user, data):
+        if "nick" in data:
+            d = self.module.query("SELECT donor_id FROM ircnicks WHERE nick = {0} LIMIT 1", data["nick"])
+            d.addCallback(self.modifyList, data)
+            d.addErrback(self.module.exclaimServerError, user, self.operserv)
+            return
+        if data["action"] == "list":
+            adminList = self.module.admins[data["service"]]
+            if not adminList:
+                user.sendMessage("NOTICE", ":The admin list for that service is empty.", prefix=self.operserv.prefix())
+                return
+            d = self.module.query("SELECT n1.donor_id, n1.nick FROM ircnicks n1 JOIN (SELECT MIN(id) minID, donor_id FROM ircnicks GROUP BY donor_id) n2 ON n1.id = n2.minID WHERE {}".format(" OR ".join(["n1.donor_id = {0}" for i in adminList])), *adminList)
+            d.addCallback(self.listAdmins, user, data["service"])
+            d.addErrback(self.module.exclaimServerError, user, self.operserv)
+            return
+        self.modifyList([[data["account"]]], data)
+    
+    def processParams(self, user, params):
+        if not self.module.isServiceAdmin(user, self.operserv):
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
+            return {}
+        if not params:
+            user.sendMessage("NOTICE", ":Usage: SERVADMIN {ADD|DEL|LIST} \x1Fservice\x1F \x1F[user]\x1F", prefix=self.operserv.prefix())
+            return {}
+        subcmd = params[0].lower()
+        if len(params) < 2 or subcmd not in ["add", "del", "list"]:
+            user.sendMessage("NOTICE", ":Usage: SERVADMIN {ADD|DEL|LIST} \x1Fservice\x1F \x1F[user]\x1F", prefix=self.operserv.prefix())
+            return {}
+        service = params[1].lower()
+        if service not in self.module.admins.keys():
+            user.sendMessage("NOTICE", ":Service {} is not a valid service name.".format(service), prefix=self.operserv.prefix())
+            return {}
+        if subcmd == "list":
+            return {
+                "user": user,
+                "service": service,
+                "action": "list"
+            }
+        if len(params) < 3:
+            user.sendMessage("NOTICE", ":The ADD and DEL subcommands require a user to add or remove.", prefix=self.operserv.prefix())
+            return {}
+        if params[2] in self.ircd.users:
+            udata = self.ircd.users[params[2]]
+            if "accountid" not in udata.cache:
+                user.sendMessage("NOTICE", ":The given user is not signed in.", prefix=self.operserv.prefix())
+                return {}
+            if subcmd == "add":
+                if udata.cache["accountid"] in self.module.admins[service]:
+                    user.sendMessage("NOTICE", ":The user you're adding is already an admin.", prefix=self.operserv.prefix())
+                    return {}
+            else:
+                if udata.cache["accountid"] not in self.module.admins[service]:
+                    user.sendMessage("NOTICE", ":The user you're removing is already not an admin.", prefix=self.operserv.prefix())
+                    return {}
+            return {
+                "user": user,
+                "service": service,
+                "action": subcmd,
+                "account": udata.cache["accountid"]
+            }
+        if params[2].isdigit():
+            return {
+                "user": user,
+                "service": service,
+                "action": subcmd,
+                "account": params[2]
+            }
+        return {
+            "user": user,
+            "service": service,
+            "action": subcmd,
+            "nick": params[2]
+        }
+    
+    def modifyList(self, target, data):
+        user = data["user"]
+        if not target:
+            user.sendMessage("NOTICE", ":The given nickname is not registered.", prefix=self.operserv.prefix())
+            return
+        targetID = str(target[0][0])
+        adminList = self.module.admins[data["service"]]
+        if data["action"] == "add":
+            if targetID in adminList:
+                user.sendMessage("NOTICE", ":Account {} is already on the admin list.".format(targetID), prefix=self.operserv.prefix())
+                return
+            adminList.append(targetID)
+            user.sendMessage("NOTICE", ":Account {} was added to the admin list.".format(targetID), prefix=self.operserv.prefix())
+        else:
+            if targetID not in adminList:
+                user.sendMessage("NOTICE", ":Account {} is already not on the admin list.".format(targetID), prefix=self.operserv.prefix())
+                return
+            adminList.remove(targetID)
+            user.sendMessage("NOTICE", ":Account {} was removed from the admin list.".format(targetID), prefix=self.operserv.prefix())
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceAdmins", args=[data["service"]] + adminList)
+    
+    def listAdmins(self, admins, user, service):
+        user.sendMessage("NOTICE", ":Admins for service {}".format(service), prefix=self.operserv.prefix())
+        for admin in admins:
+            user.sendMessage("NOTICE", ":  {}".format(admin[1]), prefix=self.operserv.prefix())
+        user.sendMessage("NOTICE", ":End of admin list", prefix=self.operserv.prefix())
+
+
 class Spawner(object):
     def __init__(self, ircd):
         self.ircd = ircd
@@ -968,7 +1076,7 @@ class Spawner(object):
         self.helpText["bidserv"][1]["HIGHBIDDER"] = ["Get the high bidder in the current auction", "Syntax: \x02HIGHBIDDER\x02\n\nDisplays the high bidder in the current auction along with the amount of the current high bid.", False]
         self.helpText["bidserv"][1]["CURRENTAUCTION"] = ["Shows the item currently up for auction.", "Syntax: \x02CURRENTAUCTION\x02\n\nDisplays the item currently up for auction.", False]
         
-        # operserv help text here
+        self.helpText["operserv"][1]["SERVADMIN"] = ["Modifies the list of services admins", "Syntax: \x02SERVADMIN \x1F{ADD|DEL|LIST}\x1F \x1Fservice\x1F \x1F[nick|ID]\x1F\n\nWith the LIST subcommand, shows the admin list for the given service, or with the ADD or DEL subcommands, adds or removes users from the admin list for the given service.  The service parameter must be the base name of a running service (e.g. 'chanserv', 'nickserv').  The nick|ID parameter (required with the ADD or DEL subcommands) takes either a nick (either of a connected user or a registered nick) or an account ID to add or remove.", True]
         
         self.nickserv = None
         self.chanserv = None
@@ -1129,7 +1237,9 @@ class Spawner(object):
                 "TWICE": BSTwiceCommand(self, self.bidserv),
                 "SOLD": BSSoldCommand(self, self.bidserv),
                 "HIGHBIDDER": BSHighbidderCommand(self, self.bidserv),
-                "CURRENTAUCTION": BSCurrentAuctionCommand(self, self.bidserv)
+                "CURRENTAUCTION": BSCurrentAuctionCommand(self, self.bidserv),
+                
+                "SERVADMIN": OSServAdminCommand(self, self.operserv)
             },
             "actions": {
                 "register": self.onRegister,

@@ -152,6 +152,19 @@ class BSCurrentAuctionCommand(Command):
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "CURRENTAUCTION {}".format(" ".join(data["params"]))])
 
+class OSServAdminCommand(Command):
+    def onUse(self, user, data):
+        user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_operserv_nick"], "SERVADMIN {}".format(" ".join(data["params"]))])
+    
+    def processParams(self, user, params):
+        if "o" not in user.mode:
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
+            return {}
+        return {
+            "user": user,
+            "params": params
+        }
+
 class Spawner(object):
     def __init__(self, ircd):
         self.ircd = ircd
@@ -200,7 +213,9 @@ class Spawner(object):
                 "TWICE": BSTwiceCommand(),
                 "SOLD": BSSoldCommand(),
                 "HIGHBIDDER": BSHighbidderCommand(),
-                "CURRENTAUCTION": BSCurrentAuctionCommand()
+                "CURRENTAUCTION": BSCurrentAuctionCommand(),
+                
+                "SERVADMIN": OSServAdminCommand()
             },
             "actions": {
                 "commandpermission": self.commandPermission,
