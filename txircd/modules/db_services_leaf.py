@@ -231,7 +231,9 @@ class Spawner(object):
                 "ServiceServer": self.noteServer,
                 "ServiceBlockUser": self.addBlock,
                 "ServiceUnblockUser": self.removeBlock,
-                "ServiceAdmins": self.setAdmins
+                "ServiceAdmins": self.setAdmins,
+                "ServiceLogin": self.loginUser,
+                "ServiceLogout": self.logoutUser
             }
         }
     
@@ -283,3 +285,13 @@ class Spawner(object):
     def setAdmins(self, command, args):
         service = args.pop(0)
         self.admins[service] = args
+    
+    def loginUser(self, command, args):
+        if args[0] not in self.ircd.userid:
+            return
+        self.ircd.userid[args[0]].cache["accountid"] = args[1]
+    
+    def logoutUser(self, command, args):
+        if args[0] not in self.ircd.userid:
+            return
+        del self.ircd.userid[args[0]].cache["accountid"]

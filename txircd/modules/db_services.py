@@ -287,11 +287,7 @@ class NSLogoutCommand(Command):
         self.nickserv = service
     
     def onUse(self, user, data):
-        del user.cache["accountid"]
-        user.delMetadata("ext", "accountname")
-        self.module.checkNick(user)
-        self.module.unregistered(user)
-        user.sendMessage("NOTICE", ":You are now logged out.", prefix=self.nickserv.prefix())
+        self.module.logoutUser(user)
     
     def processParams(self, user, params):
         if "accountid" not in user.cache:
@@ -1399,7 +1395,18 @@ class Spawner(object):
         else:
             user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
             self.checkNick(user)
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceLogin", args=[user.uuid, user.cache["accountid"]])
         self.registered(user)
+    
+    def logoutUser(self, user):
+        del user.cache["accountid"]
+        user.delMetadata("ext", "accountname")
+        self.checkNick(user)
+        self.unregistered(user)
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceLogout", args=[user.uuid])
+        user.sendMessage("NOTICE", ":You are now logged out.", prefix=self.nickserv.prefix())
     
     def loadDonorInfo(self, result, user):
         if not result:
@@ -1723,9 +1730,15 @@ class Spawner(object):
     
     def onNetmerge(self, name):
         server = self.ircd.servers[name]
+        loggedInUserList = []
+        for u in self.ircd.users:
+            if "accountid" in u.cache:
+                loggedInUserList.append(u)
         server.callRemote(ModuleMessage, destserver=name, type="ServiceServer", args=[self.ircd.name])
         for adminType, adminList in self.admins.iteritems():
             server.callRemote(ModuleMessage, destserver=name, type="ServiceAdmins", args=[adminType] + adminList)
+            for u in loggedInUserList:
+                server.callRemote(ModuleMessage, destserver=name, type="ServiceLogin", args=[u.uuid, u.cache["accountid"]])
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
