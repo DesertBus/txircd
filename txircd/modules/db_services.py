@@ -188,6 +188,10 @@ class BidServAlias(Command):
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], " ".join(data["params"])])
 
+class OperServAlias(Command):
+    def onUse(self, user, data):
+        user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_operserv_nick"], " ".join(data["params"])])
+
 
 class NSIdentifyCommand(Command):
     def __init__(self, module, service):
@@ -1101,6 +1105,8 @@ class Spawner(object):
                 "CS": ChanServAlias(),
                 "BIDSERV": BidServAlias(),
                 "BS": BidServAlias(),
+                "OPERSERV": OperServAlias(),
+                "OS": OperServAlias(),
                 
                 "IDENTIFY": NSIdentifyCommand(self, self.nickserv),
                 "ID": NSIdentifyCommand(self, self.nickserv),
