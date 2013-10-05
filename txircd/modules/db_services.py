@@ -966,6 +966,14 @@ class Spawner(object):
         self.nickserv = None
         self.chanserv = None
         self.bidserv = None
+        self.operserv = None
+        
+        self.admins = {
+            "nickserv": [],
+            "chanserv": [],
+            "bidserv": [],
+            "operserv": []
+        }
         
         self.auth_timer = {}
         self.saslUsers = {}
@@ -1133,6 +1141,7 @@ class Spawner(object):
         if "auction" in self.bidserv.cache:
             outputDict["currentauction"] = self.bidserv.cache["auction"]
         outputDict["certfp"] = self.nickserv.cache["certfp"]
+        outputDict["admins"] = self.admins
         return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
     
     def data_unserialize(self, data):
@@ -1143,6 +1152,8 @@ class Spawner(object):
         if "registeredchannels" in data:
             for key, value in data["registeredchannels"].iteritems():
                 self.chanserv.cache["registered"][key] = value
+        if "admins" in data:
+            self.admins = data["admins"]
         if "auth_timers" in data:
             self.auth_timer = data["auth_timers"]
         if "saslusers" in data:
