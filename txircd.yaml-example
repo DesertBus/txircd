@@ -450,8 +450,9 @@
 # command aliases for services and implements the command blocking functionality
 # for users not on the main services server.
 # Of the db_services config below, this module only requires
-# services_nickserv_nick, services_chanserv_nick, and services_bidserv_nick.
-# The three values MUST be set to the same as the services nicks for the server
+# services_nickserv_nick, services_chanserv_nick, services_bidserv_nick, and
+# services_operserv_nick.
+# The four values MUST be set to the same as the services nicks for the server
 # with db_services loaded (or identical across the network).
 #- db_services_leaf
 
@@ -552,6 +553,12 @@
 #services_chanserv_ident: ChanServ
 #services_chanserv_host: services.desertbus.org
 #services_chanserv_gecos: Channel Service
+
+# OperServ client: OperServ needs a nick, ident, host, and gecos.
+#services_operserv_nick: OperServ
+#services_operserv_ident: OperServ
+#services_operserv_host: services.desertbus.org
+#services_operserv_gecos: Operator Service
 
 # BidServ configuration
 # increment: The minimum increment between bids.  If not given, bids can be any

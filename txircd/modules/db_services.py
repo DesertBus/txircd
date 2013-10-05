@@ -1058,6 +1058,15 @@ class Spawner(object):
         if "services_bidserv_gecos" not in self.ircd.servconfig:
             self.ircd.servconfig["services_bidserv_gecos"] = "Bidding Service"
         
+        if "services_operserv_nick" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_nick"] = "OperServ"
+        if "services_operserv_ident" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_ident"] = "OperServ"
+        if "services_operserv_host" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_host"] = "services.desertbus.org"
+        if "services_operserv_gecos" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_gecos"] = "Operator Service"
+        
         self.nickserv = Service(self.ircd, self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_nickserv_ident"], self.ircd.servconfig["services_nickserv_host"], self.ircd.servconfig["services_nickserv_gecos"], self.helpText["nickserv"])
         self.chanserv = Service(self.ircd, self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_chanserv_ident"], self.ircd.servconfig["services_chanserv_host"], self.ircd.servconfig["services_chanserv_gecos"], self.helpText["chanserv"])
         self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"])
