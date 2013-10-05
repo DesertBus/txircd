@@ -1480,6 +1480,22 @@ class Spawner(object):
         self.saslUsers[user]["success"] = successFunction
         self.saslUsers[user]["failure"] = failureFunction
     
+    def isServiceAdmin(self, user, service):
+        if "o" in user.mode:
+            return True
+        if "accountid" not in user.cache:
+            return False
+        id = user.cache["accountid"]
+        convertServices = {
+            self.nickserv: "nickserv",
+            self.chanserv: "chanserv",
+            self.bidserv: "bidserv",
+            self.operserv: "operserv"
+        }
+        if service not in convertServices:
+            return False
+        return id in self.admins[convertServices[service]]
+    
     def registered(self, user):
         for c in self.ircd.channels.itervalues():
             if user in c.users:
