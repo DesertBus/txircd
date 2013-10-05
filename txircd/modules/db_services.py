@@ -1722,7 +1722,10 @@ class Spawner(object):
             channel.created = self.chanserv.cache["registered"][channel.name]["registertime"]
     
     def onNetmerge(self, name):
-        self.ircd.servers[name].callRemote(ModuleMessage, destserver=name, type="ServiceServer", args=[self.ircd.name])
+        server = self.ircd.servers[name]
+        server.callRemote(ModuleMessage, destserver=name, type="ServiceServer", args=[self.ircd.name])
+        for adminType, adminList in self.admins.iteritems():
+            server.callRemote(ModuleMessage, destserver=name, type="ServiceAdmins", args=[adminType] + adminList)
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
