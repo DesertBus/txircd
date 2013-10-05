@@ -294,3 +294,10 @@ class Spawner(object):
         if args[0] not in self.ircd.userid:
             return
         del self.ircd.userid[args[0]].cache["accountid"]
+    
+    def isServiceAdmin(self, user, service):
+        if service not in self.admins:
+            return False
+        if "accountid" not in user.cache:
+            return False
+        return user.cache["accountid"] in self.admins[service]
