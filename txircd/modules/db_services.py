@@ -927,7 +927,8 @@ class Spawner(object):
         self.helpText = {
             "nickserv": ["NickServ matches your IRC nickname to your Donor account, allowing for a painless auction process, as well as the peace of mind that nobody can use your nickname but you.", CaseInsensitiveDictionary()],
             "chanserv": ["ChanServ allows managing channels to ease slightly the process of running this thing.", CaseInsensitiveDictionary()],
-            "bidserv": ["BidServ handles all of our fancy schmancy auction business and serves as the interface directly to auctions.", CaseInsensitiveDictionary()]
+            "bidserv": ["BidServ handles all of our fancy schmancy auction business and serves as the interface directly to auctions.", CaseInsensitiveDictionary()],
+            "operserv": ["OperServ handles things that opers may need.", CaseInsensitiveDictionary()]
         }
         # Help text values:
         # [ short description, long description, oper only ]
@@ -962,6 +963,8 @@ class Spawner(object):
         self.helpText["bidserv"][1]["SOLD"] = ["Award the auction to the highest bidder", "Syntax: \x02SOLD\x02\n\nDeclares the auction as complete, awarding the prize to the highest bidder.", True]
         self.helpText["bidserv"][1]["HIGHBIDDER"] = ["Get the high bidder in the current auction", "Syntax: \x02HIGHBIDDER\x02\n\nDisplays the high bidder in the current auction along with the amount of the current high bid.", False]
         self.helpText["bidserv"][1]["CURRENTAUCTION"] = ["Shows the item currently up for auction.", "Syntax: \x02CURRENTAUCTION\x02\n\nDisplays the item currently up for auction.", False]
+        
+        # operserv help text here
         
         self.nickserv = None
         self.chanserv = None
@@ -1070,6 +1073,7 @@ class Spawner(object):
         self.nickserv = Service(self.ircd, self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_nickserv_ident"], self.ircd.servconfig["services_nickserv_host"], self.ircd.servconfig["services_nickserv_gecos"], self.helpText["nickserv"])
         self.chanserv = Service(self.ircd, self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_chanserv_ident"], self.ircd.servconfig["services_chanserv_host"], self.ircd.servconfig["services_chanserv_gecos"], self.helpText["chanserv"])
         self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"])
+        self.operserv = Service(self.ircd, self.ircd.servconfig["services_operserv_nick"], self.ircd.servconfig["services_operserv_ident"], self.ircd.servconfig["services_operserv_host"], self.ircd.servconfig["services_operserv_gecos"], self.helpText["operserv"])
         
         self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
         self.nickserv.cache["certfp"] = {}
