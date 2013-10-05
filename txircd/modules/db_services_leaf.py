@@ -63,11 +63,14 @@ class CSCdropCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_chanserv_nick"], "CDROP {}".format(" ".join(data["params"]))])
 
 class BSStartCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "START {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -76,11 +79,14 @@ class BSStartCommand(Command):
         }
 
 class BSStopCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "STOP {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -93,11 +99,14 @@ class BSBidCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "BID {}".format(" ".join(data["params"]))])
 
 class BSRevertCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "REVERT {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -106,11 +115,14 @@ class BSRevertCommand(Command):
         }
 
 class BSOnceCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "ONCE {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -119,11 +131,14 @@ class BSOnceCommand(Command):
         }
 
 class BSTwiceCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "TWICE {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -132,11 +147,14 @@ class BSTwiceCommand(Command):
         }
 
 class BSSoldCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "SOLD {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -153,11 +171,14 @@ class BSCurrentAuctionCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "CURRENTAUCTION {}".format(" ".join(data["params"]))])
 
 class OSServAdminCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_operserv_nick"], "SERVADMIN {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "operserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -206,17 +227,17 @@ class Spawner(object):
                 "ACCESS": CSAccessCommand(),
                 "CDROP": CSCdropCommand(),
                 
-                "START": BSStartCommand(),
-                "STOP": BSStopCommand(),
+                "START": BSStartCommand(self),
+                "STOP": BSStopCommand(self),
                 "BID": BSBidCommand(),
-                "REVERT": BSRevertCommand(),
-                "ONCE": BSOnceCommand(),
-                "TWICE": BSTwiceCommand(),
-                "SOLD": BSSoldCommand(),
+                "REVERT": BSRevertCommand(self),
+                "ONCE": BSOnceCommand(self),
+                "TWICE": BSTwiceCommand(self),
+                "SOLD": BSSoldCommand(self),
                 "HIGHBIDDER": BSHighbidderCommand(),
                 "CURRENTAUCTION": BSCurrentAuctionCommand(),
                 
-                "SERVADMIN": OSServAdminCommand()
+                "SERVADMIN": OSServAdminCommand(self)
             },
             "actions": {
                 "commandpermission": self.commandPermission,

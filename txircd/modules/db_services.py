@@ -23,7 +23,7 @@ class Service(object):
             self.transport = self.ServiceTransport()
             self.secure = True
     
-    def __init__(self, ircd, nick, ident, host, gecos, helpTexts):
+    def __init__(self, ircd, nick, ident, host, gecos, helpTexts, module):
         # We're going to try to keep Service fairly consistent with IRCUser, even if most of these variables will never be used
         # in order to prevent exceptions all over the place
         self.ircd = ircd
@@ -54,6 +54,7 @@ class Service(object):
         }
         self.cache = {} # Not only do various other modules potentially play with the cache, but we can do what we want with it to store auction data, etc.
         self.help = helpTexts
+        self.module = module
     
     def addToServers(self):
         for server in self.ircd.servers.itervalues():
@@ -91,7 +92,7 @@ class Service(object):
                     commands = sorted(self.help[1].keys())
                     for cmd in commands:
                         info = self.help[1][cmd]
-                        if info[2] and "o" not in user.mode:
+                        if info[2] and not self.module.isServiceAdmin(user, self):
                             continue
                         user.sendMessage("NOTICE", ":\x02{}\x02\t{}".format(cmd.upper(), info[0]), prefix=self.prefix())
                     user.sendMessage("NOTICE", ": ", prefix=self.prefix())
@@ -102,14 +103,14 @@ class Service(object):
                         user.sendMessage("NOTICE", ":No help available for \x02{}\x02.".format(helpCmd), prefix=self.prefix())
                     else:
                         info = self.help[1][helpCmd]
-                        if info[2] and "o" not in user.mode:
+                        if info[2] and not self.module.isServiceAdmin(user, self):
                             user.sendMessage("NOTICE", ":No help available for \x02{}\x02.".format(helpCmd), prefix=self.prefix())
                         else:
                             helpOut = chunk_message(info[1], 80)
                             for line in helpOut:
                                 user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
                             user.sendMessage("NOTICE", ":*** End of \x02{}\x02 help".format(helpCmd), prefix=self.prefix())
-            elif serviceCommand in self.help[1] and (not self.help[1][serviceCommand][2] or "o" in user.mode):
+            elif serviceCommand in self.help[1] and (not self.help[1][serviceCommand][2] or self.module.isServiceAdmin(user, self)):
                 self.ircd.users[nick].handleCommand(serviceCommand, None, params)
             else:
                 self.ircd.users[nick].sendMessage("NOTICE", ":Unknown command \x02{}\x02.  Use \x1F/msg {} HELP\x1F for help.".format(serviceCommand, self.nickname), prefix=self.prefix())
@@ -427,7 +428,7 @@ class CSRegisterCommand(Command):
             user.sendMessage("NOTICE", ":That channel is already registered.", prefix=self.chanserv.prefix())
             return {}
         cdata = self.ircd.channels[params[0]]
-        if not user.hasAccess(cdata, "o") and "o" not in user.mode:
+        if not user.hasAccess(cdata, "o") and not self.module.isServiceAdmin(user, self.chanserv):
             user.sendMessage("NOTICE", ":You must be a channel operator to register that channel.", prefix=self.chanserv.prefix())
             return {}
         return {
@@ -476,7 +477,7 @@ class CSAccessCommand(Command):
                 "targetchan": params[0]
             }
         can_modify = False
-        if "o" in user.mode:
+        if self.module.isServiceAdmin(user, self.chanserv):
             can_modify = True
         elif "accountid" in user.cache:
             if user.cache["accountid"] == self.chanserv.cache["registered"][params[0]]["founder"]:
@@ -579,7 +580,7 @@ class CSCdropCommand(Command):
         if params[0] not in self.chanserv.cache["registered"]:
             user.sendMessage("NOTICE", ":The channel \x02{}\x02 isn't registered.".format(params[0]), prefix=self.chanserv.prefix())
             return {}
-        if user.cache["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"] and "o" not in user.mode:
+        if user.cache["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"] and not self.module.isServiceAdmin(user, self.chanserv):
             user.sendMessage("NOTICE", ":You must be the channel founder in order to drop it.", prefix=self.chanserv.prefix())
             return {}
         return {
@@ -599,7 +600,7 @@ class BSStartCommand(Command):
         d.addErrback(self.module.exclaimServerError, user, self.bidserv)
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" in self.bidserv.cache:
@@ -668,7 +669,7 @@ class BSStopCommand(Command):
         user.sendMessage("NOTICE", ":The auction has been canceled.", prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -777,7 +778,7 @@ class BSRevertCommand(Command):
             channel.sendChannelMessage("PRIVMSG", revertMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -802,7 +803,7 @@ class BSOnceCommand(Command):
             channel.sendChannelMessage("PRIVMSG", onceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -827,7 +828,7 @@ class BSTwiceCommand(Command):
             channel.sendChannelMessage("PRIVMSG", twiceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -863,7 +864,7 @@ class BSSoldCommand(Command):
         del self.bidserv.cache["auction"]
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -1178,10 +1179,10 @@ class Spawner(object):
         if "services_operserv_gecos" not in self.ircd.servconfig:
             self.ircd.servconfig["services_operserv_gecos"] = "Operator Service"
         
-        self.nickserv = Service(self.ircd, self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_nickserv_ident"], self.ircd.servconfig["services_nickserv_host"], self.ircd.servconfig["services_nickserv_gecos"], self.helpText["nickserv"])
-        self.chanserv = Service(self.ircd, self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_chanserv_ident"], self.ircd.servconfig["services_chanserv_host"], self.ircd.servconfig["services_chanserv_gecos"], self.helpText["chanserv"])
-        self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"])
-        self.operserv = Service(self.ircd, self.ircd.servconfig["services_operserv_nick"], self.ircd.servconfig["services_operserv_ident"], self.ircd.servconfig["services_operserv_host"], self.ircd.servconfig["services_operserv_gecos"], self.helpText["operserv"])
+        self.nickserv = Service(self.ircd, self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_nickserv_ident"], self.ircd.servconfig["services_nickserv_host"], self.ircd.servconfig["services_nickserv_gecos"], self.helpText["nickserv"], self)
+        self.chanserv = Service(self.ircd, self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_chanserv_ident"], self.ircd.servconfig["services_chanserv_host"], self.ircd.servconfig["services_chanserv_gecos"], self.helpText["chanserv"], self)
+        self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"], self)
+        self.operserv = Service(self.ircd, self.ircd.servconfig["services_operserv_nick"], self.ircd.servconfig["services_operserv_ident"], self.ircd.servconfig["services_operserv_host"], self.ircd.servconfig["services_operserv_gecos"], self.helpText["operserv"], self)
         
         self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
         self.nickserv.cache["certfp"] = {}
