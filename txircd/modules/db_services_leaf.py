@@ -161,6 +161,8 @@ class Spawner(object):
             self.ircd.servconfig["services_chanserv_nick"] = "ChanServ"
         if "services_bidserv_nick" not in self.ircd.servconfig:
             self.ircd.servconfig["services_bidserv_nick"] = "BidServ"
+        if "services_operserv_nick" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_nick"] = "OperServ"
         return {
             "commands": {
                 "NICKSERV": NickServAlias(),
