@@ -1205,6 +1205,11 @@ class Spawner(object):
         
         self.ircd.module_data_cache["sasl_agent"] = self
         
+        for server in self.ircd.servers.itervalues(): # Propagate information to other servers
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceServer", args=[self.ircd.name])
+            for adminType, adminList in self.admins.iteritems():
+                server.callRemote(ModuleMessage, destserver=server.name, type="ServiceAdmins", args=[adminType] + adminList)
+        
         return {
             "commands": {
                 "NICKSERV": NickServAlias(),
