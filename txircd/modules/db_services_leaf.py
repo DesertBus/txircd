@@ -170,12 +170,7 @@ class Spawner(object):
         self.ircd = ircd
         self.serviceServer = None
         self.blockedUsers = set()
-        self.admins = {
-            "nickserv": [],
-            "chanserv": [],
-            "bidserv": [],
-            "operserv": []
-        }
+        self.admins = {}
     
     def spawn(self):
         if "services_nickserv_nick" not in self.ircd.servconfig:
@@ -268,6 +263,10 @@ class Spawner(object):
         if name == self.serviceServer:
             self.blockedUsers = set()
             self.serviceServer = None
+            self.admins = {}
+            for u in self.ircd.users:
+                if "accountid" in u.cache:
+                    del u.cache["accountid"]
     
     def noteServer(self, command, args):
         self.serviceServer = args[0]
