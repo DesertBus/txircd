@@ -170,6 +170,12 @@ class Spawner(object):
         self.ircd = ircd
         self.serviceServer = None
         self.blockedUsers = set()
+        self.admins = {
+            "nickserv": [],
+            "chanserv": [],
+            "bidserv": [],
+            "operserv": []
+        }
     
     def spawn(self):
         if "services_nickserv_nick" not in self.ircd.servconfig:
@@ -224,7 +230,8 @@ class Spawner(object):
             "server": {
                 "ServiceServer": self.noteServer,
                 "ServiceBlockUser": self.addBlock,
-                "ServiceUnblockUser": self.removeBlock
+                "ServiceUnblockUser": self.removeBlock,
+                "ServiceAdmins": self.setAdmins
             }
         }
     
@@ -272,3 +279,7 @@ class Spawner(object):
         if args[0] not in self.ircd.userid:
             return
         self.blockedUsers.discard(self.ircd.userid[args[0]])
+    
+    def setAdmins(self, command, args):
+        service = args.pop(0)
+        self.admins[service] = args
