@@ -14,6 +14,10 @@ class BidServAlias(Command):
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], " ".join(data["params"])])
 
+class OperServAlias(Command):
+    def onUse(self, user, data):
+        user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_operserv_nick"], " ".join(data["params"])])
+
 class NSIdentifyCommand(Command):
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_nickserv_nick"], "IDENTIFY {}".format(" ".join(data["params"]))])
@@ -59,11 +63,14 @@ class CSCdropCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_chanserv_nick"], "CDROP {}".format(" ".join(data["params"]))])
 
 class BSStartCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "START {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -72,11 +79,14 @@ class BSStartCommand(Command):
         }
 
 class BSStopCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "STOP {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -89,11 +99,14 @@ class BSBidCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "BID {}".format(" ".join(data["params"]))])
 
 class BSRevertCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "REVERT {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -102,11 +115,14 @@ class BSRevertCommand(Command):
         }
 
 class BSOnceCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "ONCE {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -115,11 +131,14 @@ class BSOnceCommand(Command):
         }
 
 class BSTwiceCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "TWICE {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -128,11 +147,14 @@ class BSTwiceCommand(Command):
         }
 
 class BSSoldCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "SOLD {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         return {
@@ -148,11 +170,28 @@ class BSCurrentAuctionCommand(Command):
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "CURRENTAUCTION {}".format(" ".join(data["params"]))])
 
+class OSServAdminCommand(Command):
+    def __init__(self, module):
+        self.module = module
+    
+    def onUse(self, user, data):
+        user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_operserv_nick"], "SERVADMIN {}".format(" ".join(data["params"]))])
+    
+    def processParams(self, user, params):
+        if not self.module.isServiceAdmin(user, "operserv"):
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
+            return {}
+        return {
+            "user": user,
+            "params": params
+        }
+
 class Spawner(object):
     def __init__(self, ircd):
         self.ircd = ircd
         self.serviceServer = None
         self.blockedUsers = set()
+        self.admins = {}
     
     def spawn(self):
         if "services_nickserv_nick" not in self.ircd.servconfig:
@@ -161,6 +200,8 @@ class Spawner(object):
             self.ircd.servconfig["services_chanserv_nick"] = "ChanServ"
         if "services_bidserv_nick" not in self.ircd.servconfig:
             self.ircd.servconfig["services_bidserv_nick"] = "BidServ"
+        if "services_operserv_nick" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_nick"] = "OperServ"
         return {
             "commands": {
                 "NICKSERV": NickServAlias(),
@@ -169,6 +210,8 @@ class Spawner(object):
                 "CS": ChanServAlias(),
                 "BIDSERV": BidServAlias(),
                 "BS": BidServAlias(),
+                "OPERSERV": OperServAlias(),
+                "OS": OperServAlias(),
                 
                 "IDENTIFY": NSIdentifyCommand(),
                 "ID": NSIdentifyCommand(),
@@ -184,15 +227,17 @@ class Spawner(object):
                 "ACCESS": CSAccessCommand(),
                 "CDROP": CSCdropCommand(),
                 
-                "START": BSStartCommand(),
-                "STOP": BSStopCommand(),
+                "START": BSStartCommand(self),
+                "STOP": BSStopCommand(self),
                 "BID": BSBidCommand(),
-                "REVERT": BSRevertCommand(),
-                "ONCE": BSOnceCommand(),
-                "TWICE": BSTwiceCommand(),
-                "SOLD": BSSoldCommand(),
+                "REVERT": BSRevertCommand(self),
+                "ONCE": BSOnceCommand(self),
+                "TWICE": BSTwiceCommand(self),
+                "SOLD": BSSoldCommand(self),
                 "HIGHBIDDER": BSHighbidderCommand(),
-                "CURRENTAUCTION": BSCurrentAuctionCommand()
+                "CURRENTAUCTION": BSCurrentAuctionCommand(),
+                
+                "SERVADMIN": OSServAdminCommand(self)
             },
             "actions": {
                 "commandpermission": self.commandPermission,
@@ -201,7 +246,10 @@ class Spawner(object):
             "server": {
                 "ServiceServer": self.noteServer,
                 "ServiceBlockUser": self.addBlock,
-                "ServiceUnblockUser": self.removeBlock
+                "ServiceUnblockUser": self.removeBlock,
+                "ServiceAdmins": self.setAdmins,
+                "ServiceLogin": self.loginUser,
+                "ServiceLogout": self.logoutUser
             }
         }
     
@@ -236,6 +284,10 @@ class Spawner(object):
         if name == self.serviceServer:
             self.blockedUsers = set()
             self.serviceServer = None
+            self.admins = {}
+            for u in self.ircd.users:
+                if "accountid" in u.cache:
+                    del u.cache["accountid"]
     
     def noteServer(self, command, args):
         self.serviceServer = args[0]
@@ -249,3 +301,24 @@ class Spawner(object):
         if args[0] not in self.ircd.userid:
             return
         self.blockedUsers.discard(self.ircd.userid[args[0]])
+    
+    def setAdmins(self, command, args):
+        service = args.pop(0)
+        self.admins[service] = args
+    
+    def loginUser(self, command, args):
+        if args[0] not in self.ircd.userid:
+            return
+        self.ircd.userid[args[0]].cache["accountid"] = args[1]
+    
+    def logoutUser(self, command, args):
+        if args[0] not in self.ircd.userid:
+            return
+        del self.ircd.userid[args[0]].cache["accountid"]
+    
+    def isServiceAdmin(self, user, service):
+        if service not in self.admins:
+            return False
+        if "accountid" not in user.cache:
+            return False
+        return user.cache["accountid"] in self.admins[service]

@@ -23,7 +23,7 @@ class Service(object):
             self.transport = self.ServiceTransport()
             self.secure = True
     
-    def __init__(self, ircd, nick, ident, host, gecos, helpTexts):
+    def __init__(self, ircd, nick, ident, host, gecos, helpTexts, module):
         # We're going to try to keep Service fairly consistent with IRCUser, even if most of these variables will never be used
         # in order to prevent exceptions all over the place
         self.ircd = ircd
@@ -54,6 +54,7 @@ class Service(object):
         }
         self.cache = {} # Not only do various other modules potentially play with the cache, but we can do what we want with it to store auction data, etc.
         self.help = helpTexts
+        self.module = module
     
     def addToServers(self):
         for server in self.ircd.servers.itervalues():
@@ -91,7 +92,7 @@ class Service(object):
                     commands = sorted(self.help[1].keys())
                     for cmd in commands:
                         info = self.help[1][cmd]
-                        if info[2] and "o" not in user.mode:
+                        if info[2] and not self.module.isServiceAdmin(user, self):
                             continue
                         user.sendMessage("NOTICE", ":\x02{}\x02\t{}".format(cmd.upper(), info[0]), prefix=self.prefix())
                     user.sendMessage("NOTICE", ": ", prefix=self.prefix())
@@ -102,14 +103,14 @@ class Service(object):
                         user.sendMessage("NOTICE", ":No help available for \x02{}\x02.".format(helpCmd), prefix=self.prefix())
                     else:
                         info = self.help[1][helpCmd]
-                        if info[2] and "o" not in user.mode:
+                        if info[2] and not self.module.isServiceAdmin(user, self):
                             user.sendMessage("NOTICE", ":No help available for \x02{}\x02.".format(helpCmd), prefix=self.prefix())
                         else:
                             helpOut = chunk_message(info[1], 80)
                             for line in helpOut:
                                 user.sendMessage("NOTICE", ":{}".format(line), prefix=self.prefix())
                             user.sendMessage("NOTICE", ":*** End of \x02{}\x02 help".format(helpCmd), prefix=self.prefix())
-            elif serviceCommand in self.help[1] and (not self.help[1][serviceCommand][2] or "o" in user.mode):
+            elif serviceCommand in self.help[1] and (not self.help[1][serviceCommand][2] or self.module.isServiceAdmin(user, self)):
                 self.ircd.users[nick].handleCommand(serviceCommand, None, params)
             else:
                 self.ircd.users[nick].sendMessage("NOTICE", ":Unknown command \x02{}\x02.  Use \x1F/msg {} HELP\x1F for help.".format(serviceCommand, self.nickname), prefix=self.prefix())
@@ -187,6 +188,10 @@ class ChanServAlias(Command):
 class BidServAlias(Command):
     def onUse(self, user, data):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], " ".join(data["params"])])
+
+class OperServAlias(Command):
+    def onUse(self, user, data):
+        user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_operserv_nick"], " ".join(data["params"])])
 
 
 class NSIdentifyCommand(Command):
@@ -283,11 +288,7 @@ class NSLogoutCommand(Command):
         self.nickserv = service
     
     def onUse(self, user, data):
-        del user.cache["accountid"]
-        user.delMetadata("ext", "accountname")
-        self.module.checkNick(user)
-        self.module.unregistered(user)
-        user.sendMessage("NOTICE", ":You are now logged out.", prefix=self.nickserv.prefix())
+        self.module.logoutUser(user)
     
     def processParams(self, user, params):
         if "accountid" not in user.cache:
@@ -427,7 +428,7 @@ class CSRegisterCommand(Command):
             user.sendMessage("NOTICE", ":That channel is already registered.", prefix=self.chanserv.prefix())
             return {}
         cdata = self.ircd.channels[params[0]]
-        if not user.hasAccess(cdata, "o"):
+        if not user.hasAccess(cdata, "o") and not self.module.isServiceAdmin(user, self.chanserv):
             user.sendMessage("NOTICE", ":You must be a channel operator to register that channel.", prefix=self.chanserv.prefix())
             return {}
         return {
@@ -476,7 +477,7 @@ class CSAccessCommand(Command):
                 "targetchan": params[0]
             }
         can_modify = False
-        if "o" in user.mode:
+        if self.module.isServiceAdmin(user, self.chanserv):
             can_modify = True
         elif "accountid" in user.cache:
             if user.cache["accountid"] == self.chanserv.cache["registered"][params[0]]["founder"]:
@@ -579,7 +580,7 @@ class CSCdropCommand(Command):
         if params[0] not in self.chanserv.cache["registered"]:
             user.sendMessage("NOTICE", ":The channel \x02{}\x02 isn't registered.".format(params[0]), prefix=self.chanserv.prefix())
             return {}
-        if user.cache["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"] and "o" not in user.mode:
+        if user.cache["accountid"] != self.chanserv.cache["registered"][params[0]]["founder"] and not self.module.isServiceAdmin(user, self.chanserv):
             user.sendMessage("NOTICE", ":You must be the channel founder in order to drop it.", prefix=self.chanserv.prefix())
             return {}
         return {
@@ -599,7 +600,7 @@ class BSStartCommand(Command):
         d.addErrback(self.module.exclaimServerError, user, self.bidserv)
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" in self.bidserv.cache:
@@ -668,7 +669,7 @@ class BSStopCommand(Command):
         user.sendMessage("NOTICE", ":The auction has been canceled.", prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -777,7 +778,7 @@ class BSRevertCommand(Command):
             channel.sendChannelMessage("PRIVMSG", revertMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -802,7 +803,7 @@ class BSOnceCommand(Command):
             channel.sendChannelMessage("PRIVMSG", onceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -827,7 +828,7 @@ class BSTwiceCommand(Command):
             channel.sendChannelMessage("PRIVMSG", twiceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -863,7 +864,7 @@ class BSSoldCommand(Command):
         del self.bidserv.cache["auction"]
     
     def processParams(self, user, params):
-        if "o" not in user.mode:
+        if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
         if "auction" not in self.bidserv.cache:
@@ -920,6 +921,114 @@ class BSCurrentAuctionCommand(Command):
         }
 
 
+class OSServAdminCommand(Command):
+    def __init__(self, module, service):
+        self.module = module
+        self.operserv = service
+    
+    def onUse(self, user, data):
+        if "nick" in data:
+            d = self.module.query("SELECT donor_id FROM ircnicks WHERE nick = {0} LIMIT 1", data["nick"])
+            d.addCallback(self.modifyList, data)
+            d.addErrback(self.module.exclaimServerError, user, self.operserv)
+            return
+        if data["action"] == "list":
+            adminList = self.module.admins[data["service"]]
+            if not adminList:
+                user.sendMessage("NOTICE", ":The admin list for that service is empty.", prefix=self.operserv.prefix())
+                return
+            d = self.module.query("SELECT n1.donor_id, n1.nick FROM ircnicks n1 JOIN (SELECT MIN(id) minID, donor_id FROM ircnicks GROUP BY donor_id) n2 ON n1.id = n2.minID WHERE {}".format(" OR ".join(["n1.donor_id = {0}" for i in adminList])), *adminList)
+            d.addCallback(self.listAdmins, user, data["service"])
+            d.addErrback(self.module.exclaimServerError, user, self.operserv)
+            return
+        self.modifyList([[data["account"]]], data)
+    
+    def processParams(self, user, params):
+        if not self.module.isServiceAdmin(user, self.operserv):
+            user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
+            return {}
+        if not params:
+            user.sendMessage("NOTICE", ":Usage: SERVADMIN {ADD|DEL|LIST} \x1Fservice\x1F \x1F[user]\x1F", prefix=self.operserv.prefix())
+            return {}
+        subcmd = params[0].lower()
+        if len(params) < 2 or subcmd not in ["add", "del", "list"]:
+            user.sendMessage("NOTICE", ":Usage: SERVADMIN {ADD|DEL|LIST} \x1Fservice\x1F \x1F[user]\x1F", prefix=self.operserv.prefix())
+            return {}
+        service = params[1].lower()
+        if service not in self.module.admins.keys():
+            user.sendMessage("NOTICE", ":Service {} is not a valid service name.".format(service), prefix=self.operserv.prefix())
+            return {}
+        if subcmd == "list":
+            return {
+                "user": user,
+                "service": service,
+                "action": "list"
+            }
+        if len(params) < 3:
+            user.sendMessage("NOTICE", ":The ADD and DEL subcommands require a user to add or remove.", prefix=self.operserv.prefix())
+            return {}
+        if params[2] in self.ircd.users:
+            udata = self.ircd.users[params[2]]
+            if "accountid" not in udata.cache:
+                user.sendMessage("NOTICE", ":The given user is not signed in.", prefix=self.operserv.prefix())
+                return {}
+            if subcmd == "add":
+                if udata.cache["accountid"] in self.module.admins[service]:
+                    user.sendMessage("NOTICE", ":The user you're adding is already an admin.", prefix=self.operserv.prefix())
+                    return {}
+            else:
+                if udata.cache["accountid"] not in self.module.admins[service]:
+                    user.sendMessage("NOTICE", ":The user you're removing is already not an admin.", prefix=self.operserv.prefix())
+                    return {}
+            return {
+                "user": user,
+                "service": service,
+                "action": subcmd,
+                "account": udata.cache["accountid"]
+            }
+        if params[2].isdigit():
+            return {
+                "user": user,
+                "service": service,
+                "action": subcmd,
+                "account": params[2]
+            }
+        return {
+            "user": user,
+            "service": service,
+            "action": subcmd,
+            "nick": params[2]
+        }
+    
+    def modifyList(self, target, data):
+        user = data["user"]
+        if not target:
+            user.sendMessage("NOTICE", ":The given nickname is not registered.", prefix=self.operserv.prefix())
+            return
+        targetID = str(target[0][0])
+        adminList = self.module.admins[data["service"]]
+        if data["action"] == "add":
+            if targetID in adminList:
+                user.sendMessage("NOTICE", ":Account {} is already on the admin list.".format(targetID), prefix=self.operserv.prefix())
+                return
+            adminList.append(targetID)
+            user.sendMessage("NOTICE", ":Account {} was added to the admin list.".format(targetID), prefix=self.operserv.prefix())
+        else:
+            if targetID not in adminList:
+                user.sendMessage("NOTICE", ":Account {} is already not on the admin list.".format(targetID), prefix=self.operserv.prefix())
+                return
+            adminList.remove(targetID)
+            user.sendMessage("NOTICE", ":Account {} was removed from the admin list.".format(targetID), prefix=self.operserv.prefix())
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceAdmins", args=[data["service"]] + adminList)
+    
+    def listAdmins(self, admins, user, service):
+        user.sendMessage("NOTICE", ":Admins for service {}".format(service), prefix=self.operserv.prefix())
+        for admin in admins:
+            user.sendMessage("NOTICE", ":  {}".format(admin[1]), prefix=self.operserv.prefix())
+        user.sendMessage("NOTICE", ":End of admin list", prefix=self.operserv.prefix())
+
+
 class Spawner(object):
     def __init__(self, ircd):
         self.ircd = ircd
@@ -927,7 +1036,8 @@ class Spawner(object):
         self.helpText = {
             "nickserv": ["NickServ matches your IRC nickname to your Donor account, allowing for a painless auction process, as well as the peace of mind that nobody can use your nickname but you.", CaseInsensitiveDictionary()],
             "chanserv": ["ChanServ allows managing channels to ease slightly the process of running this thing.", CaseInsensitiveDictionary()],
-            "bidserv": ["BidServ handles all of our fancy schmancy auction business and serves as the interface directly to auctions.", CaseInsensitiveDictionary()]
+            "bidserv": ["BidServ handles all of our fancy schmancy auction business and serves as the interface directly to auctions.", CaseInsensitiveDictionary()],
+            "operserv": ["OperServ handles things that opers may need.", CaseInsensitiveDictionary()]
         }
         # Help text values:
         # [ short description, long description, oper only ]
@@ -963,9 +1073,19 @@ class Spawner(object):
         self.helpText["bidserv"][1]["HIGHBIDDER"] = ["Get the high bidder in the current auction", "Syntax: \x02HIGHBIDDER\x02\n\nDisplays the high bidder in the current auction along with the amount of the current high bid.", False]
         self.helpText["bidserv"][1]["CURRENTAUCTION"] = ["Shows the item currently up for auction.", "Syntax: \x02CURRENTAUCTION\x02\n\nDisplays the item currently up for auction.", False]
         
+        self.helpText["operserv"][1]["SERVADMIN"] = ["Modifies the list of services admins", "Syntax: \x02SERVADMIN \x1F{ADD|DEL|LIST}\x1F \x1Fservice\x1F \x1F[nick|ID]\x1F\n\nWith the LIST subcommand, shows the admin list for the given service, or with the ADD or DEL subcommands, adds or removes users from the admin list for the given service.  The service parameter must be the base name of a running service (e.g. 'chanserv', 'nickserv').  The nick|ID parameter (required with the ADD or DEL subcommands) takes either a nick (either of a connected user or a registered nick) or an account ID to add or remove.", True]
+        
         self.nickserv = None
         self.chanserv = None
         self.bidserv = None
+        self.operserv = None
+        
+        self.admins = {
+            "nickserv": [],
+            "chanserv": [],
+            "bidserv": [],
+            "operserv": []
+        }
         
         self.auth_timer = {}
         self.saslUsers = {}
@@ -1050,9 +1170,19 @@ class Spawner(object):
         if "services_bidserv_gecos" not in self.ircd.servconfig:
             self.ircd.servconfig["services_bidserv_gecos"] = "Bidding Service"
         
-        self.nickserv = Service(self.ircd, self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_nickserv_ident"], self.ircd.servconfig["services_nickserv_host"], self.ircd.servconfig["services_nickserv_gecos"], self.helpText["nickserv"])
-        self.chanserv = Service(self.ircd, self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_chanserv_ident"], self.ircd.servconfig["services_chanserv_host"], self.ircd.servconfig["services_chanserv_gecos"], self.helpText["chanserv"])
-        self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"])
+        if "services_operserv_nick" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_nick"] = "OperServ"
+        if "services_operserv_ident" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_ident"] = "OperServ"
+        if "services_operserv_host" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_host"] = "services.desertbus.org"
+        if "services_operserv_gecos" not in self.ircd.servconfig:
+            self.ircd.servconfig["services_operserv_gecos"] = "Operator Service"
+        
+        self.nickserv = Service(self.ircd, self.ircd.servconfig["services_nickserv_nick"], self.ircd.servconfig["services_nickserv_ident"], self.ircd.servconfig["services_nickserv_host"], self.ircd.servconfig["services_nickserv_gecos"], self.helpText["nickserv"], self)
+        self.chanserv = Service(self.ircd, self.ircd.servconfig["services_chanserv_nick"], self.ircd.servconfig["services_chanserv_ident"], self.ircd.servconfig["services_chanserv_host"], self.ircd.servconfig["services_chanserv_gecos"], self.helpText["chanserv"], self)
+        self.bidserv = Service(self.ircd, self.ircd.servconfig["services_bidserv_nick"], self.ircd.servconfig["services_bidserv_ident"], self.ircd.servconfig["services_bidserv_host"], self.ircd.servconfig["services_bidserv_gecos"], self.helpText["bidserv"], self)
+        self.operserv = Service(self.ircd, self.ircd.servconfig["services_operserv_nick"], self.ircd.servconfig["services_operserv_ident"], self.ircd.servconfig["services_operserv_host"], self.ircd.servconfig["services_operserv_gecos"], self.helpText["operserv"], self)
         
         self.chanserv.cache["registered"] = CaseInsensitiveDictionary()
         self.nickserv.cache["certfp"] = {}
@@ -1060,14 +1190,22 @@ class Spawner(object):
         self.ircd.users[self.ircd.servconfig["services_nickserv_nick"]] = self.nickserv
         self.ircd.users[self.ircd.servconfig["services_chanserv_nick"]] = self.chanserv
         self.ircd.users[self.ircd.servconfig["services_bidserv_nick"]] = self.bidserv
+        self.ircd.users[self.ircd.servconfig["services_operserv_nick"]] = self.operserv
         self.ircd.userid[self.nickserv.uuid] = self.nickserv
         self.ircd.userid[self.chanserv.uuid] = self.chanserv
         self.ircd.userid[self.bidserv.uuid] = self.bidserv
+        self.ircd.userid[self.operserv.uuid] = self.operserv
         self.nickserv.addToServers()
         self.chanserv.addToServers()
         self.bidserv.addToServers()
+        self.operserv.addToServers()
         
         self.ircd.module_data_cache["sasl_agent"] = self
+        
+        for server in self.ircd.servers.itervalues(): # Propagate information to other servers
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceServer", args=[self.ircd.name])
+            for adminType, adminList in self.admins.iteritems():
+                server.callRemote(ModuleMessage, destserver=server.name, type="ServiceAdmins", args=[adminType] + adminList)
         
         return {
             "commands": {
@@ -1077,6 +1215,8 @@ class Spawner(object):
                 "CS": ChanServAlias(),
                 "BIDSERV": BidServAlias(),
                 "BS": BidServAlias(),
+                "OPERSERV": OperServAlias(),
+                "OS": OperServAlias(),
                 
                 "IDENTIFY": NSIdentifyCommand(self, self.nickserv),
                 "ID": NSIdentifyCommand(self, self.nickserv),
@@ -1099,7 +1239,9 @@ class Spawner(object):
                 "TWICE": BSTwiceCommand(self, self.bidserv),
                 "SOLD": BSSoldCommand(self, self.bidserv),
                 "HIGHBIDDER": BSHighbidderCommand(self, self.bidserv),
-                "CURRENTAUCTION": BSCurrentAuctionCommand(self, self.bidserv)
+                "CURRENTAUCTION": BSCurrentAuctionCommand(self, self.bidserv),
+                
+                "SERVADMIN": OSServAdminCommand(self, self.operserv)
             },
             "actions": {
                 "register": self.onRegister,
@@ -1120,12 +1262,15 @@ class Spawner(object):
         self.nickserv.removeFromServers()
         self.chanserv.removeFromServers()
         self.bidserv.removeFromServers()
+        self.operserv.removeFromServers()
         del self.ircd.users[self.nickserv.nickname]
         del self.ircd.users[self.chanserv.nickname]
         del self.ircd.users[self.bidserv.nickname]
+        del self.ircd.users[self.operserv.nickname]
         del self.ircd.userid[self.nickserv.uuid]
         del self.ircd.userid[self.chanserv.uuid]
         del self.ircd.userid[self.bidserv.uuid]
+        del self.ircd.userid[self.operserv.uuid]
     
     def data_serialize(self):
         outputDict = {}
@@ -1133,6 +1278,7 @@ class Spawner(object):
         if "auction" in self.bidserv.cache:
             outputDict["currentauction"] = self.bidserv.cache["auction"]
         outputDict["certfp"] = self.nickserv.cache["certfp"]
+        outputDict["admins"] = self.admins
         return [outputDict, {"auth_timers": self.auth_timer, "saslusers": self.saslUsers}]
     
     def data_unserialize(self, data):
@@ -1143,6 +1289,8 @@ class Spawner(object):
         if "registeredchannels" in data:
             for key, value in data["registeredchannels"].iteritems():
                 self.chanserv.cache["registered"][key] = value
+        if "admins" in data:
+            self.admins = data["admins"]
         if "auth_timers" in data:
             self.auth_timer = data["auth_timers"]
         if "saslusers" in data:
@@ -1248,7 +1396,18 @@ class Spawner(object):
         else:
             user.sendMessage("NOTICE", ":You are now identified. Welcome, {}.".format(user.metadata["ext"]["accountname"]), prefix=self.nickserv.prefix())
             self.checkNick(user)
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceLogin", args=[user.uuid, user.cache["accountid"]])
         self.registered(user)
+    
+    def logoutUser(self, user):
+        del user.cache["accountid"]
+        user.delMetadata("ext", "accountname")
+        self.checkNick(user)
+        self.unregistered(user)
+        for server in self.ircd.servers.itervalues():
+            server.callRemote(ModuleMessage, destserver=server.name, type="ServiceLogout", args=[user.uuid])
+        user.sendMessage("NOTICE", ":You are now logged out.", prefix=self.nickserv.prefix())
     
     def loadDonorInfo(self, result, user):
         if not result:
@@ -1469,6 +1628,22 @@ class Spawner(object):
         self.saslUsers[user]["success"] = successFunction
         self.saslUsers[user]["failure"] = failureFunction
     
+    def isServiceAdmin(self, user, service):
+        if "o" in user.mode:
+            return True
+        if "accountid" not in user.cache:
+            return False
+        id = user.cache["accountid"]
+        convertServices = {
+            self.nickserv: "nickserv",
+            self.chanserv: "chanserv",
+            self.bidserv: "bidserv",
+            self.operserv: "operserv"
+        }
+        if service not in convertServices:
+            return False
+        return id in self.admins[convertServices[service]]
+    
     def registered(self, user):
         for c in self.ircd.channels.itervalues():
             if user in c.users:
@@ -1555,7 +1730,16 @@ class Spawner(object):
             channel.created = self.chanserv.cache["registered"][channel.name]["registertime"]
     
     def onNetmerge(self, name):
-        self.ircd.servers[name].callRemote(ModuleMessage, destserver=name, type="ServiceServer", args=[self.ircd.name])
+        server = self.ircd.servers[name]
+        loggedInUserList = []
+        for u in self.ircd.users:
+            if "accountid" in u.cache:
+                loggedInUserList.append(u)
+        server.callRemote(ModuleMessage, destserver=name, type="ServiceServer", args=[self.ircd.name])
+        for adminType, adminList in self.admins.iteritems():
+            server.callRemote(ModuleMessage, destserver=name, type="ServiceAdmins", args=[adminType] + adminList)
+            for u in loggedInUserList:
+                server.callRemote(ModuleMessage, destserver=name, type="ServiceLogin", args=[u.uuid, u.cache["accountid"]])
     
     def commandPermission(self, user, cmd, data):
         if user not in self.auth_timer:
