@@ -56,7 +56,7 @@ class BadwordCommand(Command):
                 message = re.sub(mask, replacement, message, flags=re.IGNORECASE)
             data["message"] = message
             return data
-        if command == "TOPIC":
+        if command == "TOPIC" and "topic" in data:
             topic = data["topic"]
             for mask, replacement in self.badwords.iteritems():
                 topic = re.sub(mask, replacement, topic, flags=re.IGNORECASE)
