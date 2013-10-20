@@ -5,7 +5,7 @@ class Autojoin(Module):
     def joinOnConnect(self, user):
         if "client_join_on_connect" in self.ircd.servconfig:
             for channel in self.ircd.servconfig["client_join_on_connect"]:
-                user.join(self.ircd.channels[channel] if channel in self.ircd.channels else IRCChannel(self.ircd, channel))
+                user.handleCommand("JOIN", None, [channel])
         return True
 
 class Spawner(object):
