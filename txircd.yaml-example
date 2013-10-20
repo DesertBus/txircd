@@ -413,6 +413,16 @@
 # any channel.
 #- satopic
 # 
+# servnoticeconnect: Enables sending server notices to opers when users connect.
+# Activated through the "connect" notice type under the server notice mode
+# (+s connect).
+#- servnoticeconnect
+# 
+# servnoticequit: Enables sending server notices to opers when users quit.
+# Activated through the "quit" notice type under the server notice mode
+# (+s quit).
+#- servnoticequit
+# 
 # shun: Enables the shun feature, which ignores all but a few certain commands
 # from users matching the provided mask.  Setting and removing shuns works
 # similarly to g:lines.
