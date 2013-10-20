@@ -242,6 +242,7 @@ class IRCD(Factory):
         self.isupport["PREFIX"] = "({}){}".format("".join(self.prefix_order), "".join([self.prefixes[mode][0] for mode in self.prefix_order]))
         self.isupport["STATUSMSG"] = "".join([self.prefixes[mode][0] for mode in self.prefix_order])
         self.isupport["TOPICLEN"] = "316"
+        self.isupport["USERMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.user_modes])
         
         self.serialize_timer.start(300, now=False) # run every 5 minutes
     
