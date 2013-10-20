@@ -44,19 +44,19 @@ class BanMode(Mode):
             user.cache["ban_evaluating"] = channels
             return "again"
         keys = data["keys"]
-        remove = []
-        hostmask = irc_lower(user.prefix())
-        for chan in user.cache["ban_evaluating"]:
-            if "b" in chan.mode:
-                for mask in chan.mode["b"]:
-                    if fnmatch(hostmask, irc_lower(mask)):
-                        remove.append(chan)
-                        user.sendMessage(irc.ERR_BANNEDFROMCHAN, chan.name, ":Cannot join channel (You're banned)")
-                        break
-        for chan in remove:
-            index = channels.index(chan)
-            channels.pop(index)
-            keys.pop(index)
+        for hostmask in (irc_lower(user.prefix()), irc_lower("{}!{}@{}".format(user.nickname, user.username, user.realhost)), irc_lower("{}!{}@{}".format(user.nickname, user.username, user.ip))):
+            remove = []
+            for chan in user.cache["ban_evaluating"]:
+                if "b" in chan.mode:
+                    for mask in chan.mode["b"]:
+                        if fnmatch(hostmask, irc_lower(mask)):
+                            remove.append(chan)
+                            user.sendMessage(irc.ERR_BANNEDFROMCHAN, chan.name, ":Cannot join channel (You're banned)")
+                            break
+            for chan in remove:
+                index = channels.index(chan)
+                channels.pop(index)
+                keys.pop(index)
         data["targetchan"] = channels
         data["keys"] = keys
         del user.cache["ban_evaluating"]
