@@ -1732,7 +1732,7 @@ class Spawner(object):
     def onNetmerge(self, name):
         server = self.ircd.servers[name]
         loggedInUserList = []
-        for u in self.ircd.users:
+        for u in self.ircd.users.itervalues():
             if "accountid" in u.cache:
                 loggedInUserList.append(u)
         server.callRemote(ModuleMessage, destserver=name, type="ServiceServer", args=[self.ircd.name])
