@@ -299,6 +299,8 @@ class IRCUser(object):
                         continue # mode must have parameter, but one wasn't provided
                     param = params[currentParam]
                     currentParam += 1
+                    if " " in param:
+                        param = param[:param.find(" ")]
                 else:
                     param = None
                 if not (modetype == 0 and param is None): # ignore these checks for list modes so that they can be listed
