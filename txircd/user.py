@@ -294,8 +294,8 @@ class IRCUser(object):
                         user.sendMessage(irc.ERR_UMODEUNKNOWNFLAG, mode, ":is unknown mode char to me")
                     continue
                 modetype = self.ircd.user_mode_type[mode]
-                if modetype == 1 or (adding and modetype == 2) or (modetype == 0 and len(params) > current_param):
-                    if len(params) <= current_param:
+                if modetype == 1 or (adding and modetype == 2) or (modetype == 0 and len(params) > currentParam):
+                    if len(params) <= currentParam:
                         continue # mode must have parameter, but one wasn't provided
                     param = params[currentParam]
                     currentParam += 1
