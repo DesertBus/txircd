@@ -52,13 +52,6 @@ def parse_duration(duration_string):
                 pass
     return duration
 
-def build_duration(duration_int):
-    timeparts = {}
-    for name in ["years","weeks","days","hours","minutes","seconds"]:
-        timeparts[name] = duration_int / time_lengths[name]
-        duration_int -= timeparts[name] * time_lengths[name]
-    return "{years}y{weeks}w{days}d{hours}h{minutes}m{seconds}s".format(**timeparts)
-
 def chunk_message(msg, chunk_size):
     chunks = []
     msg += "\n"
