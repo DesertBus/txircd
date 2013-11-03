@@ -7,6 +7,14 @@ class LinksCommand(Command):
             user.sendMessage(irc.RPL_LINKS, servname, data.nearHop, ":{} {}".format(data.hopCount, data.description))
         user.sendMessage(irc.RPL_LINKS, self.ircd.name, self.ircd.name, ":0 {}".format(self.ircd.servconfig["server_description"]))
         user.sendMessage(irc.RPL_ENDOFLINKS, "*", ":End of /LINKS list.")
+    
+    def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "LINKS", ":You have not registered")
+            return {}
+        return {
+            "user": user
+        }
 
 class Spawner(object):
     def __init__(self, ircd):

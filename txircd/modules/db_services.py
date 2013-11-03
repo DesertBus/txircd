@@ -203,6 +203,9 @@ class NSIdentifyCommand(Command):
         self.module.auth(user, data["email"], data["password"])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMesssage(irc.ERR_NOTREGISTERED, "IDENTIFY", ":You have not registered")
+            return {}
         if not params:
             user.sendMessage("NOTICE", ":Usage: \x02IDENTIFY \x1Femail:password", prefix=self.nickserv.prefix())
             return {}
@@ -239,6 +242,9 @@ class NSGhostCommand(Command):
             d.addErrback(self.module.exclaimServerError, user, self.nickserv)
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "GHOST", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to do that.", prefix=self.nickserv.prefix())
             return {}
@@ -273,6 +279,9 @@ class NSLoginCommand(Command):
         self.module.auth(user, data["email"], data["password"])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "LOGIN", ":You have not registered")
+            return {}
         if not params or len(params) < 2:
             user.sendMessage("NOTICE", ":Usage: \x02LOGIN \x1Femail\x1F \x1Fpassword", prefix=self.nickserv.prefix())
             return {}
@@ -291,6 +300,9 @@ class NSLogoutCommand(Command):
         self.module.logoutUser(user)
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "LOGOUT", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You're already logged out.", prefix=self.nickserv.prefix())
             return {}
@@ -309,6 +321,9 @@ class NSDropCommand(Command):
         d.addErrback(self.module.exclaimServerError, user, self.nickserv)
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "DROP", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to use the DROP command.", prefix=self.nickserv.prefix())
             return {}
@@ -342,6 +357,9 @@ class NSNicklistCommand(Command):
         d.addErrback(self.module.exclaimServerError, user, self.nickserv)
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "NICKLIST", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to see your nicknames.", prefix=self.nickserv.prefix())
             return {}
@@ -379,6 +397,9 @@ class NSCertCommand(Command):
                 user.sendMessage("NOTICE", ":Certificate fingerprint {} was not associated with your account.".format(certfp), prefix=self.nickserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "CERT", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to use that command.", prefix=self.nickserv.prefix())
             return {}
@@ -415,6 +436,9 @@ class CSRegisterCommand(Command):
         user.sendMessage("NOTICE", ":The channel {} has been registered under your account.".format(channel.name), prefix=self.chanserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "REGISTER", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to register a channel.", prefix=self.chanserv.prefix())
             return {}
@@ -465,6 +489,9 @@ class CSAccessCommand(Command):
         self.changeAccess([[accessID]], accessID, user, data["targetchan"], data["flags"])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "ACCESS", ":You have not registered")
+            return {}
         if not params:
             user.sendMessage("NOTICE", ":Usage: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]", prefix=self.chanserv.prefix())
             return {}
@@ -571,6 +598,9 @@ class CSCdropCommand(Command):
         user.sendMessage("NOTICE", ":The channel \x02{}\x02 has been dropped.".format(data["channel"]), prefix=self.chanserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "CDROP", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to drop a channel.", prefix=self.chanserv.prefix())
             return {}
@@ -600,6 +630,9 @@ class BSStartCommand(Command):
         d.addErrback(self.module.exclaimServerError, user, self.bidserv)
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "START", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -669,6 +702,9 @@ class BSStopCommand(Command):
         user.sendMessage("NOTICE", ":The auction has been canceled.", prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "STOP", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -721,6 +757,9 @@ class BSBidCommand(Command):
             channel.sendChannelMessage("PRIVMSG", bidMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "BID", ":You have not registered")
+            return {}
         if "accountid" not in user.cache:
             user.sendMessage("NOTICE", ":You must be logged in to bid.", prefix=self.bidserv.prefix())
             return {}
@@ -778,6 +817,9 @@ class BSRevertCommand(Command):
             channel.sendChannelMessage("PRIVMSG", revertMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "REVERT", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -803,6 +845,9 @@ class BSOnceCommand(Command):
             channel.sendChannelMessage("PRIVMSG", onceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "ONCE", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -828,6 +873,9 @@ class BSTwiceCommand(Command):
             channel.sendChannelMessage("PRIVMSG", twiceMsg, prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "TWICE", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -864,6 +912,9 @@ class BSSoldCommand(Command):
         del self.bidserv.cache["auction"]
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "SOLD", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, self.bidserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -897,6 +948,9 @@ class BSHighbidderCommand(Command):
         user.sendMessage("NOTICE", ":The current high bid is ${:,.2f} by {}.".format(self.bidserv.cache["auction"]["highbid"], self.bidserv.cache["auction"]["highbidder"]), prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "HIGHBIDDER", ":You have not registered")
+            return {}
         if "auction" not in self.bidserv.cache:
             user.sendMessage("NOTICE", ":There is not an auction going on right now.", prefix=self.bidserv.prefix())
             return {}
@@ -913,6 +967,9 @@ class BSCurrentAuctionCommand(Command):
         user.sendMessage("NOTICE", ":The item currently up for auction is lot #{} ({}).  http://desertbus.org/live-auction/{}".format(self.bidserv.cache["auction"]["item"], self.bidserv.cache["auction"]["name"], self.bidserv.cache["auction"]["item"]), prefix=self.bidserv.prefix())
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "CURRENTAUCTION", ":You have not registered")
+            return {}
         if "auction" not in self.bidserv.cache:
             user.sendMessage("NOTICE", ":There is not an auction running at this time.", prefix=self.bidserv.prefix())
             return {}
@@ -944,6 +1001,9 @@ class OSServAdminCommand(Command):
         self.modifyList([[data["account"]]], data)
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "SERVADMIN", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, self.operserv):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}

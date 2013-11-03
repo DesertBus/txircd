@@ -7,6 +7,7 @@ class LusersCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "LUSERS", ":You have not registered")
             return {}
         return {
             "user": user
