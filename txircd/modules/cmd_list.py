@@ -32,7 +32,7 @@ class ListCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "LIST", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "LIST", ":You have not registered")
             return {}
         if params:
             chanFilter = irc_lower(params[0]).split(",")

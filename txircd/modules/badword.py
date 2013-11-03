@@ -22,7 +22,7 @@ class BadwordCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "BADWORD", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "BADWORD", ":You have not registered")
             return {}
         if "o" not in user.mode:
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")

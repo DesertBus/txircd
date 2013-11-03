@@ -11,7 +11,7 @@ class IsonCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "ISON", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "ISON", ":You have not registered")
             return {}
         if not params:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "ISON", ":Not enough parameters")

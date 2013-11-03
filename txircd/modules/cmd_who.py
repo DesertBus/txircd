@@ -35,7 +35,7 @@ class WhoCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "WHO", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "WHO", ":You have not registered")
             return {}
         if not params:
             return {

@@ -13,7 +13,7 @@ class ModulesCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "MODULES", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "MODULES", ":You have not registered")
             return {}
         return {
             "user": user

@@ -11,7 +11,7 @@ class UserhostCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "USERHOST", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "USERHOST", ":You have not registered")
             return {}
         if not params:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "USERHOST", ":Not enough parameters")

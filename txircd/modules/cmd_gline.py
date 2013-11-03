@@ -33,7 +33,7 @@ class GlineCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "GLINE", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "GLINE", ":You have not registered")
             return {}
         if "o" not in user.mode:
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")

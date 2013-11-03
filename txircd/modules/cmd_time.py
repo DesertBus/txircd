@@ -7,7 +7,7 @@ class TimeCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "TIME", ":You are not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "TIME", ":You are not registered")
             return {}
         return {
             "user": user

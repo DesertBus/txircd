@@ -13,7 +13,7 @@ class AdminCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "ADMIN", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "ADMIN", ":You have not registered")
             return {}
         return {
             "user": user

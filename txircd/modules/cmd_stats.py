@@ -20,7 +20,7 @@ class StatsCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "STATS", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "STATS", ":You have not registered")
             return {}
         if not params or not params[0]:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "STATS", ":Not enough parameters")

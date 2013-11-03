@@ -76,7 +76,7 @@ class MetadataCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "METADATA", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "METADATA", ":You have not registered")
             return {}
         if not params or len(params) < 2:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "METADATA", ":Not enough parameters")
