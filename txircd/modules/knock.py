@@ -21,7 +21,7 @@ class KnockCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "KNOCK", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "KNOCK", ":You have not registered")
             return {}
         if not params:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "KNOCK", ":Not enough parameters")

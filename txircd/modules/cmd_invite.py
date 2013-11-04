@@ -14,7 +14,7 @@ class InviteCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "INVITE", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "INVITE", ":You have not registered")
             return {}
         if not params or len(params) < 2:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "INVITE", ":Not enough parameters")

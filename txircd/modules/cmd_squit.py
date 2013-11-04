@@ -10,6 +10,9 @@ class SQuitCommand(Command):
             self.ircd.servers[data["server"].nearHop].callRemote(ModuleMessage, destserver=data["server"].nearHop, type="ServerQuit", args=[data["server"].name])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "SQUIT", ":You have not registered")
+            return {}
         if "o" not in user.mode:
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}

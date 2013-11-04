@@ -12,7 +12,7 @@ class InfoCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "INFO", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "INFO", ":You have not registered")
             return {}
         return {
             "user": user

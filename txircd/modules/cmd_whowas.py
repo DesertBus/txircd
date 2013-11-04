@@ -22,7 +22,7 @@ class WhowasCommand(Command):
     
     def processParams(self, user, params):
         if user.registered > 0:
-            user.sendMessage(irc.ERR_NOTYETREGISTERED, "WHOWAS", ":You have not registered")
+            user.sendMessage(irc.ERR_NOTREGISTERED, "WHOWAS", ":You have not registered")
             return {}
         if not params:
             user.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")

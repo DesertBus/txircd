@@ -70,6 +70,9 @@ class BSStartCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "START {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "START", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -86,6 +89,9 @@ class BSStopCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "STOP {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "STOP", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -106,6 +112,9 @@ class BSRevertCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "REVERT {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "REVERT", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -122,6 +131,9 @@ class BSOnceCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "ONCE {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "ONCE", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -138,6 +150,9 @@ class BSTwiceCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "TWICE {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "TWICE", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -154,6 +169,9 @@ class BSSoldCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_bidserv_nick"], "SOLD {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "SOLD", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, "bidserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}
@@ -178,6 +196,9 @@ class OSServAdminCommand(Command):
         user.handleCommand("PRIVMSG", None, [self.ircd.servconfig["services_operserv_nick"], "SERVADMIN {}".format(" ".join(data["params"]))])
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "SERVADMIN", ":You have not registered")
+            return {}
         if not self.module.isServiceAdmin(user, "operserv"):
             user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - You do not have the correct operator privileges")
             return {}

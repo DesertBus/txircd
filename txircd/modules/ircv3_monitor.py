@@ -98,6 +98,9 @@ class MonitorCommand(Command):
                         user.sendMessage(irc.RPL_MONOFFLINE, ":{}".format(line.replace(" ", ",")))
     
     def processParams(self, user, params):
+        if user.registered > 0:
+            user.sendMessage(irc.ERR_NOTREGISTERED, "MONITOR", ":You have not registered")
+            return {}
         if not params:
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "MONITOR", ":Not enough parameters")
             return {}
