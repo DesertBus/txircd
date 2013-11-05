@@ -55,13 +55,12 @@ class BadwordCommand(Command):
             for mask, replacement in self.badwords.iteritems():
                 message = re.sub(mask, replacement, message, flags=re.IGNORECASE)
             data["message"] = message
-            return data
-        if command == "TOPIC" and "topic" in data:
+        elif command == "TOPIC" and "topic" in data:
             topic = data["topic"]
             for mask, replacement in self.badwords.iteritems():
                 topic = re.sub(mask, replacement, topic, flags=re.IGNORECASE)
             data["topic"] = topic
-            return data
+        return data
 
 class Spawner(object):
     def __init__(self, ircd):
