@@ -495,6 +495,9 @@ class CSAccessCommand(Command):
         if not params:
             user.sendMessage("NOTICE", ":Usage: \x02ACCESS \x1Fchannel\x1F [\x1Faccount|nick|group\x1F \x1Fflags\x1F]", prefix=self.chanserv.prefix())
             return {}
+        if params[0][0] != "#":
+            user.sendMessage("NOTICE", ":{} is not a channel.".format(params[0]), prefix=self.chanserv.prefix())
+            return {}
         if params[0] not in self.chanserv.cache["registered"]:
             user.sendMessage("NOTICE", ":{} is not registered.".format(params[0]), prefix=self.chanserv.prefix())
             return {}
