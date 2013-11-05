@@ -1,9 +1,10 @@
+from twisted.words.protocols import irc
 from txircd.modbase import Mode
 
 class OperMode(Mode):
     def checkSet(self, user, target, param):
         user.sendMessage(irc.ERR_NOPRIVILEGES, ":Permission denied - User mode o may not be set")
-        return False # Should only be set by the OPER command; hence, reject any normal setting of the mode
+        return [False, param]# Should only be set by the OPER command; hence, reject any normal setting of the mode
     
     def checkWhoFilter(self, user, targetUser, filters, fields, channel, udata):
         if "o" in filters and not udata["oper"]:
