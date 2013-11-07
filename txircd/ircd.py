@@ -3,6 +3,7 @@ from twisted.internet.defer import DeferredList
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.protocol import Factory
 from twisted.internet.task import LoopingCall
+from twisted.internet.threads import deferToThread
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
@@ -215,7 +216,6 @@ class IRCD(Factory):
                     self.serialized_data = {}
         except IOError:
             self.serialized_data = {}
-        self.serialize_timer = LoopingCall(self.save_serialized)
         self.isupport = {}
         self.usercount = {
             "localmax": 0,
@@ -243,8 +243,6 @@ class IRCD(Factory):
         self.isupport["STATUSMSG"] = "".join([self.prefixes[mode][0] for mode in self.prefix_order])
         self.isupport["TOPICLEN"] = "316"
         self.isupport["USERMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.user_modes])
-        
-        self.serialize_timer.start(300, now=False) # run every 5 minutes
     
     def all_module_load(self):
         # load RFC-required modules
@@ -296,6 +294,7 @@ class IRCD(Factory):
             with open(self.config) as f:
                 self.load_options(yaml.safe_load(f))
             self.all_module_load()
+            deferToThread(self.save_serialized)
         except:
             return False
         return True
@@ -375,15 +374,7 @@ class IRCD(Factory):
     def load_module(self, name):
         saved_data = {}
         if name in self.modules:
-            try:
-                data_to_save, free_data = self.modules[name].data_serialize()
-                for key, value in free_data.iteritems():
-                    saved_data[key] = value
-                for key, value in data_to_save.iteritems():
-                    saved_data[key] = value
-            except AttributeError:
-                pass
-            self.unload_module_data(name)
+            saved_data = self.unload_module_data(name)
         try:
             mod_find = imp.find_module("txircd/modules/{}".format(name))
         except ImportError as e:
@@ -499,12 +490,18 @@ class IRCD(Factory):
         return True
     
     def unload_module_data(self, name):
+        data_to_save = {}
+        all_data = {}
         try:
-            data_to_save = self.modules[name].data_serialize()[0]
+            data_to_save, all_data = self.modules[name].data_serialize()
             if data_to_save:
                 self.serialized_data[name] = data_to_save
             elif name in self.serialized_data:
                 del self.serialized_data[name]
+            # Copy data_to_save (if anything) over to all_data (intentionally overwriting any non-permanent items already in all_data)
+            # So that we have one dictionary to pass back to data_unserialize if this is being immediately reloaded
+            for item, value in data_to_save.iteritems():
+                all_data[item] = value
         except AttributeError:
             pass
         try:
@@ -555,6 +552,7 @@ class IRCD(Factory):
             for command, function in abilities["server"].iteritems():
                 if command in self.server_commands and function in self.server_commands[command]:
                     self.server_commands[command].remove(function)
+        return all_data
     
     def save_serialized(self):
         with open("data.yaml", "w") as dataFile:
