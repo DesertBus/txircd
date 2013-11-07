@@ -496,12 +496,18 @@ class IRCD(Factory):
         return True
     
     def unload_module_data(self, name):
+        data_to_save = {}
+        all_data = {}
         try:
-            data_to_save = self.modules[name].data_serialize()[0]
+            data_to_save, all_data = self.modules[name].data_serialize()
             if data_to_save:
                 self.serialized_data[name] = data_to_save
             elif name in self.serialized_data:
                 del self.serialized_data[name]
+            # Copy data_to_save (if anything) over to all_data (intentionally overwriting any non-permanent items already in all_data)
+            # So that we have one dictionary to pass back to data_unserialize if this is being immediately reloaded
+            for item, value in data_to_save.iteritems():
+                all_data[item] = value
         except AttributeError:
             pass
         try:
@@ -552,6 +558,7 @@ class IRCD(Factory):
             for command, function in abilities["server"].iteritems():
                 if command in self.server_commands and function in self.server_commands[command]:
                     self.server_commands[command].remove(function)
+        return all_data
     
     def save_serialized(self):
         with open("data.yaml", "w") as dataFile:
