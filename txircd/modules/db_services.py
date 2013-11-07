@@ -1399,7 +1399,7 @@ class Spawner(object):
             self.removeAuthTimer(user)
         if irc_lower(user.nickname).startswith(irc_lower(self.ircd.servconfig["services_nickserv_guest_prefix"])):
             return # Don't check guest nicks
-        d = self.query("SELECT donor_id FROM ircnicks WHERE nick = {0}", irc_lower(user.nickname))
+        d = self.query("SELECT donor_id, nick FROM ircnicks WHERE nick = {0} LIMIT 1", irc_lower(user.nickname))
         d.addCallback(self.beginVerify, user)
         return d
     
@@ -1485,6 +1485,9 @@ class Spawner(object):
     def beginVerify(self, result, user):
         if result:
             id = str(result[0][0])
+            if irc_lower(user.nickname) != irc_lower(result[0][1]):
+                # The user changed nicks before the SQL result returned, so we'll just pretend none of this ever happened
+                return
             if "accountid" in user.cache and user.cache["accountid"] == id:
                 if user in self.auth_timer: # Clear the timer
                     self.removeAuthTimer(user)
