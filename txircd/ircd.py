@@ -3,6 +3,7 @@ from twisted.internet.defer import DeferredList
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.protocol import Factory
 from twisted.internet.task import LoopingCall
+from twisted.internet.threads import deferToThread
 from twisted.internet.interfaces import ISSLTransport
 from twisted.python import log
 from twisted.words.protocols import irc
@@ -293,7 +294,7 @@ class IRCD(Factory):
             with open(self.config) as f:
                 self.load_options(yaml.safe_load(f))
             self.all_module_load()
-            self.save_serialized()
+            deferToThread(self.save_serialized)
         except:
             return False
         return True
