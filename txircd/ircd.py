@@ -293,6 +293,7 @@ class IRCD(Factory):
             with open(self.config) as f:
                 self.load_options(yaml.safe_load(f))
             self.all_module_load()
+            self.save_serialized()
         except:
             return False
         return True
