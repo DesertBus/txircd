@@ -215,7 +215,6 @@ class IRCD(Factory):
                     self.serialized_data = {}
         except IOError:
             self.serialized_data = {}
-        self.serialize_timer = LoopingCall(self.save_serialized)
         self.isupport = {}
         self.usercount = {
             "localmax": 0,
@@ -243,8 +242,6 @@ class IRCD(Factory):
         self.isupport["STATUSMSG"] = "".join([self.prefixes[mode][0] for mode in self.prefix_order])
         self.isupport["TOPICLEN"] = "316"
         self.isupport["USERMODES"] = ",".join(["".join(modedict.keys()) for modedict in self.user_modes])
-        
-        self.serialize_timer.start(300, now=False) # run every 5 minutes
     
     def all_module_load(self):
         # load RFC-required modules
