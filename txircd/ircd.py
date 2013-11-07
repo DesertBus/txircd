@@ -372,15 +372,7 @@ class IRCD(Factory):
     def load_module(self, name):
         saved_data = {}
         if name in self.modules:
-            try:
-                data_to_save, free_data = self.modules[name].data_serialize()
-                for key, value in free_data.iteritems():
-                    saved_data[key] = value
-                for key, value in data_to_save.iteritems():
-                    saved_data[key] = value
-            except AttributeError:
-                pass
-            self.unload_module_data(name)
+            saved_data = self.unload_module_data(name)
         try:
             mod_find = imp.find_module("txircd/modules/{}".format(name))
         except ImportError as e:
