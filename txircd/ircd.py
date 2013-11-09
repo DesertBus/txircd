@@ -326,13 +326,13 @@ class IRCD(Factory):
             try:
                 spawner.cleanup()
             except AttributeError:
-                pass
+                pass # If the module has no extra cleanup to do, that's fine
             try:
                 data_to_save, free_data = self.modules[name].data_serialize()
                 if data_to_save:
                     self.serialized_data[name] = data_to_save
             except AttributeError:
-                pass
+                pass # If the module has no data to save, that's also fine.
         log.msg("Saving serialized data...")
         if not self.save_module_data():
             self.save_serialized_deferred.addCallback(self.save_serialized)
