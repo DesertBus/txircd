@@ -86,5 +86,13 @@ class Spawner(object):
         return [self.whowasCmd.history._data, {}]
     
     def data_unserialize(self, data):
-        for nick, entry in data.iteritems():
-            self.whowasCmd.history[nick] = entry
+        for nick, entries in data.iteritems():
+            # UPGRADE BEGIN
+            # 0.2.6: The following code upgrades data from 0.2.5 or prior
+            for entry in entries:
+                if "realhost" not in entry:
+                    entry["realhost"] = entry["host"]
+                if "ip" not in entry:
+                    entry["ip"] = "0.0.0.0"
+            # UPGRADE END
+            self.whowasCmd.history[nick] = entries
