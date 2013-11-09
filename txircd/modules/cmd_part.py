@@ -5,10 +5,14 @@ class PartCommand(Command):
     def onUse(self, user, data):
         if "targetchan" not in data:
             return
+        reason = data["reason"] if "reason" in data else None
         for channel in data["targetchan"]:
             if user not in channel.users:
                 continue
-            channel.sendChannelMessage("PART", ":{}".format(data["reason"]), prefix=user.prefix())
+            if reason:
+                channel.sendChannelMessage("PART", ":{}".format(reason), prefix=user.prefix())
+            else:
+                channel.sendChannelMessage("PART", prefix=user.prefix())
             user.leave(channel)
     
     def processParams(self, user, params):
@@ -19,7 +23,7 @@ class PartCommand(Command):
             user.sendMessage(irc.ERR_NEEDMOREPARAMS, "PART", ":Not enough parameters")
             return {}
         channels = params[0].split(",")
-        reason = params[1] if len(params) > 1 else user.nickname
+        reason = params[1] if len(params) > 1 else None
         chanInstList = []
         for chan in channels:
             if chan not in self.ircd.channels:
@@ -30,10 +34,15 @@ class PartCommand(Command):
                 user.sendMessage(irc.ERR_NOTONCHANNEL, chan, ":You're not on that channel")
             else:
                 chanInstList.append(cdata)
+        if reason:
+            return {
+                "user": user,
+                "targetchan": chanInstList,
+                "reason": reason
+            }
         return {
             "user": user,
-            "targetchan": chanInstList,
-            "reason": reason
+            "targetchan": chanInstList
         }
 
 class Spawner(object):
