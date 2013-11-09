@@ -229,6 +229,7 @@ class IRCD(Factory):
         self.name = self.servconfig["server_name"]
         log.msg("Loading modules...")
         self.all_module_load()
+        self.save_serialized_deferred = None
         self.autoconnect_servers = LoopingCall(self.server_autoconnect)
         self.autoconnect_servers.start(60, now=False) # The server factory isn't added to here yet
         # Fill in the default ISUPPORT dictionary once config and modules are loaded, since some values depend on those
@@ -294,7 +295,7 @@ class IRCD(Factory):
             with open(self.config) as f:
                 self.load_options(yaml.safe_load(f))
             self.all_module_load()
-            deferToThread(self.save_serialized)
+            self.save_module_data()
         except:
             return False
         return True
@@ -333,7 +334,9 @@ class IRCD(Factory):
             except AttributeError:
                 pass
         log.msg("Saving serialized data...")
-        self.save_serialized()
+        if not self.save_module_data():
+            self.save_serialized_deferred.addCallback(self.save_serialized)
+        deferreds.append(self.save_serialized_deferred)
         # Return deferreds
         log.msg("Waiting on deferreds...")
         self.dead = True
@@ -554,7 +557,22 @@ class IRCD(Factory):
                     self.server_commands[command].remove(function)
         return all_data
     
-    def save_serialized(self):
+    def save_module_data(self):
+        if self.save_serialized_deferred is None or self.save_serialized_deferred.called:
+            self.save_serialized_deferred = deferToThread(self.save_serialized)
+            return True
+        # Otherwise, there's a save currently happening.  This likely means that
+        #  1. We don't need to save now; not THAT much has changed
+        #  2. Saving now has the potential to cause problems.
+        # We could add self.save_serialized as a callback to the Deferred, but there's
+        # not a good way to check whether that's done yet without complicating things (and,
+        # as mentioned, there's not a need for it).
+        # The return value allows us to work around it currently saving already in the
+        # cleanup step (when we absolutely must save regardless), as adding a callback
+        # in IRCD.cleanup won't hurt anything.
+        return False
+    
+    def save_serialized(self, _ = None):
         with open("data.yaml", "w") as dataFile:
             yaml.dump(self.serialized_data, dataFile, default_flow_style=False)
     
