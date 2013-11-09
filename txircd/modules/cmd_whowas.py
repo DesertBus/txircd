@@ -28,6 +28,36 @@ class WhowasCommand(Command):
             user.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")
             return {}
         users = params[0].split(",")
+        if len(params) >= 2:
+            count = None
+            hostType = None
+            if params[1].isdigit():
+                count = int(params[1])
+            elif "o" in user.mode:
+                hostType = params[1].lower()
+            if len(params) >= 3 and hostType is None and "o" in user.mode:
+                hostType = params[2].lower()
+            if hostType not in ("realhost", "ip"):
+                hostType = None
+            if count and count > 0 and hostType:
+                return {
+                    "user": user,
+                    "nicks": users,
+                    "count": count,
+                    "hosttype": hostType
+                }
+            elif hostType:
+                return {
+                    "user": user,
+                    "nicks": users,
+                    "hosttype": hostType
+                }
+            elif count and count > 0:
+                return {
+                    "user": user,
+                    "nicks": users,
+                    "count": count
+                }
         return {
             "user": user,
             "nicks": users
@@ -40,6 +70,8 @@ class WhowasCommand(Command):
             "nick": user.nickname,
             "ident": user.username,
             "host": user.hostname,
+            "realhost": user.realhost,
+            "ip": user.ip,
             "gecos": user.realname,
             "server": user.server,
             "time": now()
