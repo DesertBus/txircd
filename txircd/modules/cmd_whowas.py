@@ -14,9 +14,16 @@ class WhowasCommand(Command):
                 user.sendMessage(irc.ERR_WASNOSUCHNICK, oldNick, ":No such nick")
                 user.sendMessage(irc.RPL_ENDOFWHOWAS, oldNick, ":End of /WHOWAS list")
                 continue
-            historyList = self.history[oldNick]
+            if "count" in data:
+                historyList = self.history[oldNick][-data["count"]:]
+            else:
+                historyList = self.history[oldNick]
+            if "hosttype" in data:
+                host = data["hosttype"]
+            else:
+                host = "host"
             for entry in historyList:
-                user.sendMessage(irc.RPL_WHOWASUSER, entry["nick"], entry["ident"], entry["host"], "*", ":{}".format(entry["gecos"]))
+                user.sendMessage(irc.RPL_WHOWASUSER, entry["nick"], entry["ident"], entry[host], "*", ":{}".format(entry["gecos"]))
                 user.sendMessage(irc.RPL_WHOISSERVER, entry["nick"], entry["server"], ":{}".format(entry["time"]))
             user.sendMessage(irc.RPL_ENDOFWHOWAS, oldNick, ":End of /WHOWAS list")
     
@@ -28,6 +35,36 @@ class WhowasCommand(Command):
             user.sendMessage(irc.ERR_NONICKNAMEGIVEN, ":No nickname given")
             return {}
         users = params[0].split(",")
+        if len(params) >= 2:
+            count = None
+            hostType = None
+            if params[1].isdigit():
+                count = int(params[1])
+            elif "o" in user.mode:
+                hostType = params[1].lower()
+            if len(params) >= 3 and hostType is None and "o" in user.mode:
+                hostType = params[2].lower()
+            if hostType not in ("realhost", "ip"):
+                hostType = None
+            if count and count > 0 and hostType:
+                return {
+                    "user": user,
+                    "nicks": users,
+                    "count": count,
+                    "hosttype": hostType
+                }
+            elif hostType:
+                return {
+                    "user": user,
+                    "nicks": users,
+                    "hosttype": hostType
+                }
+            elif count and count > 0:
+                return {
+                    "user": user,
+                    "nicks": users,
+                    "count": count
+                }
         return {
             "user": user,
             "nicks": users
@@ -40,6 +77,8 @@ class WhowasCommand(Command):
             "nick": user.nickname,
             "ident": user.username,
             "host": user.hostname,
+            "realhost": user.realhost,
+            "ip": user.ip,
             "gecos": user.realname,
             "server": user.server,
             "time": now()
@@ -86,5 +125,13 @@ class Spawner(object):
         return [self.whowasCmd.history._data, {}]
     
     def data_unserialize(self, data):
-        for nick, entry in data.iteritems():
-            self.whowasCmd.history[nick] = entry
+        for nick, entries in data.iteritems():
+            # UPGRADE BEGIN
+            # 0.2.6: The following code upgrades data from 0.2.5 or prior
+            for entry in entries:
+                if "realhost" not in entry:
+                    entry["realhost"] = entry["host"]
+                if "ip" not in entry:
+                    entry["ip"] = "0.0.0.0"
+            # UPGRADE END
+            self.whowasCmd.history[nick] = entries
