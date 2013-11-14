@@ -51,8 +51,12 @@ class Logger(Module):
                     else:
                         self.writeLog(chan, "-{}{}- {}".format(prefix, user.nickname, message))
         elif cmd == "PART":
-            for chan in data["targetchan"]:
-                self.writeLog(chan, "< {} has left the channel: {}".format(data["user"].nickname, data["reason"]))
+            if "reason" in data:
+                for chan in data["targetchan"]:
+                    self.writeLog(chan, "< {} has left the channel: {}".format(data["user"].nickname, data["reason"]))
+            else:
+                for chan in data["targetchan"]:
+                    self.writeLog(chan, "< {} has left the channel".format(data["user"].nickname))
         elif cmd == "KICK":
             self.writeLog(data["targetchan"], "< {} was kicked by {} ({})".format(data["targetuser"].nickname, data["user"].nickname, data["reason"]))
     
