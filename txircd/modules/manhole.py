@@ -1,4 +1,5 @@
 from twisted.conch.manhole_tap import makeService
+from twisted.internet import reactor
 
 class Spawner(object):
     def __init__(self, ircd):
@@ -10,7 +11,9 @@ class Spawner(object):
         })
     
     def spawn(self):
-        self.manhole.startService()
+        # Wait 100ms in event of a rehash so that the old module
+        # has time to shut down. Could cause race conditions!
+        reactor.callLater(0.1, self.manhole.startService)
         return {}
 
     def cleanup(self):
