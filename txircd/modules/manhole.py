@@ -7,7 +7,7 @@ class Spawner(object):
             'namespace': {'ircd': ircd},
             'passwd': 'manhole.passwd',
             'telnetPort': None,
-            'sshPort': '65432'
+            'sshPort': 'tcp:65432:interface=127.0.0.1'
         })
     
     def spawn(self):
