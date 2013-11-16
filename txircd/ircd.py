@@ -69,8 +69,10 @@ class IRCProtocol(irc.IRC):
         self.data = 0
         self.data_checker = LoopingCall(self.checkData)
         self.pinger = LoopingCall.withCount(self.ping)
+        self.connection_expire = reactor.callLater(15, self.connectionLost)
     
     def connectionMade(self):
+        self.connection_expire.cancel()
         self.type = IRCUser(self)
         tryagain = []
         for function in self.factory.actions["connect"]:
