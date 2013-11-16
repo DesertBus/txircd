@@ -5,7 +5,7 @@ from copy import deepcopy
 class IRCChannel(object):
     def __init__(self, ircd, name):
         self.ircd = ircd
-        self.name = name
+        self.name = str(name)
         self.created = now()
         self.topic = ""
         self.topicSetter = ""
@@ -78,7 +78,7 @@ class IRCChannel(object):
                 if modetype == -1 or (modetype == 0 and len(params) > currentParam) or modetype == 1 or (adding and modetype == 2):
                     if len(params) <= currentParam:
                         continue # The mode must have a parameter, but one wasn't provided
-                    param = params[currentParam]
+                    param = str(params[currentParam]) # Prevent similar-to-str types that aren't str (like unicode) which breaks things when sent
                     currentParam += 1
                     if " " in param:
                         param = param[:param.find(" ")]
@@ -222,8 +222,8 @@ class IRCChannel(object):
     def setTopic(self, topic, setter):
         for action in self.ircd.actions["topic"]:
             action(self, topic, setter)
-        self.topic = topic
-        self.topicSetter = setter
+        self.topic = str(topic)
+        self.topicSetter = str(setter)
         self.topicTime = now()
         from txircd.server import SetTopic
         for server in self.ircd.servers.itervalues():
@@ -231,6 +231,11 @@ class IRCChannel(object):
                 server.callRemote(SetTopic, channel=self.name, chants=epoch(self.created), topic=topic, topicsetter=setter, topicts=epoch(self.topicTime))
     
     def setMetadata(self, namespace, key, value, sourceServer = None):
+        key = str(key)
+        if not value:
+            self.delMetadata(namespace, key, sourceServer)
+            return
+        value = str(value)
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
         self.metadata[namespace][key] = value
         for modfunc in self.ircd.actions["metadataupdate"]:
@@ -241,6 +246,7 @@ class IRCChannel(object):
                 server.callRemote(SetMetadata, target=self.name, targetts=epoch(self.created), namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key, sourceServer = None):
+        key = str(key)
         oldValue = self.metadata[namespace][key]
         del self.metadata[namespace][key]
         for modfunc in self.ircd.actions["metadataupdate"]:

@@ -223,9 +223,11 @@ class IRCUser(object):
         self.socket.sendMessage(*arglist, **kw)
     
     def setMetadata(self, namespace, key, value, sourceServer = None):
+        key = str(key)
         if not value:
             self.delMetadata(namespace, key, sourceServer)
             return
+        value = str(value)
         oldValue = self.metadata[namespace][key] if key in self.metadata[namespace] else ""
         self.metadata[namespace][key] = value
         for modfunc in self.ircd.actions["metadataupdate"]:
@@ -236,6 +238,7 @@ class IRCUser(object):
                     server.callRemote(SetMetadata, target=self.uuid, targetts=epoch(self.signon), namespace=namespace, key=key, value=value)
     
     def delMetadata(self, namespace, key, sourceServer = None):
+        key = str(key)
         oldValue = self.metadata[namespace][key]
         del self.metadata[namespace][key]
         for modfunc in self.ircd.actions["metadataupdate"]:
