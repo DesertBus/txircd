@@ -306,7 +306,7 @@ class Spawner(object):
             self.blockedUsers = set()
             self.serviceServer = None
             self.admins = {}
-            for u in self.ircd.users:
+            for u in self.ircd.users.itervalues():
                 if "accountid" in u.cache:
                     del u.cache["accountid"]
     

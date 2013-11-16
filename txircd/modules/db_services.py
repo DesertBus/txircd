@@ -59,7 +59,7 @@ class Service(object):
     def addToServers(self):
         for server in self.ircd.servers.itervalues():
             if server.nearHop == self.ircd.name:
-                server.callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, realhost=self.realhost, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
+                server.callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, realhost=self.realhost, gecos=self.realname, ip=self.ip, password="", server=self.server, secure=self.socket.secure, signon=1, nickts=1)
     
     def removeFromServers(self):
         for server in self.ircd.servers.itervalues():
@@ -75,7 +75,7 @@ class Service(object):
     def disconnect(self, reason, sourceServer = None):
         if sourceServer is None:
             return
-        self.ircd.servers[sourceServer].callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, realhost=self.realhost, gecos=self.realname, ip=self.ip, server=self.server, secure=self.socket.secure, signon=1, nickts=1)
+        self.ircd.servers[sourceServer].callRemote(RegisterUser, uuid=self.uuid, nick=self.nickname, ident=self.username, host=self.hostname, realhost=self.realhost, gecos=self.realname, ip=self.ip, password="", server=self.server, secure=self.socket.secure, signon=1, nickts=1)
     
     def sendMessage(self, command, *parameter_list, **kw):
         if command == "PRIVMSG" and "prefix" in kw:
