@@ -827,7 +827,9 @@ class ServerProtocol(AMP):
             raise NoSuchServer ("The server {} is not connected to the network.".format(server))
         if uuid in self.ircd.userid:
             raise UserAlreadyConnected ("The uuid {} already exists on the network.".format(uuid))
-        self.ircd.userid[uuid] = RemoteUser(self.ircd, uuid, None, None, None, None, None, ip, None, server, secure, datetime.utcfromtimestamp(signon), now())
+        newUser = RemoteUser(self.ircd, uuid, None, None, None, None, None, ip, None, server, secure, datetime.utcfromtimestamp(signon), now())
+        newUser.registered = 1
+        self.ircd.userid[uuid] = newUser
         for remoteserver in self.ircd.servers.itervalues():
             if remoteserver.nearHop == self.ircd.name and remoteserver != self:
                 remoteserver.callRemote(ConnectUser, uuid=uuid, ip=ip, server=server, secure=secure, signon=signon)
@@ -881,6 +883,7 @@ class ServerProtocol(AMP):
             newUser.nicktime = nicktime
             newUser.metadata = oldUser.metadata
             newUser.cache = oldUser.cache
+            newUser.registered = 0
         else:
             newUser = RemoteUser(self.ircd, uuid, nick, ident, host, realhost, gecos, ip, password if password else None, server, secure, signontime, nicktime)
         self.ircd.users[nick] = newUser
