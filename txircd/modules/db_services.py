@@ -1524,8 +1524,9 @@ class Spawner(object):
     def changeNick(self, user, id, nickname):
         if user in self.auth_timer:
             del self.auth_timer[user]
-            if user.server != self.ircd.name:
-                self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceUnblockUser", args=[user.uuid])
+            if user.server != self.ircd.name and user.server in self.ircd.servers: # Make sure the target server is still on the network
+                d = self.ircd.servers[user.server].callRemote(ModuleMessage, destserver=user.server, type="ServiceUnblockUser", args=[user.uuid])
+                d.addErrback(lambda err: log.msg("Couldn't unblock remote user {}: server no longer connected to network".format(user.nickname)))
         if "accountid" in user.cache and user.cache["accountid"] == id:
             return # Somehow we auth'd and didn't clear the timer?
         if irc_lower(user.nickname) != irc_lower(nickname):

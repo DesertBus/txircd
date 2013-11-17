@@ -611,7 +611,6 @@ class ModuleMessage(Command):
     errors = {
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE"
     }
-    requiresAnswer = False
 
 class PingServer(Command):
     arguments = [
