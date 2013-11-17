@@ -107,6 +107,8 @@ class RemoteUser(object):
                 server.callRemote(RemoveUser, user=self.uuid, reason=reason)
     
     def sendMessage(self, command, *parameter_list, **kw):
+        if self.server not in self.ircd.servers:
+            return
         if command in [ "JOIN", "MODE", "TOPIC", "QUIT", "NICK", "ERROR" ]: # some items should only be sent by the remote server via other s2s commands
             return
         if "prefix" in kw:
