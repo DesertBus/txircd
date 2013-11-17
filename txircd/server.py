@@ -2,6 +2,7 @@ from twisted.internet.defer import Deferred
 from twisted.internet.protocol import Factory, ClientFactory
 from twisted.internet.task import LoopingCall
 from twisted.protocols.amp import AMP, Command, Integer, String, Boolean, AmpList, ListOf, IncompatibleVersions
+from twisted.python import log
 from twisted.words.protocols import irc
 from txircd.channel import IRCChannel
 from txircd.utils import CaseInsensitiveDictionary, epoch, irc_lower, now, IPV4_MAPPED_ADDR
