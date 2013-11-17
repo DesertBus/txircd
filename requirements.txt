@@ -1,4 +1,4 @@
-Twisted==13.1.0
+Twisted==13.2.0
 argparse==1.2.1
 pyopenssl==0.13
 pyyaml==3.10
