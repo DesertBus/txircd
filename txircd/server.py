@@ -123,7 +123,8 @@ class RemoteUser(object):
                 to = kw["to"]
         else:
             to = self.nickname if self.nickname else "*"
-        self.ircd.servers[self.server].callRemote(SendAnnouncement, user=self.uuid, type=command, args=parameter_list, prefix=prefix, to=to)
+        d = self.ircd.servers[self.server].callRemote(SendAnnouncement, user=self.uuid, type=command, args=parameter_list, prefix=prefix, to=to)
+        d.addErrback(lambda err: log.msg("Could not send message to user {}: {} {}".format(self.nickname, command, " ".join(parameter_list))))
     
     def handleCommand(self, command, prefix, params):
         cmd = self.ircd.commands[command]
@@ -582,7 +583,6 @@ class SendAnnouncement(Command):
         HandshakeNotYetComplete: "HANDSHAKE_NOT_COMPLETE",
         NoSuchUser: "NO_SUCH_USER"
     }
-    requiresAnswer = False
 
 class ChannelMessage(Command):
     arguments = [
