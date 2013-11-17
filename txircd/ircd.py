@@ -576,7 +576,7 @@ class IRCD(Factory):
     
     def save_serialized(self, _ = None):
         with open("data.yaml", "w") as dataFile:
-            yaml.dump(self.serialized_data, dataFile, default_flow_style=False)
+            yaml.safe_dump(self.serialized_data, dataFile, default_flow_style=False)
     
     def saveClientPort(self, desc, port):
         if desc in self.client_ports:
