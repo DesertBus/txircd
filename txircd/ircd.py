@@ -607,14 +607,14 @@ class IRCD(Factory):
             self.client_ports[port].stopListening()
             del self.client_ports[port]
 
-        for port in port_to_bind:
+        for port in ports_to_bind:
             try:
                 endpoint = serverFromString(reactor, resolveEndpointDescription(port))
             except ValueError as e:
                 log.msg("Could not bind {}: not a valid description ({})".format(port, e))
                 continue
             listenDeferred = endpoint.listen(self)
-            listenDeferred.addCallback(addClientPortToIRCd, self, portstring)
+            listenDeferred.addCallback(addClientPortToIRCd, self, port)
             listenDeferred.addErrback(logPortNotBound)
 
         # Server ports
@@ -625,14 +625,14 @@ class IRCD(Factory):
             self.server_ports[port].stopListening()
             del self.server_ports[port]
 
-        for port in port_to_bind:
+        for port in ports_to_bind:
             try:
                 endpoint = serverFromString(reactor, resolveEndpointDescription(port))
             except ValueError as e:
                 log.msg("Could not bind {}: not a valid description ({})".format(port, e))
                 continue
             listenDeferred = endpoint.listen(self.server_factory)
-            listenDeferred.addCallback(addServerPortToIRCd, self, portstring)
+            listenDeferred.addCallback(addServerPortToIRCd, self, port)
             listenDeferred.addErrback(logPortNotBound)
     
     def buildProtocol(self, addr):
