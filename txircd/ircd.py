@@ -1,6 +1,6 @@
 from twisted.internet import reactor
 from twisted.internet.defer import DeferredList
-from twisted.internet.endpoints import clientFromString
+from twisted.internet.endpoints import serverFromString, clientFromString
 from twisted.internet.protocol import Factory
 from twisted.internet.task import LoopingCall
 from twisted.internet.threads import deferToThread
@@ -298,6 +298,7 @@ class IRCD(Factory):
                 self.load_options(yaml.safe_load(f))
             self.all_module_load()
             self.save_module_data()
+            self.rebind_ports()
         except:
             return False
         return True
@@ -587,6 +588,52 @@ class IRCD(Factory):
         if desc in self.server_ports:
             return
         self.server_ports[desc] = port
+
+    def rebind_ports(self):
+        def addClientPortToIRCd(port, ircd, desc):
+            ircd.saveClientPort(desc, port)
+
+        def addServerPortToIRCd(port, ircd, desc):
+            ircd.saveServerPort(desc, port)
+
+        def logPortNotBound(error):
+            log.msg("An error occurred: {}".format(error))
+
+        # Client ports
+        old_ports, new_ports = set(self.client_ports.keys()), set(self.servconfig["server_client_ports"])
+        ports_to_unbind, ports_to_bind = old_ports - new_ports, new_ports - old_ports
+
+        for port in ports_to_unbind:
+            self.client_ports[port].stopListening()
+            del self.client_ports[port]
+
+        for port in port_to_bind:
+            try:
+                endpoint = serverFromString(reactor, resolveEndpointDescription(port))
+            except ValueError as e:
+                log.msg("Could not bind {}: not a valid description ({})".format(port, e))
+                continue
+            listenDeferred = endpoint.listen(self)
+            listenDeferred.addCallback(addClientPortToIRCd, self, portstring)
+            listenDeferred.addErrback(logPortNotBound)
+
+        # Server ports
+        old_ports, new_ports = set(self.server_ports.keys()), set(self.servconfig["server_link_ports"])
+        ports_to_unbind, ports_to_bind = old_ports - new_ports, new_ports - old_ports
+
+        for port in ports_to_unbind:
+            self.server_ports[port].stopListening()
+            del self.server_ports[port]
+
+        for port in port_to_bind:
+            try:
+                endpoint = serverFromString(reactor, resolveEndpointDescription(port))
+            except ValueError as e:
+                log.msg("Could not bind {}: not a valid description ({})".format(port, e))
+                continue
+            listenDeferred = endpoint.listen(self.server_factory)
+            listenDeferred.addCallback(addServerPortToIRCd, self, portstring)
+            listenDeferred.addErrback(logPortNotBound)
     
     def buildProtocol(self, addr):
         if self.dead:
