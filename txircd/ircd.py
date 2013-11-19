@@ -104,7 +104,7 @@ class IRCProtocol(irc.IRC):
         # I don't like handling this here, but twisted does not provide a hook to process it in a better place (e.g.
         # when the SSL handshake is complete); see http://twistedmatrix.com/trac/ticket/6024
         # This will be moved in the future when we can.
-        if self.secure:
+        if self.secure and self.transport:
             certificate = self.transport.getPeerCertificate()
             if certificate is not None:
                 self.type.setMetadata("server", "certfp", certificate.digest("md5").lower().replace(":", ""))
