@@ -4,10 +4,13 @@ import string
 
 class UserCommand(Command):
     def onUse(self, user, data):
+        advanceRegistration = False
         if not user.username:
-            user.registered -= 1
+            advanceRegistration = True
         user.setUsername(data["ident"])
         user.setRealname(data["gecos"])
+        if advanceRegistration:
+            user.registered -= 1
         if user.registered == 0:
             user.register()
     
