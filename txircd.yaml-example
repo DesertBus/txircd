@@ -52,11 +52,12 @@
 # may specify tcp:6667:interface=127.0.0.1 to bind only to IPv4 loopback on port
 # 6667.
 # 
-# For SSL connections, the optional parameters may include certKey and
-# privateKey, which respectively have the file names of the certificate and the
-# private key.  If the private key is not given, it is assumed to be server.pem.
-# If the certificate is not given, it is assumed to be in the same file as the
-# private key.
+# For SSL connections, the optional parameters may include certKey, privateKey,
+# and extraCertChain, which respectively have the file names of the certificate,
+# the private key, and a certificate chain file..  If the private key is not
+# given, it is assumed to be server.pem.  If the certificate is not given, it is
+# assumed to be in the same file as the private key.  If the extra cert file is
+# not given, it is not checked.
 # 
 # You may make a port into a websocket port by prefixing the whole string
 # with "sockjs:" and wrapping the rest in braces.
