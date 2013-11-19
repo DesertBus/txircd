@@ -127,7 +127,8 @@ class RemoteUser(object):
         else:
             to = self.nickname if self.nickname else "*"
         d = self.ircd.servers[self.server].callRemote(SendAnnouncement, user=self.uuid, type=command, args=parameter_list, prefix=prefix, to=to)
-        d.addErrback(lambda err: log.msg("Could not send message to user {}: {} {}".format(self.nickname, command, " ".join(parameter_list))))
+        if d: # Apparently sometimes the deferred is actually None
+            d.addErrback(lambda err: log.msg("Could not send message to user {}: {} {}".format(self.nickname, command, " ".join(parameter_list))))
     
     def handleCommand(self, command, prefix, params):
         cmd = self.ircd.commands[command]
