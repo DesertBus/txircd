@@ -62,7 +62,7 @@ default_options = {
 }
 
 class IRCProtocol(irc.IRC):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, ip):
         self.dead = False
         self.type = None
         self.secure = False
@@ -70,6 +70,7 @@ class IRCProtocol(irc.IRC):
         self.data_checker = LoopingCall(self.checkData)
         self.pinger = LoopingCall.withCount(self.ping)
         self.connection_expire = reactor.callLater(15, self.connectionLost, None)
+        self.ip = ip
     
     def connectionMade(self):
         self.connection_expire.cancel()
@@ -645,8 +646,9 @@ class IRCD(Factory):
             log.msg("A client at IP address {} has exceeded the session limit".format(ip))
             return None
         self.peerConnections[ip] = connections + 1
-        return Factory.buildProtocol(self, addr)
+        newProtocol = IRCProtocol(ip)
+        newProtocol.factory = self
+        return newProtocol
 
     def unregisterProtocol(self, p):
-        ip = p.transport.getPeer().host
-        self.peerConnections[ip] -= 1
+        self.peerConnections[p.ip] -= 1
