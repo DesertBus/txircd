@@ -46,7 +46,7 @@ if __name__ == "__main__":
         with open(args.config) as f:
             options.update(yaml.safe_load(f))
     except:
-        pass # Oh well
+        print 'Error: Loading configuration file' # Oh well
     if options["app_verbose"] or args.verbose:
         log.startLogging(args.log_file)
     ssl_cert = ChainedOpenSSLContextFactory(options["app_ssl_key"],options["app_ssl_pem"])
